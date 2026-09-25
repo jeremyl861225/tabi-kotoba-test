@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>旅ことば 配色試看</title>
+<meta name="description" content="日本旅遊常用日文單字卡：假名標音、發音、例句，依旅遊實用頻率分課與測驗。">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="旅ことば試看">
+<link rel="stylesheet" href="css/app.css">
+<script>
+  // 使用者在設定裡指定深淺色時，第一次畫面就套用（開場畫面才不會先閃另一種底色）
+  try { var t = (JSON.parse(localStorage.getItem('tabi-kotoba-test/v1') || '{}').settings || {}).theme; if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  // 測試版：網址的 ?v= 決定一開始看哪一版
+  try { var v = new URLSearchParams(location.search).get('v'); sessionStorage.setItem('tk-lab-look', /^[1-6]$/.test(v || '') ? v : (sessionStorage.getItem('tk-lab-look') || '3')); } catch (e) {}
+</script>
+</head>
+<body>
+<!--
+THESIS: 一本米色紙上的鐵道路線手帳：首頁是由必備往進階延伸的三條線，一站一課；色彩只出現在線、站點與按鈕上，字才是主角。
+OWN-WORLD: 白底（2026-09-25 起，原本米色）與暖深咖啡深色模式（#1c1814）；八個主題家族各一組 Colormind 色票，當點綴與首頁色塊的淡彩（約 10%），不鋪滿畫面；日文明朝、中文宋體（系統字，偏細）；膠囊鍵、18px 圓角選項磚、站點圓心落在不斷開的線上。
+STORY: 旅客一眼看到下一站是哪一課，一站一站學完、考一考、把不穩的字打星，到了日本離線查字播音。
+FIRST VIEWPORT: 開啟時先有約一秒的開場（日の丸的紅圓與米色「旅」，點一下跳過）；之後左上「旅ことば」與已學字數；下方是「下一站」卡片（路線章、課名、下一站是哪條線第幾站、每個字一格的進度、出發鍵）；其下是主題家族 3×3 色塊（篩選）與可收合的三條線。
+FORM: 使用者先指定參考 Drops，之後改為米色底、Colormind 色票當點綴、明朝／宋體、一站＝一課（2026-09-24）；seed 780ab2c2。
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<div id="splash" aria-hidden="true"><div class="sun"><span lang="ja">旅</span></div></div>
+<main id="app"></main>
+<nav class="tabbar" aria-label="主要分頁">
+  <div class="tabbar-inner">
+    <a class="tab" data-tab="home" href="#/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16"/><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="var(--surface)"/><circle cx="19" cy="12" r="2.2" fill="var(--surface)"/><path d="M4 6.5h9M4 17.5h13" opacity=".45"/></svg>
+      路線
+    </a>
+    <a class="tab" data-tab="browse" href="#/browse">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="1.5"/><path d="M4 14.5h16"/><path d="M8 10h8" stroke-linecap="round"/></svg>
+      字卡
+    </a>
+    <a class="tab" data-tab="quiz" href="#/quiz">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg>
+      測驗
+    </a>
+    <a class="tab" data-tab="starred" href="#/starred">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.6l2.5 5.2 5.7.8-4.2 3.9 1 5.6L12 16.4l-5 2.7 1-5.6-4.2-3.9 5.7-.8z"/></svg>
+      <span class="badge-n" hidden></span>
+      不熟
+    </a>
+    <a class="tab" data-tab="settings" href="#/settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h9M18 7h1M5 17h1M10 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+      設定
+    </a>
+  </div>
+</nav>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
