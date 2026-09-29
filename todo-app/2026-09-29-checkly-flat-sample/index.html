@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Checkly 扁平打字機範例</title>
+<style>
+@font-face{font-family:"JBM";src:url(fonts/JetBrainsMono-Bold.woff2) format("woff2");font-weight:700;font-display:block}
+@font-face{font-family:"JBM";src:url(fonts/JetBrainsMono-Regular.woff2) format("woff2");font-weight:400;font-display:block}
+:root{
+  --bg:#F8F7F2; --ink:#133E50; --ink2:#3D6070; --muted:#49646F; --faint:#8C9A9F;
+  --accent:#2A7574; --done:#2F6B41; --hot:#B9660F; --danger:#A83F17;
+  --inv-bg:#133E50; --inv-ink:#F8F7F2; --scr-inv:rgba(19,62,80,.26);
+  --mono:"JBM",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --cjk:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",system-ui,sans-serif;
+}
+html[data-theme="dark"]{
+  --bg:#111214; --ink:#ECEEF1; --ink2:#B6BBC1; --muted:#8A9097; --faint:#5E646B;
+  --accent:#5BA7A6; --done:#A7DBA0; --hot:#F4A14F; --danger:#E97552;
+  --inv-bg:#ECEEF1; --inv-ink:#111214; --scr-inv:rgba(236,238,241,.22);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+/* 內文字型：預設「等寬」＝拉丁字與數字用 JetBrains Mono、中文用系統字（中文本來就等寬） */
+body{font:400 15px/1.65 var(--mono),var(--cjk);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+html.sysfont body{font-family:var(--cjk)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+
+/* ---- 範例控制列（不是 App 的一部分）---- */
+.ctl{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;background:#E5E3DA;color:#133E50;font:13px/1.4 var(--cjk)}
+html[data-theme="dark"] .ctl{background:#26292D;color:#ECEEF1}
+.ctl b{margin-right:2px}
+.ctl .g{display:inline-flex;gap:4px;align-items:center;margin-right:8px}
+.ctl button{border:1px solid currentColor;border-radius:999px;padding:3px 10px;opacity:.55}
+.ctl button.on{opacity:1;font-weight:700}
+.ctl a{color:inherit}
+
+/* ---- App 外殼 ---- */
+.app{max-width:760px;margin:0 auto;padding:0 18px 140px;position:relative;min-height:calc(100vh - 40px)}
+header{display:flex;align-items:center;gap:12px;padding:18px 0 22px}   /* 標題下方：不畫線，多留行距 */
+.ttl{display:flex;align-items:baseline;gap:10px;min-width:0;flex:1}
+.en{font:700 26px/1 var(--mono);white-space:pre;display:inline-flex}
+.zh{font:600 16px/1 var(--cjk);color:var(--ink2);letter-spacing:.06em;white-space:nowrap}
+.cur{display:inline-block;width:.55em;height:1.05em;background:var(--ink2);transform:translateY(.12em);margin-left:1px}
+.cur.blink{animation:blink .9s steps(1) infinite}
+.cur.off{opacity:0;transition:opacity .2s}
+@keyframes blink{50%{opacity:0}}
+.sync{font:400 12px/1 var(--mono),var(--cjk);color:var(--muted);white-space:nowrap}
+.sync i{color:var(--accent);font-style:normal}
+.menu{font:700 18px/1 var(--mono);color:var(--ink2);width:32px;height:32px}
+
+.sc{display:inline-block;width:1ch;text-align:center}
+.sc-ghost{opacity:.32}.sc-dim{opacity:.62}
+.sc-inv{background:var(--scr-inv);box-shadow:0 0 0 .04em var(--scr-inv)}
+
+/* 篩選：純文字；選中＝反白（跟亂碼的反白格同一個語彙） */
+.filters{display:flex;gap:14px;overflow-x:auto;padding:2px 0 18px;scrollbar-width:none;font-size:14px}
+.filters button{white-space:nowrap;color:var(--ink2);padding:1px 4px}
+.filters button.on{background:var(--inv-bg);color:var(--inv-ink)}
+.star{color:var(--hot)}
+
+/* 分組：小字等寬，不畫線 */
+.gh{font:700 12px/1 var(--mono),var(--cjk);color:var(--muted);letter-spacing:.12em;margin:26px 0 12px}
+.gh .n{color:var(--faint);margin-left:6px}
+.gh:first-child{margin-top:4px}
+
+/* 項目：沒有卡片，內容直接排在版面上；項目之間只靠留白 */
+.it{padding:9px 0 13px;display:flex;gap:10px;align-items:flex-start}
+.it .ck{font:700 15px/1.65 var(--mono);color:var(--accent);flex:none;min-width:3ch;text-align:left}
+html.boxck .it .ck{font:400 18px/1.4 var(--cjk)}
+.it .bd{min-width:0;flex:1}
+.it .ti{font-size:16px;font-weight:600;color:var(--ink);font-family:var(--cjk)}
+html:not(.sysfont) .it .ti{font-family:var(--mono),var(--cjk)}
+.it .mt{font-size:12.5px;color:var(--muted);margin-top:1px}
+.it .mt .late{color:var(--danger)} .it .mt .today{color:var(--hot)} .it .mt .soon{color:var(--accent)}
+.it .mt .sq{font-size:10px;vertical-align:1px}
+.it .cad{font-size:11px;letter-spacing:.5px;margin-top:4px;white-space:nowrap;overflow:hidden}
+.it .cad .off{color:var(--faint);opacity:.55}
+.it .next{font-size:12.5px;color:var(--ink2)}
+.it .pg{font-size:12px;color:var(--muted);margin-top:2px}
+.it.done .ti{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1.5px}
+.it.done .ck{color:var(--done)}
+.it.lift{position:relative;z-index:3;background:var(--bg)}
+
+/* 月曆：沒有外框、沒有格線，數字直接排在版面上 */
+.calbar{display:flex;align-items:center;gap:14px;margin:0 0 14px;font:700 16px/1 var(--mono),var(--cjk)}
+.calbar .sp{flex:1}
+.calbar button{color:var(--ink2);font:700 16px/1 var(--mono)}
+.calbar .today{font:400 13px/1 var(--mono),var(--cjk);color:var(--accent)}
+.dow,.wk{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+.dow{font:400 12px/1 var(--cjk);color:var(--muted);margin-bottom:8px}
+.dow .we{color:var(--hot)}
+.cell{padding:6px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.cell .d{font:700 15px/1 var(--mono);padding:3px 4px;min-width:3ch}
+.cell.out .d{color:var(--faint)}
+.cell.today .d{background:var(--inv-bg);color:var(--inv-ink)}
+.cell.sel .d{box-shadow:inset 0 -2px 0 var(--accent)}
+.cell .dots{font:400 10px/1 var(--mono);letter-spacing:1px;min-height:10px;white-space:nowrap}
+.cell .bar{height:2px;width:100%;margin-top:-1px}
+.dayh{display:flex;align-items:baseline;gap:10px;margin:22px 0 6px;font:700 15px/1 var(--mono),var(--cjk)}
+.dayh .w{font-weight:400;color:var(--muted);font-size:13px}
+.dayh .sp{flex:1}.dayh .p{font-weight:400;color:var(--muted);font-size:13px}
+.acts{display:flex;justify-content:flex-end;margin:-8px 0 8px}
+.acts button{font:400 13px/1 var(--mono),var(--cjk);color:var(--accent)}
+
+/* 底部導覽：純文字，選中＝反白；FAB＝反白文字塊 */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;gap:6px;padding:10px 12px calc(12px + env(safe-area-inset-bottom));background:var(--bg)}
+nav button{font:600 14px/1 var(--mono),var(--cjk);color:var(--ink2);padding:8px 12px;position:relative}
+nav button.on{color:var(--inv-ink)}
+nav .lens{position:absolute;inset:0;background:var(--inv-bg);z-index:-1}
+nav button span{position:relative}
+.fab{position:fixed;right:max(18px,calc(50% - 362px));bottom:calc(64px + env(safe-area-inset-bottom));z-index:21;
+  background:var(--inv-bg);color:var(--inv-ink);font:700 14px/1 var(--mono),var(--cjk);padding:12px 14px}
+.row-in{animation:typein .28s steps(12) both}
+@keyframes typein{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+
+/* 開場 */
+#intro{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:var(--bg)}
+#intro .w{font:700 clamp(34px,10.5vw,60px)/1 var(--mono);display:inline-flex;white-space:pre}
+.note{max-width:760px;margin:26px auto 0;padding:0 18px;font:13px/1.7 var(--cjk);color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="ctl">
+  <a href="../../">← 所有測試</a>
+  <span class="g"><b>內文字型</b><button data-k="font" data-v="mono" class="on">等寬</button><button data-k="font" data-v="sys">系統字</button></span>
+  <span class="g"><b>勾選框</b><button data-k="ck" data-v="br" class="on">[ ] 文字</button><button data-k="ck" data-v="box">□ 方框</button></span>
+  <span class="g"><b>主題</b><button data-k="th" data-v="light" class="on">淺</button><button data-k="th" data-v="dark">深</button></span>
+  <span class="g"><button id="replay" style="opacity:1">重播開場</button></span>
+</div>
+<div class="app">
+  <header>
+    <div class="ttl"><span class="en" id="en"></span><span class="zh" id="zh"></span><span class="cur off" id="cur"></span></div>
+    <span class="sync"><i>●</i> 已同步</span><button class="menu">⋮</button>
+  </header>
+  <main id="page"></main>
+</div>
+<button class="fab" id="fab">+ 新增排程</button>
+<nav id="nav"></nav>
+<div id="intro"><span class="w" id="iw"></span></div>
+
+<script>
+/* ---------- 亂碼跳字（與 App 內同一個引擎）---------- */
+const GLYPHS='@#$%&*+=-_~!?;:.,^|/<>()[]{}†◆◇○●■□▪▫▲△▼▽░▒▓█';
+const rnd=n=>Math.floor(Math.random()*n);
+function cells(el,n){for(let k=el.childNodes.length-1;k>=0;k--){const nd=el.childNodes[k];if(nd.nodeType!==1||!nd.classList.contains('sc'))el.removeChild(nd);}
+  while(el.children.length<n){const c=document.createElement('span');c.className='sc';el.appendChild(c);} while(el.children.length>n)el.lastChild.remove();return[...el.children];}
+function paint(c,ch,st){c.textContent=(ch===undefined||ch===' ')?' ':ch;c.className='sc'+(st?' '+st:'');}
+const sty=()=>{const r=Math.random();return r<.16?'sc-inv':r<.34?'sc-ghost':r<.4?'sc-dim':'';};
+function sset(el,t){if(el._s){cancelAnimationFrame(el._s.raf);el._s=null;}el.dataset.text=t;cells(el,t.length).forEach((c,i)=>paint(c,t[i],''));}
+function sto(el,t,o={}){const from=el.dataset.text??'';const dur=o.duration??380,lead=o.lead??80,settle=o.settle??110,tick=o.tick??50;
+  if(el._s){cancelAnimationFrame(el._s.raf);el._s=null;}el.dataset.text=t;if(from===t){sset(el,t);return Promise.resolve();}
+  const n=Math.max(from.length,t.length,1),cs=cells(el,n),last=Math.max(1,n-1);
+  return new Promise(res=>{const t0=performance.now();const st=cs.map((_,i)=>lead*i/last+rnd(14)),en=cs.map((_,i)=>dur-settle+settle*i/last+rnd(16)),nx=cs.map(()=>0);
+    const s={raf:0};el._s=s;const step=now=>{const tt=now-t0;let live=false;cs.forEach((c,i)=>{if(tt<st[i]){paint(c,from[i],'');live=true;return;}
+      if(tt>=en[i]){paint(c,t[i],'');return;}live=true;if(tt>=nx[i]){paint(c,GLYPHS[rnd(GLYPHS.length)],sty());nx[i]=tt+tick*(.7+Math.random()*.6);}});
+      if(live&&tt<dur+60)s.raf=requestAnimationFrame(step);else{el._s=null;cells(el,t.length).forEach((c,i)=>paint(c,t[i],''));res();}};s.raf=requestAnimationFrame(step);});}
+/* 打字機：一個字一個字打出中文，游標閃一下後收掉 */
+let typeTok=0;
+async function typeZh(t){const tok=++typeTok,zh=document.getElementById('zh'),cur=document.getElementById('cur');zh.textContent='';cur.className='cur';
+  for(const ch of t){await new Promise(r=>setTimeout(r,55));if(tok!==typeTok)return;zh.textContent+=ch;}
+  cur.className='cur blink';setTimeout(()=>{if(tok===typeTok)cur.className='cur off';},900);}
+
+/* ---------- 示範資料 ---------- */
+const CAT={工作:'#5B7F6A',私人:'#B0603A',運動:'#3F6E9E',學習:'#8A5A9E'};
+const sq=c=>`<span class="sq" style="color:${CAT[c]}">■</span> ${c}`;
+const cad=(c,pat)=>`<div class="cad">${pat.split('').map(x=>x===' '?' ':`<span class="${x==='1'?'':'off'}" style="${x==='1'?`color:${CAT[c]}`:''}">${x==='1'?'■':'□'}</span>`).join('')}</div>`;
+const SCH=[
+  {g:'每日',t:'晨間查房前看檢驗',m:'每日 07:00',c:'工作',p:'1111111 1111111 1111111 1111111'},
+  {g:'每日',t:'喝水 2000 mL',m:'每日',c:'私人',p:'1111111 1111111 1111111 1111111'},
+  {g:'每週',t:'科內晨會報告',m:'每週二 07:30',c:'工作',p:'1000000 1000000 1000000 1000000',imp:1},
+  {g:'每週',t:'跑步 5 公里',m:'每週二 18:30',c:'運動',p:'1000000 1000000 1000000 1000000'},
+  {g:'每週',t:'整理病歷摘要',m:'每週五',c:'工作',p:'0001000 0001000 0001000 0001000'},
+  {g:'每月',t:'繳信用卡費',m:'每月 29 號',c:'私人',p:'1000000 0000000 0000000 0000000',imp:1},
+  {g:'自訂',t:'讀一篇期刊',m:'每 2 天',c:'學習',p:'1010101 0101010 1010101 0101010'},
+];
+let DAY=[
+  {id:'a',t:'科內晨會報告',m:'07:30 · 每週二',c:'工作',imp:1,done:0},
+  {id:'b',t:'繳信用卡費',m:'每月 29 號',c:'私人',imp:1,done:0},
+  {id:'c',t:'晨間查房前看檢驗',m:'07:00 · 每日',c:'工作',done:0},
+  {id:'d',t:'牙醫回診',m:'14:00 · 單一行程',c:'私人',done:0},
+  {id:'e',t:'跑步 5 公里',m:'18:30 · 每週二',c:'運動',done:0,sub:'■□□ 1/3'},
+  {id:'f',t:'讀一篇期刊',m:'每 2 天',c:'學習',done:0},
+  {id:'g',t:'喝水 2000 mL',m:'每日',c:'私人',done:1},
+];
+let TASK=[
+  {id:'t2',g:'已逾期',t:'換機車機油',m:'<span class="late">逾期 1 天 · 9/28</span>',c:'私人',done:0},
+  {id:'t3',g:'今天到期',t:'讀完 ICU Book 第 12 章',m:'<span class="today">今天到期</span>',c:'學習',done:0},
+  {id:'t1',g:'一週內',t:'準備年會投影片',m:'<span class="soon">2 天後 · 10/1</span>',c:'工作',done:0,imp:1,next:'排練',sub:'■■□□ 2/4'},
+  {id:'t4',g:'之後',t:'訂機票',m:'10/11',c:'私人',done:0},
+  {id:'t5',g:'未定截止日',t:'整理照片備份',m:'無截止日',c:'私人',done:0},
+];
+const PAGES=[{id:'list',en:'Recurring',zh:'重複排程',fab:'+ 新增排程'},{id:'cal',en:'Calendar',zh:'月曆',fab:'+ 新增行程'},{id:'task',en:'Upcoming',zh:'近期任務',fab:'+ 新增任務'}];
+let page='cal';
+const box=()=>document.documentElement.classList.contains('boxck');
+const ckTxt=d=>box()?(d?'☑':'☐'):(d?'[x]':'[ ]');
+const star=x=>x?'<span class="star">✦</span> ':'';
+
+function filters(){return `<div class="filters"><button class="on">全部</button><button><span class="star">✦</span>重大</button><button>工作</button><button>私人</button><button>運動</button><button>學習</button></div>`;}
+function rowHTML(x,kind){return `<div class="it ${x.done?'done':''}" data-id="${x.id}">
+  <button class="ck" data-k="${kind}">${ckTxt(x.done)}</button>
+  <div class="bd"><div class="ti">${star(x.imp)}${x.t}</div>
+  ${x.next&&!x.done?`<div class="next">&gt; ${x.next}</div>`:''}
+  <div class="mt">${x.m} · ${sq(x.c)}</div>${x.sub?`<div class="pg">${x.sub}</div>`:''}</div></div>`;}
+function renderList(){let h=filters(),g='';SCH.forEach(x=>{if(x.g!==g){g=x.g;h+=`<div class="gh">${g}<span class="n">${SCH.filter(y=>y.g===g).length}</span></div>`;}
+  h+=`<div class="it"><div class="bd"><div class="ti">${star(x.imp)}${x.t}</div><div class="mt">${x.m} · ${sq(x.c)}</div>${cad(x.c,x.p)}</div></div>`;});return h;}
+function renderCal(){const days=[30,31,...Array.from({length:30},(_,i)=>i+1),1,2,3];
+  const dots=['•••','••','✦•••','••','•••','•••','••••','••','••','✦••','•••','•••','••','•••','•••','••','✦•••','••','•••','•••','••••','••','•••','✦••','•••','••','•••','•••','•••','✦•••','••','•••','•••','•••','•••'];
+  let h=`<div class="calbar"><button>‹</button><span>2026 年 9 月</span><button>›</button><span class="sp"></span><button class="today">今天</button></div>
+  <div class="dow"><span class="we">日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span class="we">六</span></div>`;
+  for(let w=0;w<5;w++){h+='<div class="wk">';for(let d=0;d<7;d++){const k=w*7+d,n=days[k],out=k<2||k>31,today=k===30;
+    h+=`<div class="cell ${out?'out':''} ${today?'today sel':''}"><span class="d">${n}</span><span class="dots" style="color:${['#5B7F6A','#B0603A','#3F6E9E','#8A5A9E'][k%4]}">${dots[k]||''}</span></div>`;}h+='</div>';}
+  const dn=DAY.filter(x=>x.done).length;
+  h+=`<div class="dayh">9 月 29 日<span class="w">週二 · 今天</span><span class="sp"></span><span class="p">${dn}/${DAY.length}</span></div>`;
+  const ord=[...DAY].sort((a,b)=>a.done-b.done||(b.imp||0)-(a.imp||0));
+  h+=`<div id="dl">${ord.map(x=>rowHTML(x,'day')).join('')}</div>`;return h;}
+function renderTask(){let h=`<div class="acts"><button>已完成 2 →</button></div>`+filters(),g='';
+  const ord=[...TASK].sort((a,b)=>a.done-b.done);
+  ord.forEach(x=>{const gg=x.done?'剛完成':x.g;if(gg!==g){g=gg;h+=`<div class="gh">${g}<span class="n">${ord.filter(y=>(y.done?'剛完成':y.g)===g).length}</span></div>`;}h+=rowHTML(x,'task');});return h;}
+function render(anim){const m=document.getElementById('page');m.innerHTML=page==='list'?renderList():page==='cal'?renderCal():renderTask();
+  if(anim)[...m.children].forEach((c,i)=>{c.classList.add('row-in');c.style.animationDelay=Math.min(i*22,300)+'ms';});wire();}
+function navHTML(){document.getElementById('nav').innerHTML=PAGES.map(p=>`<button data-p="${p.id}" class="${p.id===page?'on':''}">${p.id===page?'<i class="lens"></i>':''}<span>${p.zh}</span></button>`).join('');
+  document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.p));}
+async function go(p,first){const from=PAGES.findIndex(x=>x.id===page);page=p;const P=PAGES.find(x=>x.id===p);
+  // 導覽：反白塊滑到新位置（FLIP）
+  const old=document.querySelector('#nav .lens')?.getBoundingClientRect();navHTML();const lens=document.querySelector('#nav .lens');
+  if(old&&lens&&!first){const nw=lens.getBoundingClientRect();lens.animate([{transform:`translateX(${old.left-nw.left}px) scaleX(${old.width/nw.width})`,transformOrigin:'left'},{transform:'none',transformOrigin:'left'}],{duration:320,easing:'cubic-bezier(.2,.9,.3,1.05)'});}
+  const fab=document.getElementById('fab');fab.textContent=P.fab;
+  render(!first);
+  document.getElementById('zh').textContent='';document.getElementById('cur').className='cur off';typeTok++;
+  if(first){sset(document.getElementById('en'),P.en);}else{await sto(document.getElementById('en'),P.en,{duration:360});}
+  typeZh(P.zh);}
+function wire(){document.querySelectorAll('.it .ck').forEach(b=>b.onclick=()=>check(b));}
+/* 勾選：原地 [ ]→[x]（跳字）＋刪除線 → 260 ms 後沉到最下面（FLIP） */
+async function check(b){const row=b.closest('.it'),id=row.dataset.id,list=b.dataset.k==='day'?DAY:TASK,x=list.find(y=>y.id===id);x.done=x.done?0:1;
+  row.classList.toggle('done',!!x.done);
+  if(!box()){b.dataset.text=x.done?'[ ]':'[x]';await sto(b,ckTxt(x.done),{duration:200,lead:0,settle:60,tick:40});}else b.textContent=ckTxt(x.done);
+  await new Promise(r=>setTimeout(r,x.done?220:0));
+  const m=document.getElementById('page');const first=new Map([...m.querySelectorAll('.it,.gh')].map(e=>[e.dataset.id||'g:'+e.textContent,e.getBoundingClientRect()]));
+  render(false);
+  m.querySelectorAll('.it,.gh').forEach(e=>{const k=e.dataset.id||'g:'+e.textContent,a=first.get(k);if(!a){e.animate([{opacity:0},{opacity:1}],{duration:240,delay:160,fill:'backwards'});return;}
+    const bb=e.getBoundingClientRect(),dy=a.top-bb.top;if(Math.abs(dy)<1)return;
+    if(k===id){e.classList.add('lift');const an=e.animate([{transform:`translateY(${dy}px)`},{transform:'none'}],{duration:560,easing:'cubic-bezier(.2,.9,.3,1.04)'});an.onfinish=()=>e.classList.remove('lift');}
+    else e.animate([{transform:`translateY(${dy}px)`},{transform:'none'}],{duration:520,delay:30,easing:'cubic-bezier(.2,.9,.3,1.04)',fill:'backwards'});});}
+
+/* ---------- 開場（加速版）---------- */
+async function intro(){const el=document.getElementById('intro'),w=document.getElementById('iw');el.style.display='grid';el.style.opacity=1;
+  const W=['Recurring','Calendar','Upcoming','Checkly'],HOLD=240,SCR=360,FINAL=280;sset(w,W[0]);
+  for(let i=1;i<W.length;i++){await new Promise(r=>setTimeout(r,HOLD));await sto(w,W[i],{duration:SCR});}
+  await new Promise(r=>setTimeout(r,FINAL));
+  const a=w.getBoundingClientRect(),b=document.getElementById('en').getBoundingClientRect(),k=26/parseFloat(getComputedStyle(w).fontSize);
+  w.animate([{transform:'none'},{transform:`translate(${b.left-a.left}px,${b.top-a.top}px) scale(${k})`}],{duration:340,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards',transformOrigin:'0 0'});
+  el.animate([{opacity:1},{opacity:0}],{duration:340,fill:'forwards'});await new Promise(r=>setTimeout(r,340));el.style.display='none';w.getAnimations().forEach(x=>x.cancel());
+  const en=document.getElementById('en');sset(en,'Checkly');const P=PAGES.find(x=>x.id===page);await sto(en,P.en,{duration:380});typeZh(P.zh);}
+document.getElementById('iw').style.transformOrigin='0 0';
+
+document.querySelector('.ctl').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;
+  b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  const r=document.documentElement;if(b.dataset.k==='font')r.classList.toggle('sysfont',b.dataset.v==='sys');
+  if(b.dataset.k==='ck')r.classList.toggle('boxck',b.dataset.v==='box');
+  if(b.dataset.k==='th')r.dataset.theme=b.dataset.v;render(false);});
+document.getElementById('replay').onclick=intro;
+document.fonts.load('700 26px "JBM"').then(()=>{go(page,true);intro();});
+</script>
+</body>
+</html>
