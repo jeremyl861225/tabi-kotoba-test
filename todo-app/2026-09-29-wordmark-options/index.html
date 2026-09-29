@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TODO 字標：換個樣子</title>
+<style>
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC",system-ui,sans-serif;
+  --page:#EEF0EC; --txt:#133E50; --txt2:#49646F; --card:#fff; --line:rgba(19,62,80,.12);
+}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.6 var(--font);color:var(--txt);background:var(--page);-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto;padding:16px 16px 60px}
+a.back{color:var(--txt2);text-decoration:none;font-size:14px}
+h1{font-size:22px;margin:10px 0 4px}
+.lead{color:var(--txt2);margin:0 0 14px;font-size:14px}
+.seg{display:inline-flex;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;margin:0 0 18px}
+.seg button{font:inherit;font-size:14px;border:0;background:none;color:var(--txt2);padding:7px 14px;border-radius:999px;cursor:pointer}
+.seg button.on{background:#133E50;color:#fff}
+.opt{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin:0 0 16px;box-shadow:0 2px 10px rgba(19,62,80,.05)}
+.opt h2{font-size:17px;margin:0 0 2px;display:flex;align-items:baseline;gap:8px}
+.opt h2 .n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#133E50;color:#fff;font-size:14px;flex:none}
+.opt.ref h2 .n{background:#9aa6ab}
+.opt p{margin:2px 0 12px;color:var(--txt2);font-size:13.5px}
+.mocks{display:grid;gap:10px}
+@media (min-width:640px){.mocks{grid-template-columns:1fr 1fr}}
+/* 模擬 App 標頭：淺色／深色各一條，背景接近新主題的柔光底 */
+.hdr{position:relative;border-radius:14px;overflow:hidden;height:74px;display:flex;align-items:center;gap:10px;padding:0 12px}
+.hdr.light{--ink:#133E50;background:
+  radial-gradient(70% 120% at 0% 0%,rgba(42,117,116,.20),transparent 70%),
+  radial-gradient(60% 120% at 100% 0%,rgba(139,128,214,.16),transparent 70%),#F2F4F1;color:#133E50}
+.hdr.dark{--ink:#ECEEF1;background:
+  radial-gradient(70% 120% at 0% 0%,rgba(91,167,166,.18),transparent 70%),
+  radial-gradient(60% 120% at 100% 0%,rgba(124,112,230,.14),transparent 70%),#0D0F12;color:#ECEEF1}
+.hdr .glass{position:absolute;inset:8px 8px auto 8px;height:58px;border-radius:12px;
+  background:rgba(255,255,255,.45);box-shadow:inset 0 0 0 1px rgba(255,255,255,.7)}
+.hdr.dark .glass{background:rgba(28,31,36,.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.hdr .wm{position:relative;height:34px;aspect-ratio:420/120;margin-left:6px}
+.hdr .wm svg,.big .wm svg,.hdr .wm canvas,.big .wm canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hdr .sp{flex:1}
+.pill{position:relative;font-size:12.5px;padding:4px 11px;border-radius:999px;display:flex;align-items:center;gap:6px}
+.light .pill{background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1px rgba(19,62,80,.1)}
+.dark .pill{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.pill i{width:7px;height:7px;border-radius:50%;background:#4C8C5B}
+.dots{position:relative;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;margin-right:4px}
+.light .dots{background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1px rgba(19,62,80,.1)}
+.dark .dots{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.big{border-radius:14px;padding:22px 12px;display:grid;place-items:center;margin-top:10px}
+.big.light{background:#F2F4F1}.big.dark{background:#0D0F12}
+.big .wm{position:relative;width:min(100%,360px);aspect-ratio:420/120}
+/* 5 號：Paper 的條紋本身是近黑／近白，tint 只能壓暗不能提亮 → 用濾鏡把對比收掉、再拉回主題色調 */
+.wm[data-kind="live"][data-theme="light"] canvas{filter:contrast(.5) brightness(.72) saturate(.8)}
+.wm[data-kind="live"][data-theme="dark"] canvas{filter:contrast(.45) brightness(1.55) saturate(.6)}
+.note{font-size:13px;color:var(--txt2);margin-top:22px;padding:12px 14px;border-radius:14px;background:#fff;border:1px dashed var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../../">← 所有測試</a>
+  <h1>TODO 字標：換個樣子</h1>
+  <p class="lead">上面是 App 標頭的實際大小（淺色／深色各一條），下面是放大版。挑一個號碼告訴我就好；也可以說「2 號但用細的」。</p>
+  <div class="seg" id="wt">
+    <button data-w="std" class="on">標準粗細</button>
+    <button data-w="thin">細一點</button>
+  </div>
+  <div id="list"></div>
+  <div class="note">
+    開場動畫會一起改：拿掉「待辦事項」中文副標，字母的材質也改成你選的這一款（不再是鏡面鉻）。<br>
+    5 號是唯一「會動」的：平常靜止，只有在你勾完成當日事項時流動一下。
+  </div>
+</div>
+
+<script type="module">
+import { ShaderMount, liquidMetalFragmentShader, getShaderColorFromString, ShaderFitOptions } from './vendor/paper-liquid-metal.runtime.min.js';
+
+// 標準＝App 目前的管徑 22；細＝16（勾勾 10→8）
+const W = { std:{sw:22, tw:10}, thin:{sw:16, tw:8} };
+const PATHS = sw => `
+  <path d="M11 11H75M43 11V89"/><circle cx="148" cy="50" r="39"/>
+  <path d="M221 11V89M221 11H236A39 39 0 0 1 236 89H221"/><circle cx="348" cy="50" r="39"/>`;
+const TICK = 'M333 51L343 61L363 41';
+
+let uid = 0;
+function glyph(kind, w, theme){
+  const {sw, tw} = W[w], id = 'g' + (++uid);
+  const dark = theme === 'dark';
+  const ink = dark ? '#ECEEF1' : '#133E50';
+  let defs = '', stroke = ink, extra = '';
+  if(kind === 'matte'){
+    defs = `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${dark ? '#F4F7F8' : '#3F838C'}"/>
+      <stop offset="1" stop-color="${dark ? '#A3B9BE' : '#123B4A'}"/></linearGradient>`;
+    stroke = `url(#${id})`;
+  }
+  if(kind === 'teal') stroke = dark ? '#6FB5B3' : '#2A7574';
+  if(kind === 'chrome'){
+    defs = `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${dark ? '#f4fbfa' : '#eef5f4'}"/><stop offset=".46" stop-color="${dark ? '#9fbfc0' : '#7c9fa2'}"/>
+      <stop offset=".5" stop-color="${dark ? '#2a4a50' : '#173840'}"/><stop offset=".58" stop-color="${dark ? '#e3f3f1' : '#d2e7e5'}"/>
+      <stop offset="1" stop-color="${dark ? '#7fa9aa' : '#5d8a8c'}"/></linearGradient>`;
+    stroke = `url(#${id})`;
+  }
+  if(kind === 'outline'){
+    // 用遮罩挖空：外圈 sw、內圈 sw-5 → 2.5 單位的描邊，任何底色都透得過去
+    defs = `<mask id="${id}" maskUnits="userSpaceOnUse" x="-10" y="-10" width="420" height="120">
+      <rect x="-10" y="-10" width="420" height="120" fill="#000"/>
+      <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <g stroke="#fff" stroke-width="${sw}">${PATHS(sw)}</g><path stroke="#fff" stroke-width="${tw}" d="${TICK}"/>
+        <g stroke="#000" stroke-width="${sw-7}">${PATHS(sw)}</g>
+      </g></mask>`;
+    return `<svg viewBox="-10 -10 420 120" aria-hidden="true"><defs>${defs}</defs>
+      <rect x="-10" y="-10" width="420" height="120" fill="${ink}" mask="url(#${id})"/></svg>`;
+  }
+  return `<svg viewBox="-10 -10 420 120" aria-hidden="true"><defs>${defs}</defs>
+    <g fill="none" stroke="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+      <g stroke-width="${sw}">${PATHS(sw)}</g><path stroke-width="${tw}" d="${TICK}"/></g></svg>`;
+}
+
+const OPTS = [
+  {n:1, kind:'ink',     t:'墨色實心', d:'最素：跟內文同一個深墨色（深色主題是近白），沒有任何光澤。'},
+  {n:2, kind:'matte',   t:'霧面單色', d:'同一個顏色由亮到暗的柔和漸層，像啞光金屬，沒有反光條紋。'},
+  {n:3, kind:'teal',    t:'青綠實心', d:'用 App 按鈕的主色，跟「新增」按鈕、選中的分頁同一個顏色。'},
+  {n:4, kind:'outline', t:'描邊',     d:'只留外框線，最輕、最有「工具感」。'},
+  {n:5, kind:'live',    t:'低調液態金屬（會動）', d:'保留液態金屬，但拿掉彩虹色散與強烈明暗條紋：淺色是石墨色、深色是霧銀色的柔光金屬。只有標準粗細。'},
+  {n:'現', kind:'chrome', t:'目前版本（參考）', d:'就是你說太花俏的那個，放著方便比較。', ref:true},
+];
+
+function header(o, w, theme){
+  return `<div class="hdr ${theme}"><div class="glass"></div>
+    <span class="wm" data-kind="${o.kind}" data-theme="${theme}">${o.kind==='live' ? glyph('matte', 'std', theme) : glyph(o.kind, w, theme)}</span>
+    <span class="sp"></span><span class="pill"><i></i>已同步</span>
+    <span class="dots"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></span></div>`;
+}
+function render(w){
+  document.getElementById('list').innerHTML = OPTS.map(o => `
+    <section class="opt${o.ref?' ref':''}">
+      <h2><span class="n">${o.n}</span>${o.t}</h2><p>${o.d}</p>
+      <div class="mocks">${header(o, w, 'light')}${header(o, w, 'dark')}</div>
+      <div class="mocks">
+        <div class="big light"><span class="wm" data-kind="${o.kind}" data-theme="light">${o.kind==='live' ? glyph('matte','std','light') : glyph(o.kind, w, 'light')}</span></div>
+        <div class="big dark"><span class="wm" data-kind="${o.kind}" data-theme="dark">${o.kind==='live' ? glyph('matte','std','dark') : glyph(o.kind, w, 'dark')}</span></div>
+      </div>
+    </section>`).join('');
+  mountLive();
+}
+
+// ---- 5 號：Paper LiquidMetal，收斂版參數（色散 0、條紋少、柔化）----
+const mask = new Image(); mask.src = './vendor/todo-mask.webp';
+const mounts = [];
+async function mountLive(){
+  mounts.splice(0).forEach(m => { try{ m.dispose(); }catch(e){} });
+  try{ await mask.decode(); }catch(e){ return; }
+  for(const el of document.querySelectorAll('.wm[data-kind="live"]')){
+    const dark = el.dataset.theme === 'dark';
+    try{
+      const m = new ShaderMount(el, liquidMetalFragmentShader.replace(
+          'smoothstep(100., 500., min(u_resolution.x, u_resolution.y))',
+          'smoothstep(24., 120., min(u_resolution.x, u_resolution.y))'), {
+        u_image: mask, u_isImage: true, u_shape: 0, u_colorBack: [0,0,0,0],
+        u_colorTint: getShaderColorFromString(dark ? '#cfe3e4' : '#9fc4c6'),
+        u_repetition: 1.1, u_softness: .75, u_shiftRed: 0, u_shiftBlue: 0,
+        u_distortion: .04, u_contour: .25, u_angle: 90,
+        u_fit: ShaderFitOptions.contain, u_scale: 1, u_rotation: 0, u_offsetX: 0, u_offsetY: 0,
+        u_originX: .5, u_originY: .5, u_worldWidth: 0, u_worldHeight: 0,
+      }, {alpha:true, premultipliedAlpha:true, antialias:false, powerPreference:'low-power'},
+      .35, 2400, 2, 600000, ['u_image']);
+      el.querySelector('svg').style.opacity = 0;
+      mounts.push(m);
+    }catch(e){ /* 沒有 WebGL2：留著霧面 SVG */ }
+  }
+}
+
+document.getElementById('wt').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#wt button').forEach(x => x.classList.toggle('on', x === b));
+  render(b.dataset.w);
+});
+render('std');
+</script>
+</body>
+</html>
