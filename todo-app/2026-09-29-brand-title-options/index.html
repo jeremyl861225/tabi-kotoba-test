@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Todo 標頭與頁面標題：選樣式</title>
+<style>
+/* 全部用原本 App 的色票（c64acd8） */
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC",system-ui,sans-serif;
+  --e-out:cubic-bezier(.2,.8,.25,1);
+  --spring:linear(0, 0.0442, 0.1498, 0.2848, 0.4269, 0.5618, 0.6811, 0.781, 0.8608, 0.9216, 0.9656, 0.9957, 1.0146, 1.0251, 1.0296, 1.0299, 1.0277, 1.024, 1.0198, 1.0156, 1.0117, 1.0083, 1.0055, 1.0034, 1.0018, 1.0006, 0.9999, 0.9994, 1);
+}
+.L{--bg:#F8F7F2;--bg2:#E5E8D2;--card:#FFFEFC;--line:#DCD9CE;--line-soft:#EBE9E1;--ink:#133E50;--ink2:#3D6070;--muted:#49646F;
+  --accent:#2A7574;--accent-ink:#1E5E5D;--accent-soft:#DCEBE8;--accent-line:#A9CFCC;--on-accent:#FDFCF7;--hot:#F4A14F;
+  --glass:rgba(248,247,242,.88);--tile-glass:rgba(255,254,252,.75);--tile-rim:rgba(19,62,80,.12);
+  --liq-top:#3A8A89;--liq-bot:#21605F;--lm-filter:contrast(.5) brightness(.72) saturate(.8);
+  --mark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 30' preserveAspectRatio='none'%3E%3Cg fill='%23F4A14F'%3E%3Cpath d='M2.2 8.8C42 8 80 8.6 118 7.8 147 7.2 173 7.8 197.6 6.8L198.4 22.4C171 23.6 143 22.9 113 23.7 79 24.6 44 23.9 3.2 24.7Z' fill-opacity='.55'/%3E%3Cpath d='M6.6 10.4C20 9.8 33 10.5 47.4 9.9L47.9 23.2C34 23.7 20 23 7.1 23.6Z' fill-opacity='.3'/%3E%3C/g%3E%3C/svg%3E");
+  background:var(--bg);color:var(--ink)}
+.D{--bg:#111214;--bg2:#212327;--card:#181A1D;--line:#34383D;--line-soft:#26292D;--ink:#ECEEF1;--ink2:#B6BBC1;--muted:#8A9097;
+  --accent:#5BA7A6;--accent-ink:#8FCBC9;--accent-soft:#16292C;--accent-line:#2E5457;--on-accent:#111214;--hot:#F4A14F;
+  --glass:rgba(17,18,20,.88);--tile-glass:rgba(255,255,255,.08);--tile-rim:rgba(255,255,255,.12);
+  --liq-top:#6FB5B4;--liq-bot:#3F8584;--lm-filter:contrast(.45) brightness(1.55) saturate(.6);
+  --mark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 30' preserveAspectRatio='none'%3E%3Cg fill='%23F4A14F'%3E%3Cpath d='M2.2 8.8C42 8 80 8.6 118 7.8 147 7.2 173 7.8 197.6 6.8L198.4 22.4C171 23.6 143 22.9 113 23.7 79 24.6 44 23.9 3.2 24.7Z' fill-opacity='.3'/%3E%3Cpath d='M6.6 10.4C20 9.8 33 10.5 47.4 9.9L47.9 23.2C34 23.7 20 23 7.1 23.6Z' fill-opacity='.17'/%3E%3C/g%3E%3C/svg%3E");
+  background:var(--bg);color:var(--ink)}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.6 var(--font);background:#EEEDE6;color:#133E50;-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto;padding:16px 16px 70px}
+a.back{color:#3D6070;text-decoration:none;font-size:14px}
+h1{font-size:22px;margin:10px 0 4px}
+h2.part{font-size:18px;margin:30px 0 4px;padding-top:14px;border-top:1px solid #DCD9CE}
+.lead{color:#3D6070;margin:0 0 14px;font-size:14px}
+.opt{background:#FFFEFC;border:1px solid #DCD9CE;border-radius:18px;padding:14px;margin:0 0 14px}
+.opt h3{font-size:16px;margin:0 0 2px;display:flex;align-items:center;gap:8px}
+.opt h3 .n{display:inline-grid;place-items:center;min-width:28px;height:26px;padding:0 6px;border-radius:13px;background:#133E50;color:#fff;font-size:13px}
+.opt p{margin:2px 0 10px;color:#3D6070;font-size:13.5px}
+.pair{display:grid;gap:8px}
+@media(min-width:640px){.pair{grid-template-columns:1fr 1fr}}
+
+/* ---- icon（原本 App 的圖案，描成向量）---- */
+.ico{display:block;flex:none}
+.ico use{stroke:currentColor}
+
+/* ---- 標頭 mock ---- */
+.hdr{height:58px;border-radius:14px;display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--glass);box-shadow:inset 0 -1px 0 var(--line-soft);overflow:hidden}
+.hdr .sp{flex:1}
+.pill{font-size:12.5px;padding:4px 11px;border-radius:999px;display:flex;align-items:center;gap:6px;border:1px solid var(--line);color:var(--ink2)}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.dots{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);color:var(--ink2)}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.brand b{font-weight:800;letter-spacing:-.01em;line-height:1}
+/* A1 */ .A1 .ico{width:25px;height:22px;color:var(--accent)} .A1 b{font-size:21px;color:var(--accent-ink)}
+/* A2 */ .A2 .ico{width:29px;height:25px;color:var(--accent)} .A2 b{font-size:25px;color:var(--ink);letter-spacing:-.02em}
+/* A3 */ .A3 .tile{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;
+          background:linear-gradient(180deg,var(--liq-top),var(--accent) 55%,var(--liq-bot));box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 3px 10px rgba(19,62,80,.18)}
+       .A3 .ico{width:21px;height:18px;color:var(--on-accent)} .A3 b{font-size:23px;color:var(--ink)}
+/* A4 */ .A4 .tile{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:var(--tile-glass);
+          box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 0 0 1px var(--tile-rim),0 2px 8px rgba(19,62,80,.10)}
+       .D .A4 .tile{box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px var(--tile-rim),0 2px 8px rgba(0,0,0,.4)}
+       .A4 .ico{width:21px;height:18px;color:var(--accent)} .A4 b{font-size:23px;color:var(--ink)}
+/* A5 */ .A5 .lm{position:relative;width:32px;height:27.5px;flex:none}
+       .A5 .lm svg,.A5 .lm canvas{position:absolute;inset:0;width:100%;height:100%}
+       .A5 .lm canvas{filter:var(--lm-filter)}
+       .A5 .lm .ico{color:var(--ink2)}
+       .A5 b{font-size:24px;color:var(--ink)}
+
+/* ---- 頁面標題 mock ---- */
+.screen{border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+.tabs{display:flex;gap:6px;padding:10px 12px 0}
+.tabs button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--card);color:var(--ink2);border-radius:999px;padding:5px 12px;cursor:pointer}
+.tabs button.on{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.stage{position:relative;height:118px;padding:16px 16px 0;overflow:hidden}
+.stage .ghost{height:14px;border-radius:7px;background:var(--line-soft);margin:14px 0 0;width:78%}
+.stage .ghost.b{width:56%;margin-top:9px}
+.ttl{display:flex;align-items:center;gap:12px}
+.ttl h4{margin:0;font-weight:800;color:var(--ink);letter-spacing:.02em;line-height:1.15}
+.ch{display:inline-block;will-change:transform}
+.stage h4{margin:0}
+/* B1：圖示徽章＋大標＋數量 */
+.B1 .badge{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex:none}
+.B1 .badge svg{width:24px;height:24px}
+.B1 h4{font-size:26px}
+.B1 .cnt{margin-left:auto;font-size:13px;font-weight:700;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:3px 11px;font-variant-numeric:tabular-nums}
+/* B2：大字＋螢光筆 */
+.B2 h4{font-size:29px;display:inline;background:var(--mark) 0 70%/0% 60% no-repeat;padding:0 4px}
+.B2 h4.sweep{animation:sweep .55s .12s var(--e-out) forwards}
+@keyframes sweep{to{background-size:100% 60%}}
+/* B3：遮罩浮出大字＋主色短線 */
+.B3 .col{display:flex;flex-direction:column;gap:8px}
+.B3 h4{font-size:30px;clip-path:inset(0 0 0 0)}
+.B3 .bar{height:4px;width:34px;border-radius:2px;background:var(--accent)}
+.note{font-size:13px;color:#3D6070;margin-top:10px}
+
+/* ---- 開場構想示意 ---- */
+.introbox{position:relative;height:420px;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+.introbox .mini-hdr{position:absolute;left:0;right:0;top:0;height:58px;display:flex;align-items:center;gap:9px;padding:0 14px;opacity:0;background:var(--glass);box-shadow:inset 0 -1px 0 var(--line-soft)}
+.introbox .mini-hdr b{font-size:23px;font-weight:800;color:var(--ink)}
+.introbox .mini-hdr .slot{width:28px;height:24px}
+.introbox .mini-hdr b .ch{opacity:0;transform:translateY(40%)}
+.introbox .big{position:absolute;left:50%;top:50%;width:150px;height:129px;margin:-64px 0 0 -75px;color:var(--accent);transform-origin:0 0}
+.introbox .big path,.introbox .big rect{fill:none;stroke:currentColor;stroke-width:22;stroke-linecap:round;stroke-linejoin:round}
+.introbox .lens{position:absolute;left:50%;width:210px;height:64px;margin-left:-105px;top:-80px;border-radius:32px;
+  background:rgba(255,255,255,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.8),inset 0 0 0 1px rgba(255,255,255,.55),0 8px 24px rgba(19,62,80,.12);
+  -webkit-backdrop-filter:blur(2px) saturate(1.6);backdrop-filter:blur(2px) saturate(1.6)}
+.D .introbox .lens{background:rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),inset 0 0 0 1px rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+.replay{margin-top:8px;font:inherit;font-size:14px;border:1px solid #DCD9CE;background:#fff;color:#133E50;border-radius:999px;padding:7px 16px;cursor:pointer}
+.themeseg{display:inline-flex;gap:4px;margin-left:8px}
+.themeseg button{font:inherit;font-size:13px;border:1px solid #DCD9CE;background:#fff;color:#3D6070;border-radius:999px;padding:5px 12px;cursor:pointer}
+.themeseg button.on{background:#133E50;color:#fff}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic" viewBox="-11 -11 336 292">
+      <g fill="none" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12.5 31.5L33.5 55L78 12"/>
+        <path d="M123 12H212M123 56H302"/>
+        <rect x="22" y="112" width="45" height="45" rx="3"/>
+        <path d="M123 112H212M123 157H302"/>
+        <rect x="22" y="213" width="45" height="45" rx="3"/>
+        <path d="M123 213H212M123 258H302"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+<div class="wrap">
+  <a class="back" href="../../">← 所有測試</a>
+  <h1>Todo 標頭與頁面標題</h1>
+  <p class="lead">全部已改回原本的色票。回覆時說「標頭 A?、標題 B?」就好；開場構想看最下面，有意見也一起說。</p>
+
+  <h2 class="part">A. 左上角：icon＋Todo（5 種）</h2>
+  <p class="lead">每種上面是淺色、下面是深色，都是 App 標頭的實際大小。</p>
+  <div id="brands"></div>
+
+  <h2 class="part">B. 頁面標題（3 種）＋換頁動態</h2>
+  <p class="lead">底下的說明小字都拿掉了。點上方的分頁按鈕看換頁時標題怎麼動（往右切從右邊進、往左切從左邊進）。
+    <span class="themeseg" id="tseg"><button data-t="L" class="on">淺色</button><button data-t="D">深色</button></span></p>
+  <div id="titles"></div>
+
+  <h2 class="part">C. 開場動畫新構想（2D 示意）</h2>
+  <p class="lead">以 icon 為發想：三列清單的線條先滑出來 → 兩個方框彈出、第一列的勾「寫」上去 → 一片液態玻璃由上往下掃過三列 →
+    icon 縮到左上角，「Todo」字母一個個接上。正式版是 3D 霧面金屬＋真的玻璃折射，長度約 2 秒，點一下可跳過。</p>
+  <div class="pair">
+    <div class="L introbox" id="ib-L"></div>
+    <div class="D introbox" id="ib-D"></div>
+  </div>
+  <button class="replay" id="replay">重播開場</button>
+</div>
+
+<script type="module">
+import { ShaderMount, liquidMetalFragmentShader, getShaderColorFromString, ShaderFitOptions } from './vendor/paper-liquid-metal.runtime.min.js';
+const ICON = (cls='ico') => `<svg class="${cls}" viewBox="-11 -11 336 292" aria-hidden="true"><use href="#ic"/></svg>`;
+const hdrRight = `<span class="sp"></span><span class="pill"><i></i>已同步</span>
+  <span class="dots"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></span>`;
+const BRANDS = [
+  {k:'A1', t:'原樣換成英文', d:'跟原本一樣：主色 icon＋主色字，只是「待辦事項」換成 Todo，字放大加粗。', html:()=>`${ICON()}<b>Todo</b>`},
+  {k:'A2', t:'深墨大字', d:'icon 維持主色，Todo 改用深墨色、更大更粗，最醒目。', html:()=>`${ICON()}<b>Todo</b>`},
+  {k:'A3', t:'主色圖示磚', d:'icon 放進一塊主色圓角方磚（像手機桌面的 App 圖示），旁邊深墨色 Todo。', html:()=>`<span class="tile">${ICON()}</span><b>Todo</b>`},
+  {k:'A4', t:'玻璃圖示磚', d:'icon 放進一塊半透明玻璃方磚，跟導覽列、按鈕的玻璃同一個語彙。', html:()=>`<span class="tile">${ICON()}</span><b>Todo</b>`},
+  {k:'A5', t:'液態金屬 icon', d:'icon 用你選的 5 號低調液態金屬（淺色石墨、深色霧銀），完成事項時流動一下；Todo 深墨色。', html:()=>`<span class="lm">${ICON()}</span><b>Todo</b>`},
+];
+document.getElementById('brands').innerHTML = BRANDS.map(b=>`
+  <section class="opt"><h3><span class="n">${b.k}</span>${b.t}</h3><p>${b.d}</p>
+    <div class="pair">
+      <div class="L"><div class="hdr ${b.k}"><span class="brand">${b.html()}</span>${hdrRight}</div></div>
+      <div class="D"><div class="hdr ${b.k}"><span class="brand">${b.html()}</span>${hdrRight}</div></div>
+    </div></section>`).join('');
+
+// A5：液態金屬 icon（Paper LiquidMetal，遮罩由 icon 向量烤成）
+const mask = new Image(); mask.src = './vendor/icon-mask.webp';
+mask.decode().then(()=>{
+  document.querySelectorAll('.A5 .lm').forEach(el=>{
+    const dark = !!el.closest('.D');
+    try{
+      new ShaderMount(el, liquidMetalFragmentShader.replace('smoothstep(100., 500., min(u_resolution.x, u_resolution.y))','smoothstep(24., 120., min(u_resolution.x, u_resolution.y))'), {
+        u_image: mask, u_isImage: true, u_shape: 0, u_colorBack: [0,0,0,0],
+        u_colorTint: getShaderColorFromString(dark ? '#cfe3e4' : '#9fc4c6'),
+        u_repetition: 1.1, u_softness: .75, u_shiftRed: 0, u_shiftBlue: 0, u_distortion: .04, u_contour: .25, u_angle: 90,
+        u_fit: ShaderFitOptions.contain, u_scale: 1, u_rotation: 0, u_offsetX: 0, u_offsetY: 0, u_originX: .5, u_originY: .5, u_worldWidth: 0, u_worldHeight: 0,
+      }, {alpha:true, premultipliedAlpha:true, antialias:false, powerPreference:'low-power'}, .3, 2400, 2, 200000, ['u_image']);
+      el.querySelector('svg').style.opacity = 0;
+    }catch(e){}
+  });
+}).catch(()=>{});
+
+// ---- B：頁面標題 ----
+const NAVI = {
+  list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5l2 2 3.5-4"/><path d="M3.5 13l2 2 3.5-4"/><path d="M3.5 19.5l2 2 3.5-4"/><path d="M13 6h8M13 12.5h8M13 19h8"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  task:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><rect x="9" y="2.4" width="6" height="3.8" rx="1.4"/><path d="M9.3 13.2l2 2 3.4-4"/></svg>'
+};
+const PAGES = [{id:'list',t:'重複排程',c:'8 項'},{id:'cal',t:'月曆',c:'9 月'},{id:'task',t:'近期任務',c:'5 項'}];
+const TITLES = [
+  {k:'B1', t:'圖示徽章＋大標＋數量', d:'標題前面放該頁的圖示徽章，右邊一顆小數量（重複排程幾項、月曆顯示月份、任務幾項）。換頁時徽章彈出、字一個個浮上來。'},
+  {k:'B2', t:'大字＋螢光筆', d:'沿用 App 原本「重大事件」的手繪螢光筆，換頁時字整排滑進來、螢光筆由左往右刷過。'},
+  {k:'B3', t:'遮罩浮出大字＋主色短線', d:'最簡潔：字從一條看不見的線下面浮出來，底下一條主色短線跟著伸長。'},
+];
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const spring = getComputedStyle(document.documentElement).getPropertyValue('--spring').trim();
+function chars(s){ return [...s].map(c=>`<span class="ch">${c}</span>`).join(''); }
+function titleHTML(k, p){
+  if(k==='B1') return `<div class="ttl"><span class="badge">${NAVI[p.id]}</span><h4>${chars(p.t)}</h4><span class="cnt">${p.c}</span></div>`;
+  if(k==='B2') return `<div class="ttl"><h4>${p.t}</h4></div>`;
+  return `<div class="col"><h4>${chars(p.t)}</h4><span class="bar"></span></div>`;
+}
+function animate(k, stage, dir){
+  if(reduce) return;
+  const h = stage.querySelector('h4');
+  if(k==='B1'){
+    stage.querySelector('.badge').animate([{transform:'scale(.5) rotate(-12deg)',opacity:0},{transform:'none',opacity:1}],{duration:520,easing:spring});
+    stage.querySelectorAll('.badge path,.badge rect').forEach((el,i)=>{ const L=el.getTotalLength?el.getTotalLength():40;
+      el.style.strokeDasharray=L; el.animate([{strokeDashoffset:L},{strokeDashoffset:0}],{duration:420,delay:80+i*50,easing:'ease-out',fill:'backwards'}); });
+    h.querySelectorAll('.ch').forEach((c,i)=>c.animate([{transform:'translateY(70%)',opacity:0},{transform:'none',opacity:1}],{duration:520,delay:60+i*45,easing:spring,fill:'backwards'}));
+    stage.querySelector('.cnt').animate([{opacity:0,transform:`translateX(${dir*10}px)`},{opacity:1,transform:'none'}],{duration:360,delay:260,easing:'ease-out',fill:'backwards'});
+  }else if(k==='B2'){
+    h.classList.remove('sweep'); h.style.backgroundSize='0% 60%'; void h.offsetWidth; h.style.backgroundSize=''; h.classList.add('sweep');
+    h.animate([{transform:`translateX(${dir*48}px)`,opacity:0},{transform:'none',opacity:1}],{duration:520,easing:spring});
+  }else{
+    h.querySelectorAll('.ch').forEach((c,i)=>c.animate([{transform:'translateY(105%)'},{transform:'none'}],{duration:560,delay:i*55,easing:spring,fill:'backwards'}));
+    stage.querySelector('.bar').animate([{width:'0px'},{width:'34px'}],{duration:520,delay:160,easing:spring,fill:'backwards'});
+  }
+  stage.querySelectorAll('.ghost').forEach((g,i)=>g.animate([{opacity:0,transform:`translateX(${dir*24}px)`},{opacity:1,transform:'none'}],{duration:420,delay:120+i*50,easing:'ease-out',fill:'backwards'}));
+}
+let theme = 'L';
+function renderTitles(){
+  document.getElementById('titles').innerHTML = TITLES.map(o=>`
+    <section class="opt"><h3><span class="n">${o.k}</span>${o.t}</h3><p>${o.d}</p>
+      <div class="${theme} screen ${o.k}" data-k="${o.k}" data-i="0">
+        <div class="tabs">${PAGES.map((p,i)=>`<button data-i="${i}" class="${i?'':'on'}">${p.t}</button>`).join('')}</div>
+        <div class="stage">${titleHTML(o.k, PAGES[0])}<div class="ghost"></div><div class="ghost b"></div></div>
+      </div></section>`).join('');
+  document.querySelectorAll('.screen').forEach(sc=>{
+    const k = sc.dataset.k, stage = sc.querySelector('.stage');
+    sc.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+      const from = +sc.dataset.i, to = +b.dataset.i; if(from===to) return;
+      sc.dataset.i = to;
+      sc.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on', x===b));
+      stage.innerHTML = titleHTML(k, PAGES[to]) + '<div class="ghost"></div><div class="ghost b"></div>';
+      animate(k, stage, to>from ? 1 : -1);
+    });
+    if(k==='B2') stage.querySelector('h4').classList.add('sweep');
+  });
+}
+document.getElementById('tseg').onclick = e=>{ const b=e.target.closest('button'); if(!b) return;
+  theme=b.dataset.t; document.querySelectorAll('#tseg button').forEach(x=>x.classList.toggle('on',x===b)); renderTitles(); };
+renderTitles();
+
+// ---- C：開場構想（2D 示意）----
+const BIG = `<svg class="big" viewBox="-11 -11 336 292" aria-hidden="true">
+  <path class="ln" d="M123 12H212"/><path class="ln" d="M123 56H302"/>
+  <path class="ln" d="M123 112H212"/><path class="ln" d="M123 157H302"/>
+  <path class="ln" d="M123 213H212"/><path class="ln" d="M123 258H302"/>
+  <rect class="bx" x="22" y="112" width="45" height="45" rx="3"/><rect class="bx" x="22" y="213" width="45" height="45" rx="3"/>
+  <path class="tk" d="M12.5 31.5L33.5 55L78 12"/></svg>`;
+function playIntro(box){
+  box.innerHTML = `<div class="mini-hdr"><span class="slot"></span><b>${chars('Todo')}</b></div>${BIG}<div class="lens"></div>`;
+  if(reduce) return;
+  const svg = box.querySelector('.big'), lens = box.querySelector('.lens'), hdr = box.querySelector('.mini-hdr');
+  svg.querySelectorAll('.ln').forEach((p,i)=>{ const L=p.getTotalLength(); p.style.strokeDasharray=L;
+    p.animate([{strokeDashoffset:L},{strokeDashoffset:0}],{duration:360,delay:60+i*55,easing:'cubic-bezier(.3,.8,.3,1)',fill:'backwards'}); });
+  svg.querySelectorAll('.bx').forEach((r,i)=>{ r.style.transformBox='fill-box'; r.style.transformOrigin='center';
+    r.animate([{transform:'scale(0)'},{transform:'none'}],{duration:480,delay:420+i*90,easing:spring,fill:'backwards'}); });
+  const tk = svg.querySelector('.tk'), TL = tk.getTotalLength(); tk.style.strokeDasharray = TL;
+  tk.animate([{strokeDashoffset:TL},{strokeDashoffset:0}],{duration:380,delay:640,easing:'cubic-bezier(.5,0,.2,1)',fill:'backwards'});
+  svg.animate([{filter:'brightness(1)'},{filter:'brightness(1.35)'},{filter:'brightness(1)'}],{duration:360,delay:960});
+  const H = box.clientHeight;
+  lens.animate([{top:'-80px'},{top:(H+20)+'px'}],{duration:620,delay:900,easing:'cubic-bezier(.45,0,.35,1)',fill:'both'});
+  // 縮到左上角（slot 在 14px, 17px；28×24）
+  const bw = box.clientWidth, s = 28/150;
+  const x0 = bw/2-75, y0 = H/2-64, x1 = 14, y1 = 17;
+  svg.animate([{transform:'none'},{transform:`translate(${x1-x0}px,${y1-y0}px) scale(${s})`}],{duration:560,delay:1480,easing:spring,fill:'forwards'});
+  hdr.animate([{opacity:0},{opacity:1}],{duration:300,delay:1560,fill:'forwards'});
+  hdr.querySelectorAll('.ch').forEach((c,i)=>c.animate([{opacity:0,transform:'translateY(40%)'},{opacity:1,transform:'none'}],{duration:420,delay:1700+i*60,easing:spring,fill:'forwards'}));
+}
+const run = ()=>{ playIntro(document.getElementById('ib-L')); playIntro(document.getElementById('ib-D')); };
+document.getElementById('replay').onclick = run; run();
+</script>
+</body>
+</html>
