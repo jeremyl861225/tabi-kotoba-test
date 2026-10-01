@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>C 乘車券｜旅ことば設計試作</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+/* C 乘車券：JR 的磁氣車票。淡青綠的防偽底紋、點陣印字機的數字、紅色的「使用済」章與剪票缺口。
+   總進度＝定期券，下一站＝一張車票，一站一張票；出發＝自動改札機的綠色箭頭。 */
+:root {
+  --hall: #e9ebe6; --ticket: #cfe7dc; --ticket-2: #bcdccd; --micro: #a9cfbd;
+  --ink: #1b2340; --ink-2: #44506e; --ink-3: #6d7891; --red: #d0332f; --go: #12a150; --gate: #22262b;
+  --pre: "Zen Kaku Gothic New", "Hiragino Sans", "PingFang TC", sans-serif;
+  --dot: "DotGothic16", "Osaka-Mono", monospace;
+  --tc: "PingFang TC", "Noto Sans TC", sans-serif;
+  --lift: 0 1px 0 rgb(255 255 255 / .6) inset, 0 10px 20px -14px rgb(20 40 30 / .55);
+}
+.dark { --hall: #14171b; --ticket: #a9c7ba; --ticket-2: #98b9ab; --micro: #8fb2a3; --gate: #0b0d10; --lift: 0 12px 24px -14px rgb(0 0 0 / .9); }
+* { box-sizing: border-box; }
+html { background: var(--hall); -webkit-text-size-adjust: 100%; }
+body { margin: 0; min-height: 100vh; background: var(--hall); color: var(--ink); font-family: var(--tc); }
+.dark body { color: #e7ebe8; }
+::selection { background: color-mix(in srgb, var(--go) 30%, transparent); }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--go); outline-offset: 2px; }
+[data-screen="home"] .card-screen, [data-screen="card"] .home-screen { display: none; }
+main { max-width: 560px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 120px; }
+
+/* 票面：防偽細字底紋「旅」＋左右的剪票缺口 */
+.tk { position: relative; color: var(--ink); background-color: var(--ticket);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='16'%3E%3Ctext x='1' y='12' font-size='10' font-family='sans-serif' fill='%23b6d8c8'%3E%E6%97%85%3C/text%3E%3Ctext x='14' y='12' font-size='7' font-family='sans-serif' fill='%23bfdccf'%3ETK%3C/text%3E%3C/svg%3E");
+  border-radius: 6px; box-shadow: var(--lift); }
+.tk .pre { font: 900 13px var(--pre); letter-spacing: .2em; }
+.tk .dot, .dot { font-family: var(--dot); letter-spacing: .04em; }
+.punch { position: absolute; right: -1px; top: 50%; width: 14px; height: 22px; margin-top: -11px; border-radius: 11px 0 0 11px; background: var(--hall); }
+.stamp { position: absolute; display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; border: 2.5px solid var(--red); color: var(--red); font: 900 13px/1.1 var(--pre); text-align: center; transform: rotate(-14deg); opacity: .86; filter: url(#rough); }
+.stamp small { display: block; font: 400 11px var(--dot); letter-spacing: 0; }
+
+/* ---------- 首頁 ---------- */
+.pass { padding: 14px 16px 16px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; }
+.pass .brand { font: 900 24px var(--pre); letter-spacing: .08em; }
+.pass .kind { align-self: start; padding: 3px 8px; border: 2px solid var(--ink); font: 900 13px var(--pre); letter-spacing: .3em; }
+.pass .rows { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin-top: 8px; font-size: 13px; }
+.pass .rows dt { color: var(--ink-3); }
+.pass .rows dd { margin: 0; font-family: var(--dot); font-size: 15px; }
+.pass .bar { grid-column: 1 / -1; display: flex; gap: 2px; margin-top: 10px; height: 8px; }
+.pass .bar i { flex: 70; background: var(--ink); opacity: .85; position: relative; }
+.pass .bar i:nth-child(2) { flex: 102; opacity: .35; } .pass .bar i:nth-child(3) { flex: 182; opacity: .2; }
+.pass .bar i b { position: absolute; left: 0; top: 0; bottom: 0; width: 8.6%; background: var(--go); }
+
+.next { margin-top: 14px; padding: 14px 16px 0; overflow: hidden; }
+.next .top { display: flex; justify-content: space-between; align-items: baseline; }
+.next .route { display: flex; align-items: center; gap: 10px; margin: 10px 0 2px; }
+.next .route .from { font: 700 15px var(--pre); color: var(--ink-2); }
+.next .route svg { width: 22px; height: 22px; flex: none; color: var(--ink-2); }
+.next h1 { margin: 0; font: 900 40px/1.15 var(--pre); letter-spacing: .04em; }
+.next .info { display: flex; gap: 14px; margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+.next .info .dot { font-size: 15px; color: var(--ink); }
+.next .perf { margin: 14px -16px 0; border-top: 2px dotted color-mix(in srgb, var(--ink) 35%, transparent); }
+.gatebtn { display: flex; align-items: center; justify-content: space-between; margin: 0 -16px; padding: 0 16px; height: 58px; background: var(--gate); color: #fff; font-weight: 700; font-size: 15px; border-radius: 0 0 6px 6px; }
+.gatebtn .arr { display: flex; align-items: center; gap: 10px; color: var(--go); font: 400 15px var(--dot); }
+.gatebtn .arr svg { width: 36px; height: 24px; }
+
+.zones { display: flex; gap: 6px; overflow-x: auto; margin: 16px -16px 0; padding: 0 16px 4px; scrollbar-width: none; }
+.zones::-webkit-scrollbar { display: none; }
+.zones button { flex: none; height: 36px; padding: 0 12px; border-radius: 4px; background: #fff; box-shadow: inset 0 0 0 1.5px var(--ink); font: 700 13px var(--pre); color: var(--ink); }
+.dark .zones button { background: #1d2126; color: #e7ebe8; box-shadow: inset 0 0 0 1.5px #59616b; }
+.zones button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.dark .zones button[aria-pressed="true"] { background: #e7ebe8; color: #14171b; }
+
+.book-head { display: flex; align-items: baseline; gap: 10px; margin: 22px 0 8px; }
+.book-head h2 { margin: 0; font: 900 20px var(--pre); letter-spacing: .1em; }
+.book-head span { font: 400 13px var(--dot); color: var(--ink-3); }
+.dark .book-head span { color: #9aa4ad; }
+.stubs { display: grid; gap: 0; }
+.stub { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 12px; min-height: 64px; padding: 8px 14px 8px 12px; border-radius: 0; box-shadow: none; border-bottom: 2px dotted color-mix(in srgb, var(--ink) 30%, transparent); }
+.stub:first-child { border-radius: 6px 6px 0 0; } .stub:last-child { border-radius: 0 0 6px 6px; border-bottom: 0; }
+.stub .n { font: 400 22px var(--dot); text-align: center; }
+.stub .n small { display: block; font-size: 11px; color: var(--ink-3); }
+.stub b { display: block; font: 700 15px var(--pre); }
+.stub span.t { font-size: 13px; color: var(--ink-3); }
+.stub .stamp { position: static; width: 46px; height: 46px; font-size: 11px; border-width: 2px; }
+.stub.up { background-color: var(--ticket-2); opacity: .8; }
+.stub.cur { background-color: #fff6c9; }
+.stub.cur .tag { font: 400 13px var(--dot); color: var(--go); padding: 4px 8px; border: 1.5px solid var(--go); border-radius: 4px; }
+.stub .pn { position: relative; width: 14px; height: 14px; }
+
+.gate { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--gate); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.gate div { display: grid; grid-template-columns: repeat(5, 1fr); max-width: 560px; margin: 0 auto; height: 66px; }
+.gate a { display: grid; justify-items: center; align-content: center; gap: 4px; font-size: 11px; font-weight: 700; color: #a9b0b8; }
+.gate svg { width: 22px; height: 22px; }
+.gate a[aria-current="page"] { color: #fff; }
+.gate a[aria-current="page"]::after { content: ""; width: 18px; height: 4px; border-radius: 2px; background: var(--go); }
+
+/* ---------- 字卡＝一張票 ---------- */
+.cardbar { display: flex; align-items: center; gap: 8px; min-height: 48px; margin: -4px -6px 10px; }
+.icon-btn { display: grid; place-items: center; width: 44px; height: 44px; }
+.icon-btn svg { width: 24px; height: 24px; }
+.cardbar .t { flex: 1; font: 700 15px var(--pre); }
+.cardbar .c { font: 400 15px var(--dot); }
+.ticket { padding: 14px 16px 16px; overflow: hidden; touch-action: pan-y; }
+.ticket .row1 { display: flex; align-items: center; justify-content: space-between; }
+.ticket .row1 .pre { font-size: 18px; }
+.ticket .row1 .dot { font-size: 15px; }
+.ticket .word { margin: 8px 0 0; text-align: center; font: 900 104px/1.3 var(--pre); }
+.ticket .word rt { font: 400 20px var(--dot); letter-spacing: .3em; color: var(--ink-2); }
+.ticket .roma { margin-top: 2px; text-align: center; font: 400 15px var(--dot); letter-spacing: .3em; color: var(--ink-2); }
+.ticket dl { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 6px 10px; margin: 16px 0 0; padding-top: 12px; border-top: 2px dotted color-mix(in srgb, var(--ink) 35%, transparent); font-size: 13px; }
+.ticket dt { color: var(--ink-3); font: 700 11px var(--pre); letter-spacing: .1em; }
+.ticket dd { margin: 0; font: 400 15px var(--dot); }
+.ticket dd.zh { grid-column: 2 / -1; font: 700 20px var(--tc); letter-spacing: 0; }
+.ticket .stamp { right: 14px; top: 46px; }
+.ticket .punch { top: 64%; }
+.say { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.say button { display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 14px; border-radius: 6px; background: var(--gate); color: #fff; font-weight: 700; font-size: 15px; }
+.say .ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--go); color: var(--go); }
+.say svg { width: 20px; height: 20px; }
+.say small { display: block; font: 400 13px var(--dot); color: #a9b0b8; }
+.receipt { margin-top: 12px; padding: 14px 16px; background: #fffef8; color: #1b2340; border-radius: 4px; box-shadow: var(--lift); font-family: var(--dot); }
+.receipt .h { font: 400 13px var(--dot); color: #6d7891; display: flex; justify-content: space-between; border-bottom: 1px dashed #b9bfcc; padding-bottom: 6px; }
+.receipt .ja { font: 400 20px/1.9 var(--dot); margin-top: 8px; }
+.receipt .ja rt { font-size: 11px; }
+.receipt .zh2 { font: 500 15px var(--tc); color: #44506e; }
+.nav2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.nav2 button { display: flex; align-items: center; gap: 8px; height: 58px; padding: 0 14px; border-radius: 6px; background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); font: 900 22px var(--pre); }
+.dark .nav2 button { background: #1d2126; color: #e7ebe8; box-shadow: inset 0 0 0 1.5px #59616b; }
+.nav2 button:last-child { justify-content: flex-end; background: var(--ink); color: #fff; }
+.dark .nav2 button:last-child { background: #e7ebe8; color: #14171b; }
+.nav2 rt { font: 400 11px var(--dot); }
+.nav2 svg { width: 16px; height: 16px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<!--
+THESIS: 學習就是一張一張用掉的車票：總進度是定期券，下一站是一張乘車券，學完的站蓋「使用済」並剪票。拒絕：抽象的進度條與徽章。
+OWN-WORLD: JR 磁氣車票的淡青綠防偽底紋、點陣印字的數字（DotGothic16）、預印的粗黑體、紅色使用済章、剪票缺口、自動改札機的黑色機身與綠色箭頭。
+STORY: 旅客看定期券知道走了多遠，下一張票寫著從哪站到哪站，按綠色箭頭進站；字卡是一張票，背面印著例句收據。
+FIRST VIEWPORT: 定期券（旅ことば、區間、已學、到着、三段進度）；乘車券（居酒屋入門 → 東西南北、9 字、改札鍵）；區間標籤；票冊。
+FORM: 挑戰者「噴射機時代機票夾」融合成日本車票，判定 competitive（旅客認同強、清楚度持平）；抽籤 be4917ea。
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.2"/></filter></svg>
+<main>
+  <div class="home-screen">
+    <section class="tk pass" aria-label="學習進度">
+      <div class="brand" lang="ja">旅ことば</div><div class="kind" lang="ja">定期券</div>
+      <dl class="rows"><dt>區間</dt><dd>必備 ⇄ 進階</dd><dt>已學</dt><dd>0084 / 5074 字</dd><dt>到着</dt><dd>006 / 354 站</dd></dl>
+      <div class="bar" aria-hidden="true"><i><b></b></i><i></i><i></i></div>
+      <span class="punch"></span>
+    </section>
+    <section class="tk next" aria-label="下一站">
+      <div class="top"><span class="pre" lang="ja">乗車券</span><span class="dot">必備線 07</span></div>
+      <div class="route"><span class="from">居酒屋入門</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M14 7l5 5-5 5"/></svg></div>
+      <h1>東西南北</h1>
+      <div class="info"><span>問路與方向</span><span class="dot">09字</span><span class="dot">已學02</span></div>
+      <div class="perf"></div>
+      <a class="gatebtn" href="?s=card">進站學習<span class="arr">入場<svg viewBox="0 0 36 24" fill="currentColor"><path d="M2 8h18V2l14 10-14 10v-6H2z"/></svg></span></a>
+    </section>
+    <nav class="zones" id="zones" aria-label="主題篩選"></nav>
+    <div class="book-head"><h2>必備線</h2><span>06/70 使用済</span></div>
+    <div class="stubs" id="stubs"></div>
+  </div>
+
+  <div class="card-screen">
+    <div class="cardbar">
+      <a class="icon-btn" href="?s=home" aria-label="返回"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+      <span class="t">東西南北</span><span class="c" id="pos">3/9</span>
+      <button class="icon-btn" aria-label="標記為不熟"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3.4l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg></button>
+    </div>
+    <article class="tk ticket" id="tk">
+      <div class="row1"><span class="pre" lang="ja">乗車券</span><span class="dot" id="no">No.0084</span></div>
+      <div class="word" lang="ja" id="nm"></div>
+      <div class="roma" id="roma"></div>
+      <dl>
+        <dt>中文</dt><dd class="zh" id="zh"></dd>
+        <dt>詞性</dt><dd>名詞</dd><dt>等級</dt><dd>必備</dd>
+        <dt>頻率</dt><dd>第045名</dd><dt>日檢</dt><dd>N5</dd>
+        <dt>區間</dt><dd>必備線07</dd><dt>收錄</dt><dd>3份</dd>
+      </dl>
+      <span class="punch"></span>
+    </article>
+    <div class="say">
+      <button><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9.5h3.5L12 5.6v12.8l-4.5-3.9H4z"/><path d="M15.6 9.2a4 4 0 010 5.6M18.2 6.6a7.6 7.6 0 010 10.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span>單字<small>女聲</small></span></button>
+      <button><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9.5h3.5L12 5.6v12.8l-4.5-3.9H4z"/><path d="M15.6 9.2a4 4 0 010 5.6M18.2 6.6a7.6 7.6 0 010 10.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span>例句<small>男聲</small></span></button>
+    </div>
+    <section class="receipt" aria-label="例句"><div class="h"><span>例句</span><span>2026.10.01</span></div><div class="ja" lang="ja" id="exja"></div><div class="zh2" id="exzh"></div></section>
+    <div class="nav2"><button id="prev"></button><button id="nextb"></button></div>
+  </div>
+</main>
+<nav class="gate" aria-label="主要分頁"><div>
+  <a href="?s=home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16"/><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2"/></svg>路線</a>
+  <a href="?s=card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="1.5"/><path d="M4 14.5h16M8 10h8"/></svg>字卡</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg>測驗</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.6l2.5 5.2 5.7.8-4.2 3.9 1 5.6L12 16.4l-5 2.7 1-5.6-4.2-3.9 5.7-.8z"/></svg>不熟</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h9M18 7h1M5 17h1M10 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>設定</a>
+</div></nav>
+<script src="shared.js"></script>
+<script type="module">
+const T = window.TK;
+document.querySelectorAll('.gate a').forEach((a, i) => a.setAttribute('aria-current', (T.screen === 'home' ? i === 0 : i === 1) ? 'page' : 'false'));
+document.getElementById('zones').innerHTML = `<button aria-pressed="true">全區間</button>` + T.families.map((f) => `<button aria-pressed="false">${f.name}</button>`).join('');
+const pad = (n, k = 2) => String(n).padStart(k, '0');
+document.getElementById('stubs').innerHTML = T.route.map((s) => `<div class="tk stub ${s.done ? 'done' : s.cur ? 'cur' : 'up'}">
+  <span class="n">${pad(s.no)}<small>必備</small></span>
+  <span><b>${s.title}</b><span class="t">${s.theme}・<span class="dot">${pad(s.n)}字</span>${s.quiz ? `・測驗 <span class="dot">${s.quiz}</span>` : ''}</span></span>
+  ${s.done ? '<span class="stamp" lang="ja">使用済<small>到着</small></span>' : s.cur ? '<span class="tag">入場中 02/09</span>' : '<span></span>'}
+</div>`).join('');
+
+const WORDS = [
+  { w: '北', r: 'きた', roma: 'kita', zh: '北；北邊', no: 83, ex: [['北', 'きた'], ['のほうへ'], ['歩', 'ある'], ['いてください。']], exz: '請往北邊走。' },
+  { w: '南', r: 'みなみ', roma: 'minami', zh: '南；南邊', no: 84, ex: T.card.ex, exz: T.card.exz },
+  { w: '西', r: 'にし', roma: 'nishi', zh: '西；西邊', no: 85, ex: [['西口', 'にしぐち'], ['で'], ['待', 'ま'], ['っています。']], exz: '我在西出口等。' },
+  { w: '東', r: 'ひがし', roma: 'higashi', zh: '東；東邊', no: 86, ex: [['東京', 'とうきょう'], ['の'], ['東', 'ひがし'], ['にあります。']], exz: '在東京的東邊。' },
+];
+let i = 1;
+const arrow = (d) => `<svg viewBox="0 0 16 16" fill="currentColor"><path d="${d < 0 ? 'M11 2 4 8l7 6z' : 'm5 2 7 6-7 6z'}"/></svg>`;
+function paint() {
+  const c = WORDS[i], p = WORDS[i - 1], n = WORDS[i + 1];
+  document.getElementById('nm').innerHTML = `<ruby>${c.w}<rt>${c.r}</rt></ruby>`;
+  document.getElementById('roma').textContent = c.roma.toUpperCase();
+  document.getElementById('zh').textContent = c.zh;
+  document.getElementById('no').textContent = `No.${pad(c.no, 4)}`;
+  document.getElementById('pos').textContent = `${i + 2}/9`;
+  document.getElementById('prev').innerHTML = p ? `${arrow(-1)}<ruby lang="ja">${p.w}<rt>${p.r}</rt></ruby>` : '';
+  document.getElementById('nextb').innerHTML = n ? `<ruby lang="ja">${n.w}<rt>${n.r}</rt></ruby>${arrow(1)}` : '';
+  document.getElementById('exja').innerHTML = T.ruby(c.ex);
+  document.getElementById('exzh').textContent = c.exz;
+}
+paint();
+T.switcher();
+// 下一張：舊票沿著虛線撕掉往上飛，新票從下面推上來
+let animate = null;
+import('https://cdn.jsdelivr.net/npm/motion@13.5.0/+esm').then((m) => { animate = m.animate; }).catch(() => {});
+const tk = document.getElementById('tk');
+async function go(d) {
+  if (!WORDS[i + d]) return;
+  const motion = animate && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (motion && d > 0) await animate(tk, { y: [0, -40], rotate: [0, -3], opacity: [1, 0] }, { duration: 0.18, ease: 'easeIn' });
+  i += d; paint();
+  if (motion) animate(tk, { y: [d > 0 ? 40 : -20, 0], rotate: [0, 0], opacity: [0, 1] }, { type: 'spring', stiffness: 380, damping: 36 });
+}
+document.getElementById('prev').onclick = () => go(-1);
+document.getElementById('nextb').onclick = () => go(1);
+</script>
+</body>
+</html>

@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A 站名牌｜旅ことば設計試作</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* A 站名牌：日本鐵道的站名標與路線圖。字卡＝駅名標（上一站／下一站＝上一個字／下一個字），首頁＝路線圖。
+   線只走 90°／45°，轉乘圓環標出跨主題的站；深色模式是深藍琺瑯底。 */
+:root {
+  --concourse: #f3f3ef; --plate: #ffffff; --ink: #141414; --ink-2: #4b4b48; --ink-3: #74746f; --rule: #d9d9d3;
+  --line: #d6261d;          /* 必備線：信號紅 */
+  --strip: #161616; --strip-ink: #f4f4ef;
+  --led: #ffb21a; --led-2: #6bd36b; --board: #101010;
+  --f-basic: #8a735c; --f-move: #0a78c2; --f-stay: #c0457a; --f-food: #e57f0e; --f-shop: #8c4da3; --f-care: #c63a32; --f-city: #08a259; --f-listen: #5958b8;
+  --jp: "BIZ UDPGothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+  --tc: "PingFang TC", "Noto Sans TC", "Heiti TC", sans-serif;
+  --shadow: 0 1px 0 rgb(0 0 0 / .06), 0 8px 22px -12px rgb(0 0 0 / .28);
+}
+.dark {
+  --concourse: #0a1130; --plate: #121c47; --ink: #f2f1ea; --ink-2: #bfc3d6; --ink-3: #8d93b0; --rule: #26316a;
+  --line: #ff4a3d; --strip: #050a1f; --strip-ink: #eef0f8; --board: #050814;
+  --shadow: 0 1px 0 rgb(255 255 255 / .05) inset, 0 12px 26px -14px rgb(0 0 0 / .8);
+}
+* { box-sizing: border-box; }
+html { background: var(--concourse); -webkit-text-size-adjust: 100%; }
+body { margin: 0; min-height: 100vh; background: var(--concourse); color: var(--ink); font-family: var(--tc); }
+::selection { background: color-mix(in srgb, var(--line) 30%, transparent); }
+[lang="ja"] { font-family: var(--jp); }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--led); outline-offset: 2px; }
+main { max-width: 560px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 120px; }
+[data-screen="home"] .card-screen, [data-screen="card"] .home-screen { display: none; }
+
+/* 站號牌：東京地下鐵式的方框編號 */
+.numbering { display: inline-grid; place-items: center; width: 38px; height: 38px; border: 3.5px solid var(--line); border-radius: 9px; background: var(--plate); color: var(--ink); font: 700 10px/1 var(--jp); }
+.numbering b { font-size: 16px; letter-spacing: -.02em; }
+.numbering.sm { width: 30px; height: 30px; border-width: 3px; border-radius: 7px; font-size: 8px; }
+.numbering.sm b { font-size: 13px; }
+
+/* ---------- 首頁 ---------- */
+.concourse-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 8px 2px 16px; }
+.brand { display: grid; line-height: 1.05; }
+.brand [lang="ja"] { font: 700 30px/1.1 var(--jp); letter-spacing: .02em; }
+.brand .en { font: 700 11px/1 var(--jp); letter-spacing: .28em; text-transform: uppercase; color: var(--ink-3); margin-top: 6px; }
+.meter { text-align: right; font-size: 12px; color: var(--ink-2); line-height: 1.6; font-variant-numeric: tabular-nums; }
+.meter b { font: 700 17px var(--jp); color: var(--ink); }
+
+.sign { position: relative; background: var(--plate); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+.next .sign-top { display: flex; align-items: center; gap: 10px; padding: 16px 18px 0; }
+.tsugi { display: grid; font: 700 12px/1.25 var(--jp); color: var(--ink-2); }
+.tsugi small { font: 500 11px var(--tc); color: var(--ink-3); }
+.next h1 { margin: 6px 18px 0; font: 800 46px/1.15 var(--tc); letter-spacing: .04em; }
+.next .sign-sub { margin: 2px 18px 14px; font-size: 13px; color: var(--ink-2); }
+.band { display: flex; align-items: stretch; background: var(--line); color: #fff; min-height: 46px; }
+.band > * { flex: 1; display: flex; align-items: center; gap: 6px; padding: 0 14px; font-size: 13px; font-weight: 600; }
+.band > :last-child { justify-content: flex-end; text-align: right; }
+.band svg { width: 14px; height: 14px; flex: none; }
+.band .here { flex: none; width: 0; padding: 0; position: relative; }
+.band .here::before { content: ""; position: absolute; left: -9px; top: 50%; width: 18px; height: 18px; margin-top: -9px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px var(--line), 0 0 0 6px #fff; }
+.depart { position: absolute; right: 16px; top: 16px; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 8px; background: var(--strip); color: var(--strip-ink); font-weight: 700; font-size: 14px; }
+.depart svg { width: 16px; height: 16px; }
+
+.legend { display: flex; gap: 6px; overflow-x: auto; margin: 18px -16px 0; padding: 0 16px 4px; scrollbar-width: none; }
+.legend::-webkit-scrollbar { display: none; }
+.legend button { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px 0 10px; border-radius: 8px; background: var(--plate); box-shadow: inset 0 0 0 1px var(--rule); font-size: 13px; font-weight: 600; }
+.legend button i { width: 18px; height: 6px; border-radius: 3px; background: var(--c); }
+.legend button small { color: var(--ink-3); font-weight: 500; font-variant-numeric: tabular-nums; }
+.legend button[aria-pressed="true"] { background: var(--ink); color: var(--concourse); box-shadow: none; }
+.legend button[aria-pressed="true"] small { color: inherit; opacity: .7; }
+
+.runhead { position: sticky; top: 0; z-index: 3; display: flex; align-items: baseline; gap: 10px; margin: 18px -16px 0; padding: 12px 16px 10px; background: color-mix(in srgb, var(--concourse) 92%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); }
+.runhead h2 { margin: 0; font: 800 20px var(--tc); display: flex; align-items: center; gap: 8px; }
+.runhead h2::before { content: ""; width: 22px; height: 8px; border-radius: 4px; background: var(--line); }
+.runhead .span { font: 700 12px var(--jp); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.runhead .done { margin-left: auto; font-size: 12px; color: var(--ink-3); }
+
+.route { list-style: none; margin: 0; padding: 6px 0 0; position: relative; }
+.route li { position: relative; display: grid; grid-template-columns: 38px 34px 1fr auto; align-items: center; gap: 10px; min-height: 64px; }
+.route li::before { content: ""; position: absolute; left: 55px; top: 0; bottom: 0; width: 8px; margin-left: -4px; background: var(--line); }
+.route li:first-child::before { top: 50%; }
+.route li.up::before { background: color-mix(in srgb, var(--line) 30%, var(--concourse)); }
+.route .tick { grid-column: 2; justify-self: center; position: relative; z-index: 1; width: 22px; height: 22px; border-radius: 50%; background: var(--plate); box-shadow: 0 0 0 4px var(--line); }
+.route li.done .tick { background: var(--line); box-shadow: 0 0 0 4px var(--line), inset 0 0 0 5px var(--plate); }
+.route li.up .tick { box-shadow: 0 0 0 4px color-mix(in srgb, var(--line) 30%, var(--concourse)); }
+.route li.cur .tick { width: 28px; height: 28px; background: var(--plate); box-shadow: 0 0 0 5px var(--line), 0 0 0 9px color-mix(in srgb, var(--line) 22%, transparent); }
+.route .xfer { position: absolute; left: 66px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; border: 3px solid var(--c); background: var(--plate); z-index: 1; }
+.route .nm { min-width: 0; padding: 10px 0; }
+.route .nm b { display: block; font-size: 16px; font-weight: 700; }
+.route li.up .nm b { color: var(--ink-2); }
+.route .nm span { display: flex; gap: 8px; margin-top: 2px; font-size: 12px; color: var(--ink-3); }
+.route .nm .fam { color: var(--c); font-weight: 600; }
+.route .meta { text-align: right; font-size: 11px; color: var(--ink-3); line-height: 1.5; }
+.route .meta .arr { display: inline-block; padding: 2px 6px; border-radius: 4px; background: var(--ink); color: var(--concourse); font: 700 10px var(--jp); letter-spacing: .08em; }
+.route li.cur .here-tag { position: absolute; left: 82px; top: -2px; padding: 2px 7px; border-radius: 4px; background: var(--line); color: #fff; font: 700 10px var(--jp); letter-spacing: .08em; z-index: 2; }
+.jog { height: 56px; margin-left: 38px; position: relative; }
+.jog svg { position: absolute; left: 0; top: 0; overflow: visible; }
+
+/* 分頁列：站內指標牌的黑色條帶，目前分頁＝線色方塊 */
+.strip { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--strip); color: var(--strip-ink); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.strip .in { display: grid; grid-template-columns: repeat(5, 1fr); max-width: 560px; margin: 0 auto; height: 66px; }
+.strip a { display: grid; justify-items: center; align-content: center; gap: 4px; font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--strip-ink) 70%, transparent); }
+.strip a span.pic { display: grid; place-items: center; width: 34px; height: 30px; border-radius: 6px; }
+.strip svg { width: 22px; height: 22px; }
+.strip a[aria-current="page"] { color: var(--strip-ink); }
+.strip a[aria-current="page"] .pic { background: var(--line); color: #fff; }
+
+/* ---------- 字卡＝駅名標 ---------- */
+.cardbar { display: flex; align-items: center; gap: 8px; min-height: 48px; margin: -4px -6px 10px; }
+.icon-btn { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; }
+.icon-btn svg { width: 24px; height: 24px; }
+.cardbar .t { flex: 1; font-weight: 700; font-size: 15px; }
+.cardbar .c { font: 700 14px var(--jp); color: var(--ink-2); }
+
+.ekimei { background: var(--plate); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; touch-action: pan-y; }
+.ekimei .head { display: flex; align-items: center; gap: 10px; padding: 14px 16px 0; }
+.ekimei .head .no { font: 700 12px var(--jp); color: var(--ink-3); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+.ekimei .head .pos { margin-left: auto; padding: 4px 9px; border-radius: 6px; box-shadow: inset 0 0 0 1.5px var(--rule); font-size: 12px; color: var(--ink-2); }
+.ekimei .name { text-align: center; padding: 8px 12px 0; font: 700 112px/1.12 var(--jp); letter-spacing: .02em; }
+.ekimei .name rt { font: 700 20px var(--jp); letter-spacing: .3em; color: var(--ink-2); }
+.ekimei .roma { text-align: center; font: 700 17px var(--jp); letter-spacing: .32em; color: var(--ink-2); text-transform: capitalize; margin-top: 2px; }
+.ekimei .zh { text-align: center; font-size: 22px; font-weight: 700; margin: 12px 0 18px; }
+.ekimei .band { min-height: 64px; }
+.ekimei .band button { flex: 1; display: flex; align-items: center; gap: 8px; padding: 0 16px; color: #fff; }
+.ekimei .band button:last-child { justify-content: flex-end; }
+.ekimei .band ruby { font: 700 22px var(--jp); }
+.ekimei .band rt { font: 700 10px var(--jp); opacity: .85; }
+.ekimei .band svg { width: 16px; height: 16px; }
+
+.say { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.say button { display: flex; align-items: center; justify-content: center; gap: 10px; height: 56px; border-radius: 12px; background: var(--strip); color: var(--strip-ink); font-weight: 700; font-size: 15px; }
+.say button small { font-weight: 500; opacity: .7; font-size: 12px; }
+.say svg { width: 22px; height: 22px; }
+.say .playing { background: var(--line); }
+
+.board { margin-top: 12px; border-radius: 12px; background: var(--board); padding: 14px 16px 16px; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .06); }
+.board .lbl { display: flex; justify-content: space-between; font: 700 11px var(--jp); letter-spacing: .14em; color: color-mix(in srgb, var(--led) 70%, #000); }
+.board .ja { margin-top: 10px; font: 700 21px/1.9 var(--jp); color: var(--led); text-shadow: 0 0 6px color-mix(in srgb, var(--led) 28%, transparent);   /* 發車標的 LED 本來就會微微發光 */ }
+.board .ja rt { font-size: 10px; color: color-mix(in srgb, var(--led) 80%, #fff); }
+.board .zh2 { margin-top: 4px; font-size: 15px; color: var(--led-2); text-shadow: 0 0 5px color-mix(in srgb, var(--led-2) 24%, transparent); }
+.facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.facts span { padding: 5px 9px; border-radius: 6px; background: var(--plate); box-shadow: inset 0 0 0 1px var(--rule); font-size: 12px; color: var(--ink-2); }
+.facts span:first-child { background: var(--line); color: #fff; box-shadow: none; font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<!--
+THESIS: 字卡就是車站的站名標：大字站名、上方假名、下方中文，底部色帶的左右兩端就是上一個字與下一個字；首頁是一條真的路線圖。拒絕：通用卡片清單。
+OWN-WORLD: 月台白與站名牌白板、信號紅的必備線、東京地下鐵式方框站號、黑色指標條帶、發車標的琥珀色 LED；深色＝深藍琺瑯底。
+STORY: 旅客一眼看到「つぎは」下一站，沿線往下學，一張字卡像一個車站，左右滑就是往前一站、下一站。
+FIRST VIEWPORT: 左上「旅ことば」＋羅馬字，右上已學字數；下一站駅名標（站號、つぎは、站名 46px、紅色色帶標前後站、右上出發鍵）；線色圖例；必備線路線圖。
+FORM: 清單第 3 名（鐵道路線圖／站名牌），抽籤 be4917ea；吸收深藍琺瑯地鐵圖（線只走 90/45°、轉乘圓環、深色琺瑯）與辭典頁（頂端顯示目前看到的站號範圍）。
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<main>
+  <!-- 首頁 -->
+  <div class="home-screen">
+    <header class="concourse-head">
+      <div class="brand"><span lang="ja">旅ことば</span><span class="en">Tabi Kotoba</span></div>
+      <div class="meter">已學 <b id="m1"></b> 字<br>到着 <b id="m2"></b> 站</div>
+    </header>
+    <section class="sign next" aria-label="下一站">
+      <div class="sign-top"><span class="numbering">必<b>07</b></span><span class="tsugi" lang="ja">つぎは<small lang="zh-Hant">下一站</small></span></div>
+      <h1>東西南北</h1>
+      <p class="sign-sub">問路與方向・9 字・已學 2</p>
+      <div class="band"><span><svg viewBox="0 0 16 16" fill="currentColor"><path d="M11 2 4 8l7 6z"/></svg>居酒屋入門</span><span class="here" aria-hidden="true"></span><span>程度與頻率<svg viewBox="0 0 16 16" fill="currentColor"><path d="m5 2 7 6-7 6z"/></svg></span></div>
+      <a class="depart" href="?s=card">出發<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+    </section>
+    <nav class="legend" aria-label="主題篩選" id="legend"></nav>
+    <div class="runhead"><h2>必備線</h2><span class="span" id="span">必01–必12</span><span class="done">6／70 站到着</span></div>
+    <ol class="route" id="route"></ol>
+    <div class="jog" aria-hidden="true"><svg width="200" height="56"><path d="M17 0v14l28 28h40" fill="none" stroke="#11994d" stroke-width="8" stroke-linejoin="round"/><circle cx="96" cy="42" r="9" fill="var(--plate)" stroke="#11994d" stroke-width="4"/></svg><span style="position:absolute;left:116px;top:31px;font-weight:800;font-size:15px">常用線 <small style="font-weight:500;color:var(--ink-3)">轉乘・102 站</small></span></div>
+  </div>
+
+  <!-- 字卡 -->
+  <div class="card-screen">
+    <div class="cardbar">
+      <a class="icon-btn" href="?s=home" aria-label="返回"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+      <span class="t">東西南北</span><span class="c" id="pos">3/9</span>
+      <button class="icon-btn" aria-label="標記為不熟"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3.4l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg></button>
+    </div>
+    <article class="ekimei" id="eki">
+      <div class="head"><span class="numbering sm">必<b>07</b></span><span class="no" id="no">No. 0084</span><span class="pos">名詞</span></div>
+      <div class="name" lang="ja" id="nm"></div>
+      <div class="roma" id="roma"></div>
+      <div class="zh" id="zh"></div>
+      <div class="band">
+        <button id="prev" aria-label="上一張"></button>
+        <span class="here" aria-hidden="true"></span>
+        <button id="nextb" aria-label="下一張"></button>
+      </div>
+    </article>
+    <div class="say">
+      <button id="sayw"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9.5h3.5L12 5.6v12.8l-4.5-3.9H4z"/><path d="M15.6 9.2a4 4 0 010 5.6M18.2 6.6a7.6 7.6 0 010 10.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>單字<small>女聲</small></button>
+      <button><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9.5h3.5L12 5.6v12.8l-4.5-3.9H4z"/><path d="M15.6 9.2a4 4 0 010 5.6M18.2 6.6a7.6 7.6 0 010 10.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>例句<small>男聲</small></button>
+    </div>
+    <section class="board" aria-label="例句">
+      <div class="lbl" lang="ja"><span>例句 EXAMPLE</span><span>必備線 7</span></div>
+      <div class="ja" lang="ja" id="exja"></div>
+      <div class="zh2" id="exzh"></div>
+    </section>
+    <div class="facts" id="facts"></div>
+  </div>
+</main>
+<nav class="strip" aria-label="主要分頁"><div class="in">
+  <a href="?s=home" aria-current="page"><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16"/><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2" fill="none"/></svg></span>路線</a>
+  <a href="?s=card"><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="1.5"/><path d="M4 14.5h16M8 10h8"/></svg></span>字卡</a>
+  <a href="#"><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg></span>測驗</a>
+  <a href="#"><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.6l2.5 5.2 5.7.8-4.2 3.9 1 5.6L12 16.4l-5 2.7 1-5.6-4.2-3.9 5.7-.8z"/></svg></span>不熟</a>
+  <a href="#"><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h9M18 7h1M5 17h1M10 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></span>設定</a>
+</div></nav>
+<script src="shared.js"></script>
+<script type="module">
+const T = window.TK;
+const FAM = { basic: 'var(--f-basic)', move: 'var(--f-move)', stay: 'var(--f-stay)', food: 'var(--f-food)', shop: 'var(--f-shop)', care: 'var(--f-care)', city: 'var(--f-city)', listen: 'var(--f-listen)' };
+document.querySelectorAll('.strip a').forEach((a, i) => a.setAttribute('aria-current', (T.screen === 'home' ? i === 0 : i === 1) ? 'page' : 'false'));
+// 首頁
+document.getElementById('m1').textContent = T.learned; document.getElementById('m1').insertAdjacentText('afterend', `／${T.total}`);
+document.getElementById('m2').textContent = T.arrived; document.getElementById('m2').insertAdjacentText('afterend', `／${T.stations}`);
+document.getElementById('legend').innerHTML = `<button aria-pressed="true">全部<small>354</small></button>` + T.families.map((f) => `<button aria-pressed="false" style="--c:${FAM[f.id]}"><i></i>${f.name}<small>${f.st}</small></button>`).join('');
+const pad = (n) => String(n).padStart(2, '0');
+document.getElementById('route').innerHTML = T.route.map((s) => {
+  const cls = s.done ? 'done' : s.cur ? 'cur' : 'up';
+  const xfer = s.fam !== 'basic' ? `<i class="xfer" style="--c:${FAM[s.fam]}" title="轉乘：${s.theme}"></i>` : '';
+  return `<li class="${cls}" style="--c:${FAM[s.fam]}">
+    <span class="numbering sm">必<b>${pad(s.no)}</b></span><span class="tick"></span>${xfer}
+    ${s.cur ? '<span class="here-tag" lang="ja">現在地</span>' : ''}
+    <span class="nm"><b>${s.title}</b><span><span class="${s.fam !== 'basic' ? 'fam' : ''}">${s.theme}</span><span>${s.n} 字${s.cur ? `，已學 ${s.seen}` : ''}</span></span></span>
+    <span class="meta">${s.done ? '<span class="arr" lang="ja">到着</span>' : ''}${s.quiz ? `<br>測驗 ${s.quiz}` : ''}</span>
+  </li>`;
+}).join('');
+// 頂端的範圍：目前看得到的第一站與最後一站
+const rows = [...document.querySelectorAll('.route li')];
+const span = document.getElementById('span');
+const upd = () => {
+  const vis = rows.filter((r) => { const b = r.getBoundingClientRect(); return b.bottom > 60 && b.top < innerHeight - 70; });
+  if (vis.length) span.textContent = `必${pad(T.route[rows.indexOf(vis[0])].no)}–必${pad(T.route[rows.indexOf(vis[vis.length - 1])].no)}`;
+};
+addEventListener('scroll', upd, { passive: true }); upd();
+
+// 字卡
+const WORDS = [
+  { w: '北', r: 'きた', roma: 'kita', zh: '北；北邊', no: '0083', ex: [['北', 'きた'], ['のほうへ'], ['歩', 'ある'], ['いてください。']], exz: '請往北邊走。' },
+  { w: '南', r: 'みなみ', roma: 'minami', zh: '南；南邊', no: '0084', ex: T.card.ex, exz: T.card.exz },
+  { w: '西', r: 'にし', roma: 'nishi', zh: '西；西邊', no: '0085', ex: [['西口', 'にしぐち'], ['で'], ['待', 'ま'], ['っています。']], exz: '我在西出口等。' },
+  { w: '東', r: 'ひがし', roma: 'higashi', zh: '東；東邊', no: '0086', ex: [['東京', 'とうきょう'], ['の'], ['東', 'ひがし'], ['にあります。']], exz: '在東京的東邊。' },
+];
+let i = 1;
+const arrow = (d) => `<svg viewBox="0 0 16 16" fill="currentColor"><path d="${d < 0 ? 'M11 2 4 8l7 6z' : 'm5 2 7 6-7 6z'}"/></svg>`;
+function paint() {
+  const c = WORDS[i], p = WORDS[i - 1], n = WORDS[i + 1];
+  document.getElementById('nm').innerHTML = `<ruby>${c.w}<rt>${c.r}</rt></ruby>`;
+  document.getElementById('roma').textContent = c.roma;
+  document.getElementById('zh').textContent = c.zh;
+  document.getElementById('no').textContent = `No. ${c.no}`;
+  document.getElementById('pos').textContent = `${i + 2}/9`;
+  document.getElementById('prev').innerHTML = p ? `${arrow(-1)}<ruby lang="ja">${p.w}<rt>${p.r}</rt></ruby>` : '';
+  document.getElementById('nextb').innerHTML = n ? `<ruby lang="ja">${n.w}<rt>${n.r}</rt></ruby>${arrow(1)}` : '';
+  document.getElementById('exja').innerHTML = T.ruby(c.ex);
+  document.getElementById('exzh').textContent = c.exz;
+}
+document.getElementById('facts').innerHTML = T.card.facts.map((f) => `<span>${f}</span>`).join('') + '<span>必備線第 7 站</span>';
+paint();
+T.switcher();
+
+// 換站：站名牌像列車進站一樣從右邊滑進來（Motion 的彈簧，不回彈）
+let animate = null;
+import('https://cdn.jsdelivr.net/npm/motion@13.5.0/+esm').then((m) => { animate = m.animate; }).catch(() => {});
+const eki = document.getElementById('eki');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function go(d) {
+  if (!WORDS[i + d]) return;
+  i += d; paint();
+  if (animate && !reduce) animate(eki, { x: [d * 60, 0], opacity: [0.2, 1] }, { type: 'spring', stiffness: 420, damping: 40, bounce: 0 });
+}
+document.getElementById('prev').onclick = () => go(-1);
+document.getElementById('nextb').onclick = () => go(1);
+let sx = null;
+eki.addEventListener('pointerdown', (e) => { sx = e.clientX; });
+eki.addEventListener('pointerup', (e) => { if (sx != null && Math.abs(e.clientX - sx) > 50) go(e.clientX < sx ? 1 : -1); sx = null; });
+document.getElementById('sayw').onclick = (e) => { const b = e.currentTarget; b.classList.add('playing'); setTimeout(() => b.classList.remove('playing'), 900); };
+</script>
+</body>
+</html>

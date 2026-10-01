@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>旅ことば：整體設計試作</title>
+<meta name="theme-color" content="#f4f3ef">
+<style>
+  :root { --bg: #f4f3ef; --card: #fff; --ink: #18181a; --ink-2: #55555c; --ink-3: #85858c; --rule: #e2e1db; --accent: #18181a;
+    --ui: -apple-system, "PingFang TC", "Noto Sans TC", system-ui, sans-serif; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #141416; --card: #1d1d20; --ink: #f2f2f0; --ink-2: #b9b9bd; --ink-3: #8a8a90; --rule: #2c2c30; --accent: #f2f2f0; } }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--ui); line-height: 1.6; }
+  ::selection { background: color-mix(in srgb, var(--ink) 18%, transparent); }
+  main { max-width: 760px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px 60px; }
+  a { color: inherit; }
+  .back { font-size: 14px; color: var(--ink-2); text-decoration: none; }
+  h1 { font-size: 26px; line-height: 1.3; margin: 14px 0 8px; letter-spacing: -.01em; }
+  .lead { color: var(--ink-2); font-size: 15px; margin: 0 0 6px; }
+  section.dir { margin-top: 34px; padding-top: 26px; border-top: 1px solid var(--rule); }
+  .dir h2 { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin: 0; font-size: 22px; line-height: 1.3; }
+  .dir h2 .tag { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--card); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink-2); }
+  .dir .thesis { margin: 8px 0 0; font-size: 16px; }
+  .strip { display: flex; gap: 10px; overflow-x: auto; margin: 16px -16px 0; padding: 0 16px 8px; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+  .strip figure { flex: none; width: min(44vw, 200px); margin: 0; scroll-snap-align: start; }
+  .strip img { display: block; width: 100%; aspect-ratio: 390 / 844; object-fit: cover; border-radius: 16px; box-shadow: 0 0 0 1px var(--rule), 0 10px 24px -16px rgb(0 0 0 / .45); background: var(--card); }
+  .strip figcaption { margin-top: 6px; font-size: 12px; color: var(--ink-3); text-align: center; }
+  .try { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; height: 44px; padding: 0 18px; border-radius: 999px; background: var(--accent); color: var(--bg); text-decoration: none; font-weight: 600; font-size: 15px; }
+  .try svg { width: 16px; height: 16px; }
+  dl.facts { display: grid; grid-template-columns: 4.8em 1fr; gap: 6px 12px; margin: 16px 0 0; font-size: 14px; }
+  dl.facts dt { color: var(--ink-3); }
+  dl.facts dd { margin: 0; color: var(--ink-2); }
+  .qa { margin-top: 22px; padding: 16px 18px; border-radius: 16px; background: var(--card); box-shadow: inset 0 0 0 1px var(--rule); font-size: 14px; color: var(--ink-2); }
+  .qa h3 { margin: 0 0 8px; font-size: 16px; color: var(--ink); }
+  .qa p { margin: 6px 0; }
+  .qa b { color: var(--ink); }
+  .how { margin-top: 30px; padding: 16px 18px; border-radius: 16px; background: var(--ink); color: var(--bg); font-size: 15px; }
+  .how b { font-weight: 700; }
+  .demoted { margin-top: 14px; font-size: 13px; color: var(--ink-3); }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="../../">← 所有測試</a>
+  <h1>旅ことば：整體設計試作</h1>
+  <p class="lead">四個完全不同的視覺方向，每個都做了「主畫面」和「字卡」，淺色、深色各一。內容都是 App 裡的真實資料（必備線前 12 站、「南」那張卡）。圖片可以左右滑；按「實際操作」可以點進去切換畫面、換下一張卡、切深淺色。最下面是現在的樣子，方便對照。</p>
+
+  <div class="qa">
+    <h3>你問的程式庫與 skill</h3>
+    <p><b>Motion</b>：可以用，有不需要 React 的版本（約 20 KB）。四個方向的換卡動畫都是它：A 像列車進站、C 撕票、D 用手指甩卡片的彈簧。</p>
+    <p><b>shadergradient</b>：它本身綁 React 和 Three.js，不能直接放進這個沒有建置步驟的 App。同樣「會流動的漸層」用 <b>Paper Shaders</b> 的原生版做（D 的天空），或自己寫一小段著色器（B 的暈染天空、現在的立體開場）。</p>
+    <p><b>kokonut ui</b>：React＋Tailwind 的元件集，不能直接放；D 的便當格首頁和下一站那格會繞一圈的流光邊框，是照它的做法手寫的。</p>
+    <p><b>liquid-glass</b>：用瀏覽器內建的毛玻璃（iPhone 原生支援），D 整套都是；需要先把整頁截圖再折射的 liquid-glass-js 在手機上會卡，不採用。</p>
+    <p><b>Skill</b>：這次用 <b>impeccable</b>（這個 App 一開始的設計也是它做的），先抽籤決定主打方向，避免每次都做成同一種樣子。</p>
+  </div>
+
+  <section class="dir" id="a">
+    <h2>A　站名牌<span class="tag">抽籤指定的主打</span></h2>
+    <p class="thesis">字卡就是日本車站的站名牌：大字是單字、上面是假名、下面是中文（日本車站的牌子真的會寫中文），紅色帶子左右兩端寫著上一站、下一站，也就是上一個字、下一個字。首頁是一條真正的路線圖。</p>
+    <div class="strip">
+      <figure><img src="shots/a-eki-home-l.webp" alt="A 主畫面淺色" loading="lazy"><figcaption>主畫面</figcaption></figure>
+      <figure><img src="shots/a-eki-card-l.webp" alt="A 字卡淺色" loading="lazy"><figcaption>字卡</figcaption></figure>
+      <figure><img src="shots/a-eki-home-d.webp" alt="A 主畫面深色" loading="lazy"><figcaption>主畫面・深色</figcaption></figure>
+      <figure><img src="shots/a-eki-card-d.webp" alt="A 字卡深色" loading="lazy"><figcaption>字卡・深色</figcaption></figure>
+    </div>
+    <a class="try" href="a-eki.html">實際操作<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+    <dl class="facts">
+      <dt>特色</dt><dd>東京地下鐵式的方框站號（必07）、「つぎは」下一站、跨主題的站畫成轉乘圓環、目前位置標「現在地」；例句放在黑底琥珀色的發車標裡；捲動時頂端顯示目前看到的是哪幾站。</dd>
+      <dt>深色</dt><dd>深藍琺瑯底（像地鐵站的琺瑯路線圖）。</dd>
+      <dt>動態</dt><dd>換字時站名牌像列車進站一樣滑進來，不回彈。</dd>
+      <dt>風險</dt><dd>很像你最早的第一版「車站站名牌風」，只是做得更完整；紅色用得多，整體比現在熱鬧。</dd>
+      <dt>上線要做</dt><dd>BIZ UDPゴシック 字型要自己打包裁切（離線用），約 1–2 MB。</dd>
+    </dl>
+  </section>
+
+  <section class="dir" id="b">
+    <h2>B　東海道五十三次<span class="tag">impeccable 的首選</span></h2>
+    <p class="thesis">三條線是三條街道，一站一「宿」。整個 App 是一套廣重式的木版畫連作：天空是木版畫特有的「暈染」漸層，朱紅直書題籤寫站名，學完一宿蓋一個「着」字朱印。不畫任何插圖。</p>
+    <div class="strip">
+      <figure><img src="shots/b-tokaido-home-l.webp" alt="B 主畫面淺色" loading="lazy"><figcaption>主畫面</figcaption></figure>
+      <figure><img src="shots/b-tokaido-card-l.webp" alt="B 字卡淺色" loading="lazy"><figcaption>字卡</figcaption></figure>
+      <figure><img src="shots/b-tokaido-home-d.webp" alt="B 主畫面深色" loading="lazy"><figcaption>主畫面・深色（夜景版畫）</figcaption></figure>
+      <figure><img src="shots/b-tokaido-card-d.webp" alt="B 字卡深色" loading="lazy"><figcaption>字卡・深色</figcaption></figure>
+    </div>
+    <a class="try" href="b-tokaido.html">實際操作<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+    <dl class="facts">
+      <dt>特色</dt><dd>暈染天空用一小段著色器做成很慢地流動（shadergradient 的效果，不用 React）；和紙纖維、漢數字的宿號（第七宿）、例句裡的單字用朱色底線標出。</dd>
+      <dt>深色</dt><dd>夜景版畫：藍黑色的天空、深藍紙。</dd>
+      <dt>動態</dt><dd>換字時版畫從模糊浮現；天空一直在極慢地流動。</dd>
+      <dt>風險</dt><dd>「和風」是很常見的日本意象，做得不好會像觀光紀念品；底色又回到米色系（你之前從米色改成米白）。</dd>
+      <dt>上線要做</dt><dd>Zen Old Mincho 字型要打包裁切；天空的著色器要在畫面不動時暫停，避免耗電。</dd>
+    </dl>
+  </section>
+
+  <section class="dir" id="c">
+    <h2>C　乘車券<span class="tag">挑戰者：從「機票夾」改成日本車票</span></h2>
+    <p class="thesis">學習就是一張一張用掉的車票。總進度是一張「定期券」，下一站是一張乘車券（從哪站到哪站），按綠色箭頭「入場」開始學；學完的站蓋紅色「使用済」章、旁邊有剪票缺口。</p>
+    <div class="strip">
+      <figure><img src="shots/c-kippu-home-l.webp" alt="C 主畫面淺色" loading="lazy"><figcaption>主畫面</figcaption></figure>
+      <figure><img src="shots/c-kippu-card-l.webp" alt="C 字卡淺色" loading="lazy"><figcaption>字卡</figcaption></figure>
+      <figure><img src="shots/c-kippu-home-d.webp" alt="C 主畫面深色" loading="lazy"><figcaption>主畫面・深色</figcaption></figure>
+      <figure><img src="shots/c-kippu-card-d.webp" alt="C 字卡深色" loading="lazy"><figcaption>字卡・深色</figcaption></figure>
+    </div>
+    <a class="try" href="c-kippu.html">實際操作<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+    <dl class="facts">
+      <dt>特色</dt><dd>淡青綠的防偽底紋（細字「旅」）、點陣印字機的數字（DotGothic16）、自動改札機的黑色機身與綠色箭頭；例句印在像收據的白紙上。</dd>
+      <dt>深色</dt><dd>夜晚的車站：票仍是淺色，背景變深。</dd>
+      <dt>動態</dt><dd>按下一張，舊票沿虛線撕掉往上飛，新票從下面推上來。</dd>
+      <dt>風險</dt><dd>資訊欄位多、畫面比較密；點陣字型讀久了會累，所以只用在數字和例句。</dd>
+      <dt>上線要做</dt><dd>兩種字型要打包；DotGothic16 只需要數字與假名，很小。</dd>
+    </dl>
+  </section>
+
+  <section class="dir" id="d">
+    <h2>D　暮色玻璃<span class="tag">你點名的程式庫</span></h2>
+    <p class="thesis">背景是日本一天的天色，用 Paper Shaders 的網格漸層慢慢流動；所有資訊浮在液態玻璃面板上，首頁是便當格，字卡可以用手指拖、放手時用 Motion 的彈簧甩出去或彈回來。</p>
+    <div class="strip">
+      <figure><img src="shots/d-glass-home-l.webp" alt="D 主畫面淺色" loading="lazy"><figcaption>主畫面（白天）</figcaption></figure>
+      <figure><img src="shots/d-glass-card-l.webp" alt="D 字卡淺色" loading="lazy"><figcaption>字卡</figcaption></figure>
+      <figure><img src="shots/d-glass-home-d.webp" alt="D 主畫面深色" loading="lazy"><figcaption>主畫面（傍晚）</figcaption></figure>
+      <figure><img src="shots/d-glass-card-d.webp" alt="D 字卡深色" loading="lazy"><figcaption>字卡・傍晚</figcaption></figure>
+    </div>
+    <a class="try" href="d-glass.html">實際操作<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+    <dl class="facts">
+      <dt>特色</dt><dd>下一站那格有一圈慢慢繞的流光邊框（kokonut 的做法）、三條線各自的進度條、浮動的玻璃分頁列（選到的分頁是一片玻璃鏡片，點別的會滑過去）。</dd>
+      <dt>深色</dt><dd>傍晚到入夜的天色（茜、藤、紺）。</dd>
+      <dt>動態</dt><dd>字卡拖曳＋彈簧；天空一直在流動。</dd>
+      <dt>風險</dt><dd>「玻璃＋漸層」是現在很常見的樣子，不像旅ことば獨有；背景一直動比較耗電，文字壓在漸層上的對比也要顧。</dd>
+      <dt>上線要做</dt><dd>Paper Shaders 要放進 App（約 60 KB）；畫面不動時暫停天空。</dd>
+    </dl>
+  </section>
+
+  <section class="dir" id="now">
+    <h2>現在的樣子<span class="tag">對照</span></h2>
+    <div class="strip">
+      <figure><img src="shots/now-home-l.webp" alt="現在的主畫面" loading="lazy"><figcaption>主畫面</figcaption></figure>
+      <figure><img src="shots/now-card-l.webp" alt="現在的字卡" loading="lazy"><figcaption>字卡</figcaption></figure>
+      <figure><img src="shots/now-home-d.webp" alt="現在的主畫面深色" loading="lazy"><figcaption>主畫面・深色</figcaption></figure>
+      <figure><img src="shots/now-card-d.webp" alt="現在的字卡深色" loading="lazy"><figcaption>字卡・深色</figcaption></figure>
+    </div>
+  </section>
+
+  <p class="demoted">另外三張抽到但沒做的挑戰者：深藍琺瑯地鐵圖（併進 A：線只走直角與 45°、轉乘圓環、深藍琺瑯深色模式）、19 世紀辭典頁（併進 A：頂端顯示目前看到的站號範圍）、同人誌展場目錄與舞譜、資料藝術（跟旅遊單字無關，不採用）。</p>
+  <div class="how">跟我說要哪一個（例如「A」），也可以混搭（例如「A 的字卡＋D 的背景」或「B 但不要米色」）。選定後我會整個 App（路線、字卡、測驗、不熟、設定、字典、開場）都照那個方向改。</div>
+</main>
+</body>
+</html>

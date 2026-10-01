@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D 暮色玻璃｜旅ことば設計試作</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* D 暮色玻璃：背景是會慢慢流動的網格漸層（Paper Shaders 的 MeshGradient，shadergradient 的原生 JS 版），
+   面板是液態玻璃（背景模糊＋高光邊），首頁是便當格（kokonut ui 的做法），字卡用手指拖、放手時 Motion 的彈簧。
+   淺色＝白天的天空，深色＝傍晚到入夜。 */
+:root {
+  --ink: #18203a; --ink-2: #3c4566; --ink-3: #5f6788;
+  --glass: rgb(255 255 255 / .42); --glass-2: rgb(255 255 255 / .26); --edge: rgb(255 255 255 / .6); --edge-2: rgb(255 255 255 / .3);
+  --shade: rgb(0 0 0 / .2); --cta: #18203a; --cta-ink: #fff; --accent: #e0664a;
+  --font: "Zen Kaku Gothic New", "PingFang TC", "Hiragino Sans", sans-serif;
+}
+.dark {
+  --ink: #fbf7ff; --ink-2: #ddd6ee; --ink-3: #b3abcc;
+  --glass: rgb(22 20 52 / .36); --glass-2: rgb(255 255 255 / .08); --edge: rgb(255 255 255 / .34); --edge-2: rgb(255 255 255 / .14);
+  --shade: rgb(0 0 0 / .45); --cta: #fbf7ff; --cta-ink: #1a1636; --accent: #ff9a6b;
+}
+* { box-sizing: border-box; }
+html { background: #c9d6ee; -webkit-text-size-adjust: 100%; }
+.dark { background: #1b1640; }
+body { margin: 0; min-height: 100vh; color: var(--ink); font-family: var(--font); }
+#sky { position: fixed; inset: 0; z-index: -1; }
+#sky canvas { display: block; }
+::selection { background: rgb(255 255 255 / .5); }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+[data-screen="home"] .card-screen, [data-screen="card"] .home-screen { display: none; }
+main { max-width: 560px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 130px; }
+
+.glass { position: relative; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.7); backdrop-filter: blur(24px) saturate(1.7); border-radius: 26px;
+  box-shadow: inset 0 1px 0 var(--edge), inset 0 0 0 1px var(--edge-2), 0 22px 40px -24px var(--shade); }
+.glass::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(160deg, rgb(255 255 255 / .38), rgb(255 255 255 / 0) 34%); mix-blend-mode: soft-light; }
+
+/* ---------- 首頁 ---------- */
+.top { display: flex; align-items: flex-end; justify-content: space-between; padding: 6px 4px 16px; }
+.top h1 { margin: 0; font: 900 32px/1.1 var(--font); letter-spacing: .02em; }
+.top p { margin: 4px 0 0; font-size: 13px; color: var(--ink-2); }
+.top .me { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; }
+.bento { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.next { grid-column: 1 / -1; padding: 18px 18px 18px; overflow: hidden; }
+.next::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1.5px; pointer-events: none;
+  background: conic-gradient(from var(--a, 0deg), transparent 0 70%, rgb(255 255 255 / .95) 82%, transparent 92%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: spin 7s linear infinite; }
+@property --a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes spin { to { --a: 360deg; } }
+.next .lbl { font-size: 13px; color: var(--ink-2); }
+.next h2 { margin: 6px 0 2px; font: 900 40px/1.15 var(--font); letter-spacing: .02em; }
+.next .sub { font-size: 14px; color: var(--ink-2); }
+.next .dots { display: flex; gap: 6px; margin: 16px 0 16px; }
+.next .dots i { flex: 1; height: 6px; border-radius: 3px; background: var(--glass-2); box-shadow: inset 0 0 0 1px var(--edge-2); }
+.next .dots i.on { background: var(--ink); box-shadow: none; }
+.next .go { display: inline-flex; align-items: center; gap: 10px; height: 50px; padding: 0 22px; border-radius: 999px; background: var(--cta); color: var(--cta-ink); font-weight: 700; font-size: 16px; }
+.next .go svg { width: 18px; height: 18px; }
+.lines { grid-column: 1 / -1; padding: 16px 18px; display: grid; gap: 12px; }
+.lines .row { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 12px; font-size: 14px; }
+.lines .row b { font-weight: 700; }
+.lines .track { position: relative; height: 8px; border-radius: 4px; background: var(--glass-2); box-shadow: inset 0 0 0 1px var(--edge-2); overflow: hidden; }
+.lines .track i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--ink); }
+.lines .row span:last-child { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.fams { grid-column: 1 / -1; display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 4px; scrollbar-width: none; }
+.fams::-webkit-scrollbar { display: none; }
+.fams button { flex: none; height: 40px; padding: 0 16px; border-radius: 999px; font-weight: 700; font-size: 14px; }
+.fams button[aria-pressed="true"] { background: var(--cta); color: var(--cta-ink); box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.fams button[aria-pressed="true"]::before { display: none; }
+.route { grid-column: 1 / -1; padding: 8px 6px; }
+.route h3 { margin: 10px 14px 6px; font-size: 16px; display: flex; justify-content: space-between; }
+.route h3 span { font-weight: 500; font-size: 12px; color: var(--ink-2); }
+.route ol { list-style: none; margin: 0; padding: 0; position: relative; }
+.route ol::before { content: ""; position: absolute; left: 31px; top: 24px; bottom: 24px; width: 2px; background: linear-gradient(var(--ink) 52%, var(--edge-2) 52%); opacity: .7; }
+.route li { position: relative; display: grid; grid-template-columns: 50px 1fr auto; align-items: center; min-height: 60px; padding-right: 12px; border-radius: 18px; }
+.route li .dot { justify-self: center; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); z-index: 1; }
+.route li.up .dot { background: transparent; box-shadow: inset 0 0 0 2px var(--ink-3); }
+.route li.cur { background: var(--glass-2); box-shadow: inset 0 0 0 1px var(--edge-2); }
+.route li.cur .dot { width: 18px; height: 18px; background: var(--accent); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 30%, transparent); }
+.route b { display: block; font-size: 16px; font-weight: 700; }
+.route li.up b { color: var(--ink-2); }
+.route small { font-size: 12px; color: var(--ink-3); }
+.route .q { font-size: 12px; color: var(--ink-2); text-align: right; }
+
+.dock { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); transform: translateX(-50%); z-index: 20; width: min(92vw, 420px); padding: 6px; border-radius: 999px; display: grid; grid-template-columns: repeat(5, 1fr); }
+.dock a { position: relative; z-index: 1; display: grid; justify-items: center; align-content: center; gap: 3px; height: 56px; font-size: 11px; font-weight: 700; color: var(--ink-2); }
+.dock svg { width: 22px; height: 22px; }
+.dock a[aria-current="page"] { color: var(--ink); }
+.dock .lens { position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / 5); border-radius: 999px; background: rgb(255 255 255 / .55); box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), 0 6px 14px -8px var(--shade); }
+.dark .dock .lens { background: rgb(255 255 255 / .16); }
+
+/* ---------- 字卡 ---------- */
+.cardbar { display: flex; align-items: center; gap: 8px; margin: -4px -6px 12px; }
+.round { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; }
+.round svg { width: 22px; height: 22px; }
+.cardbar .t { flex: 1; text-align: center; font-weight: 700; font-size: 15px; }
+.cardbar .t small { display: block; font-weight: 500; font-size: 12px; color: var(--ink-2); }
+.stack { position: relative; }
+.stack .behind { position: absolute; inset: 14px 14px -10px; border-radius: 30px; transform: scale(.96); opacity: .7; }
+.card { position: relative; padding: 18px 18px 22px; border-radius: 30px; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
+.card .meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.card .meta span:last-child { padding: 4px 10px; border-radius: 999px; background: var(--glass-2); box-shadow: inset 0 0 0 1px var(--edge-2); }
+.card .word { text-align: center; margin-top: 10px; font: 900 116px/1.12 var(--font); }
+.card .word rt { font: 700 20px var(--font); letter-spacing: .3em; color: var(--ink-2); }
+.card .roma { text-align: center; font-size: 15px; letter-spacing: .3em; color: var(--ink-2); }
+.card .zh { text-align: center; margin-top: 12px; font-size: 24px; font-weight: 700; }
+.card .hint { text-align: center; margin-top: 14px; font-size: 12px; color: var(--ink-3); }
+.say { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.say button { display: flex; align-items: center; justify-content: center; gap: 10px; height: 58px; border-radius: 999px; font-weight: 700; font-size: 15px; }
+.say button:first-child { background: var(--cta); color: var(--cta-ink); box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.say button:first-child::before { display: none; }
+.say small { font-weight: 500; opacity: .7; font-size: 12px; }
+.say svg { width: 22px; height: 22px; }
+.ex { margin-top: 12px; padding: 16px 18px; border-radius: 24px; }
+.ex .ja { font: 700 20px/1.95 var(--font); }
+.ex .ja rt { font-size: 10px; color: var(--ink-2); }
+.ex .zh2 { font-size: 15px; color: var(--ink-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.chips span { padding: 6px 12px; border-radius: 999px; font-size: 12px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<!--
+THESIS: 學日文像在日本看一整天的天空：背景是會慢慢流動的天色，所有資訊浮在液態玻璃上；字卡可以用手指甩。拒絕：靜態的白底清單。
+OWN-WORLD: 白天＝空色、桃色、藤色的網格漸層；傍晚＝茜、藤、紺；玻璃面板（模糊＋高光邊）、膠囊按鈕、圓角 26px、Zen Kaku Gothic。
+STORY: 打開看到天空與下一站的玻璃大格，三條線的進度在下面；字卡用拖的，放手就換下一張。
+FIRST VIEWPORT: 左上「旅ことば」＋已學字數；下一站大格（流光邊框、東西南北 40px、九格進度、出發鍵）；三條線進度格；主題膠囊；路線玻璃面板；浮動的玻璃分頁列。
+FORM: 使用者點名的程式庫（Paper Shaders 網格漸層＝shadergradient 的效果、液態玻璃、kokonut 便當格、Motion）；抽籤 be4917ea 之外的使用者指定方向。
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<div id="sky" aria-hidden="true"></div>
+<main>
+  <div class="home-screen">
+    <header class="top"><div><h1 lang="ja">旅ことば</h1><p>已學 84 字・到着 6 站</p></div><a class="glass me" href="#" aria-label="設定"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h9M18 7h1M5 17h1M10 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></a></header>
+    <div class="bento">
+      <section class="glass next" aria-label="下一站">
+        <div class="lbl">下一站・必備線第 7 站</div>
+        <h2>東西南北</h2>
+        <div class="sub">問路與方向・9 字</div>
+        <div class="dots" aria-label="已學 2／9"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <a class="go" href="?s=card">出發<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+      </section>
+      <section class="glass lines" aria-label="三條線">
+        <div class="row"><b>必備</b><span class="track"><i style="width:8.6%"></i></span><span>6／70</span></div>
+        <div class="row"><b>常用</b><span class="track"><i style="width:0"></i></span><span>0／102</span></div>
+        <div class="row"><b>進階</b><span class="track"><i style="width:0"></i></span><span>0／182</span></div>
+      </section>
+      <nav class="fams" id="fams" aria-label="主題篩選"></nav>
+      <section class="glass route"><h3>必備線<span>6／70 站到着</span></h3><ol id="route"></ol></section>
+    </div>
+  </div>
+
+  <div class="card-screen">
+    <div class="cardbar">
+      <a class="glass round" href="?s=home" aria-label="返回"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+      <span class="t">東西南北<small id="pos">3 / 9</small></span>
+      <button class="glass round" aria-label="標記為不熟"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3.4l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg></button>
+    </div>
+    <div class="stack">
+      <div class="glass behind" aria-hidden="true"></div>
+      <article class="glass card" id="card">
+        <div class="meta"><span id="no">0084</span><span>名詞</span></div>
+        <div class="word" lang="ja" id="nm"></div>
+        <div class="roma" id="roma"></div>
+        <div class="zh" id="zh"></div>
+        <div class="hint">左右拖曳換卡</div>
+      </article>
+    </div>
+    <div class="say">
+      <button><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9.5h3.5L12 5.6v12.8l-4.5-3.9H4z"/><path d="M15.6 9.2a4 4 0 010 5.6M18.2 6.6a7.6 7.6 0 010 10.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>單字<small>女聲</small></button>
+      <button class="glass"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9.5h3.5L12 5.6v12.8l-4.5-3.9H4z"/><path d="M15.6 9.2a4 4 0 010 5.6M18.2 6.6a7.6 7.6 0 010 10.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>例句<small>男聲</small></button>
+    </div>
+    <section class="glass ex"><div class="ja" lang="ja" id="exja"></div><div class="zh2" id="exzh"></div></section>
+    <div class="chips"><span class="glass">必備</span><span class="glass">旅遊頻率第 45 名</span><span class="glass">日檢 N5</span><span class="glass">3 份資料收錄</span></div>
+  </div>
+</main>
+<nav class="glass dock" aria-label="主要分頁">
+  <span class="lens" id="lens" aria-hidden="true"></span>
+  <a href="?s=home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16"/><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2"/></svg>路線</a>
+  <a href="?s=card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="1.5"/><path d="M4 14.5h16M8 10h8"/></svg>字卡</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg>測驗</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.6l2.5 5.2 5.7.8-4.2 3.9 1 5.6L12 16.4l-5 2.7 1-5.6-4.2-3.9 5.7-.8z"/></svg>不熟</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h9M18 7h1M5 17h1M10 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>設定</a>
+</nav>
+<script src="shared.js"></script>
+<script type="module">
+const T = window.TK;
+const tabs = [...document.querySelectorAll('.dock a')];
+let active = T.screen === 'home' ? 0 : 1;
+tabs.forEach((a, i) => a.setAttribute('aria-current', i === active ? 'page' : 'false'));
+const lens = document.getElementById('lens');
+const placeLens = () => { lens.style.transform = `translateX(${active * 100}%)`; };
+placeLens();
+document.getElementById('fams').innerHTML = `<button class="glass" aria-pressed="true">全部</button>` + T.families.map((f) => `<button class="glass" aria-pressed="false">${f.name}</button>`).join('');
+document.getElementById('route').innerHTML = T.route.slice(0, 10).map((s) => `<li class="${s.done ? 'done' : s.cur ? 'cur' : 'up'}"><span class="dot"></span>
+  <span><b>${s.title}</b><small>${s.theme}・${s.n} 字${s.cur ? '・已學 2' : ''}</small></span><span class="q">${s.done ? '到着' : ''}${s.quiz ? `<br>測驗 ${s.quiz}` : ''}</span></li>`).join('');
+
+const WORDS = [
+  { w: '北', r: 'きた', roma: 'kita', zh: '北；北邊', no: '0083', ex: [['北', 'きた'], ['のほうへ'], ['歩', 'ある'], ['いてください。']], exz: '請往北邊走。' },
+  { w: '南', r: 'みなみ', roma: 'minami', zh: '南；南邊', no: '0084', ex: T.card.ex, exz: T.card.exz },
+  { w: '西', r: 'にし', roma: 'nishi', zh: '西；西邊', no: '0085', ex: [['西口', 'にしぐち'], ['で'], ['待', 'ま'], ['っています。']], exz: '我在西出口等。' },
+  { w: '東', r: 'ひがし', roma: 'higashi', zh: '東；東邊', no: '0086', ex: [['東京', 'とうきょう'], ['の'], ['東', 'ひがし'], ['にあります。']], exz: '在東京的東邊。' },
+];
+let i = 1;
+function paint() {
+  const c = WORDS[i];
+  document.getElementById('nm').innerHTML = `<ruby>${c.w}<rt>${c.r}</rt></ruby>`;
+  document.getElementById('roma').textContent = c.roma;
+  document.getElementById('zh').textContent = c.zh;
+  document.getElementById('no').textContent = c.no;
+  document.getElementById('pos').textContent = `${i + 2} / 9`;
+  document.getElementById('exja').innerHTML = T.ruby(c.ex);
+  document.getElementById('exzh').textContent = c.exz;
+}
+paint();
+T.switcher();
+
+// 天空：Paper Shaders 的網格漸層（原生 JS，不用 React）
+const day = ['#a9cdee', '#f3bcb0', '#c8b6e6', '#f6efe8', '#86aee0'];
+const dusk = ['#c9603f', '#5e4a9e', '#141b4a', '#2c2152', '#2a3c86'];
+const dark = document.documentElement.classList.contains('dark');
+import('https://cdn.jsdelivr.net/npm/@paper-design/shaders@0.0.81/+esm').then(({ ShaderMount, meshGradientFragmentShader, getShaderColorFromString }) => {
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cols = (dark ? dusk : day).map(getShaderColorFromString);
+  new ShaderMount(document.getElementById('sky'), meshGradientFragmentShader, {
+    u_colors: cols, u_colorsCount: cols.length, u_distortion: 0.8, u_swirl: 0.35, u_grainMixer: 0, u_grainOverlay: 0.06,
+    u_fit: 0, u_scale: 1, u_rotation: 0, u_offsetX: 0, u_offsetY: 0, u_originX: 0.5, u_originY: 0.5, u_worldWidth: 0, u_worldHeight: 0,
+  }, undefined, still ? 0 : 0.18, 0, 1);
+}).catch(() => { document.getElementById('sky').style.background = `linear-gradient(160deg, ${(dark ? dusk : day).join(',')})`; });
+
+// 字卡：手指拖曳（Motion 的彈簧放手）
+import('https://cdn.jsdelivr.net/npm/motion@13.5.0/+esm').then(({ animate }) => {
+  const card = document.getElementById('card');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let x0 = null, dx = 0;
+  card.addEventListener('pointerdown', (e) => { x0 = e.clientX; dx = 0; card.setPointerCapture(e.pointerId); });
+  card.addEventListener('pointermove', (e) => { if (x0 == null) return; dx = e.clientX - x0; card.style.transform = `translateX(${dx}px) rotate(${dx / 28}deg)`; });
+  const end = async () => {
+    if (x0 == null) return; x0 = null;
+    const d = dx < -70 ? 1 : dx > 70 ? -1 : 0;
+    if (!d || !WORDS[i + d]) { animate(card, { x: 0, rotate: 0 }, reduce ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 30 }); card.style.transform = ''; return; }
+    if (!reduce) await animate(card, { x: -d * 460, rotate: -d * 14 }, { duration: 0.22, ease: 'easeIn' });
+    i += d; paint();
+    card.style.transform = '';
+    if (!reduce) animate(card, { x: [d * 60, 0], rotate: [0, 0], scale: [0.94, 1], opacity: [0, 1] }, { type: 'spring', stiffness: 420, damping: 32 });
+  };
+  card.addEventListener('pointerup', end); card.addEventListener('pointercancel', end);
+  // 分頁列的玻璃鏡片：點了滑過去（彈簧）
+  tabs.forEach((a, k) => a.addEventListener('click', (e) => {
+    if (a.getAttribute('href') === '#') e.preventDefault(); else return;
+    active = k; tabs.forEach((t, j) => t.setAttribute('aria-current', j === k ? 'page' : 'false'));
+    animate(lens, { transform: `translateX(${k * 100}%)` }, { type: 'spring', stiffness: 520, damping: 34 });
+  }));
+}).catch(() => {});
+</script>
+</body>
+</html>
