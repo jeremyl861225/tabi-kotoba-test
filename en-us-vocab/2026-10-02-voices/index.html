@@ -1,0 +1,24 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>美式英語聲音試聽</title>
+<style>
+:root{--bg:#f7f5f0;--ink:#1c1814;--sub:#6b6156;--line:#e6e0d4;--card:#fff;--acc:#44598b}
+@media (prefers-color-scheme:dark){:root{--bg:#1b1916;--ink:#eee8dd;--sub:#a99f91;--line:#3a352e;--card:#26231f;--acc:#9fb0d8}}
+body{margin:0;padding:16px;background:var(--bg);color:var(--ink);font-family:"Songti TC","Noto Serif TC",serif;line-height:1.5}
+a{color:var(--acc)} h1{font-size:22px;margin:8px 0 4px} p{margin:0 0 14px;color:var(--sub);font-size:15px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 14px}
+h2{font-family:ui-serif,Georgia,serif;font-size:20px;margin:0 0 10px;font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.g{font-size:13px;color:var(--sub);width:2.6em}
+button{font:15px ui-serif,Georgia,serif;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+</style>
+<a href="../../">← 所有測試</a>
+<h1>美式英語：聲音試聽</h1>
+<p>每一句底下是所有候選聲音，點名字就播。單字卡會一女一男交替念，請挑一個女聲、一個男聲（或只要一個）。</p>
+<section><h2>receipt</h2><div class="row"><span class="g">女聲</span><button data-src="Ava-1.mp3">Ava</button><button data-src="Emma-1.mp3">Emma</button><button data-src="Jenny-1.mp3">Jenny</button><button data-src="Aria-1.mp3">Aria</button><button data-src="Michelle-1.mp3">Michelle</button></div><div class="row"><span class="g">男聲</span><button data-src="Andrew-1.mp3">Andrew</button><button data-src="Brian-1.mp3">Brian</button><button data-src="Guy-1.mp3">Guy</button><button data-src="Christopher-1.mp3">Christopher</button><button data-src="Eric-1.mp3">Eric</button><button data-src="Roger-1.mp3">Roger</button><button data-src="Steffan-1.mp3">Steffan</button></div></section><section><h2>Can I get the check, please?</h2><div class="row"><span class="g">女聲</span><button data-src="Ava-2.mp3">Ava</button><button data-src="Emma-2.mp3">Emma</button><button data-src="Jenny-2.mp3">Jenny</button><button data-src="Aria-2.mp3">Aria</button><button data-src="Michelle-2.mp3">Michelle</button></div><div class="row"><span class="g">男聲</span><button data-src="Andrew-2.mp3">Andrew</button><button data-src="Brian-2.mp3">Brian</button><button data-src="Guy-2.mp3">Guy</button><button data-src="Christopher-2.mp3">Christopher</button><button data-src="Eric-2.mp3">Eric</button><button data-src="Roger-2.mp3">Roger</button><button data-src="Steffan-2.mp3">Steffan</button></div></section><section><h2>For here or to go?</h2><div class="row"><span class="g">女聲</span><button data-src="Ava-3.mp3">Ava</button><button data-src="Emma-3.mp3">Emma</button><button data-src="Jenny-3.mp3">Jenny</button><button data-src="Aria-3.mp3">Aria</button><button data-src="Michelle-3.mp3">Michelle</button></div><div class="row"><span class="g">男聲</span><button data-src="Andrew-3.mp3">Andrew</button><button data-src="Brian-3.mp3">Brian</button><button data-src="Guy-3.mp3">Guy</button><button data-src="Christopher-3.mp3">Christopher</button><button data-src="Eric-3.mp3">Eric</button><button data-src="Roger-3.mp3">Roger</button><button data-src="Steffan-3.mp3">Steffan</button></div></section><section><h2>No worries, I&#x27;m good. How about you?</h2><div class="row"><span class="g">女聲</span><button data-src="Ava-4.mp3">Ava</button><button data-src="Emma-4.mp3">Emma</button><button data-src="Jenny-4.mp3">Jenny</button><button data-src="Aria-4.mp3">Aria</button><button data-src="Michelle-4.mp3">Michelle</button></div><div class="row"><span class="g">男聲</span><button data-src="Andrew-4.mp3">Andrew</button><button data-src="Brian-4.mp3">Brian</button><button data-src="Guy-4.mp3">Guy</button><button data-src="Christopher-4.mp3">Christopher</button><button data-src="Eric-4.mp3">Eric</button><button data-src="Roger-4.mp3">Roger</button><button data-src="Steffan-4.mp3">Steffan</button></div></section>
+<script>
+const a=new Audio();let cur=null;
+document.querySelectorAll('button').forEach(b=>b.onclick=()=>{if(cur)cur.classList.remove('on');cur=b;b.classList.add('on');a.src=b.dataset.src;a.play();});
+a.onended=()=>{if(cur)cur.classList.remove('on');};
+</script>
+</html>
