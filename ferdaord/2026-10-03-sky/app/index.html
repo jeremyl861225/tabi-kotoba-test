@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ferðaorð｜冰島旅行冰島文單字卡</title>
+<meta name="description" content="台灣人去冰島旅行看得懂的冰島文單字卡：路標與路況、天氣警報、告示、菜單與超市、泳池溫泉，附 IPA 發音、名詞變格表、真人發音、例句與測驗。">
+<meta name="theme-color" content="#f2b98f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ferðaorð">
+<link rel="preload" href="fonts/zenold-900.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/app.css">
+<script>
+  // 使用者在設定裡指定深淺色時，第一次畫面就套用（開場畫面才不會先閃另一種底色）
+  try { var t = (JSON.parse(localStorage.getItem('ferdaord-test/v1') || '{}').settings || {}).theme; if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  // 開場（js/splash.js）：開場期間先藏住 App 本體，開場結束後才淡入；減少動態效果時沒有開場
+  if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) document.documentElement.classList.add('splashing');
+</script>
+</head>
+<body>
+<!--
+THESIS: 旅ことば系列的「暮色玻璃」冰島文版：背景是慢慢起伏的極光天空漸層，所有內容浮在液態玻璃上；主角是冰島文（襯線字）與它下面的 IPA 發音、名詞的性別與變格。
+OWN-WORLD: 照搬英文版 Street Talk（著色器天空、玻璃面板、分頁列玻璃珠、下一站玻璃大格、站號章、可拖曳的字卡）。天空與家族色＝冰島（極光、冰河、火山、苔原）。路線隱喻＝一號環島公路。
+STORY: 打開時天空亮起、玻璃上浮出「旅」與「Ferðaorð」；看到下一站與三條線；字卡用手指拖著換；在冰島現場查路標、菜單、告示，連變格後的字也查得到。
+FIRST VIEWPORT: 開場（約 1.7 秒、點一下跳過）；之後左上「Ferðaorð」與已學字數；下一站玻璃大格；主題家族 3×3；三條可收合的線。
+FORM: 外觀與互動同旅ことば／여행말／Street Talk；冰島文的差異：IPA 行、名詞性別與變格表、字母方塊拼字（含 á ð þ æ ö）、選性別與選定冠形兩種題型、折疊搜尋（þ→th、ð→d、變化形指回原形）。
+FINISH: 2026-10-03 搬殼；未做：天空色組、圖示、字母與發音課程內容、資料。
+-->
+<canvas id="sky" aria-hidden="true"></canvas>
+<div id="splash" aria-hidden="true"><div class="splash-tile"><span lang="zh-Hant">旅</span></div><p class="splash-name" lang="is">Ferðaorð</p></div>
+<main id="app"></main>
+<nav class="tabbar" aria-label="主要分頁">
+  <div class="tabbar-inner">
+    <!-- 底板：陰影、毛玻璃（clip-path 裁出凹口）、細框與高光；形狀由 js/tabbar.js 畫 -->
+    <svg class="tb-line tb-under" aria-hidden="true" preserveAspectRatio="none"><defs><filter id="tb-blur" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="7"/></filter></defs><path class="tb-shadow" filter="url(#tb-blur)"/></svg>
+    <div class="tb-glass" aria-hidden="true"></div>
+    <svg class="tb-line tb-over" aria-hidden="true" preserveAspectRatio="none"><defs><linearGradient id="tb-hi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path class="tb-hair"/><path class="tb-hi" stroke="url(#tb-hi)"/></svg>
+    <span class="tb-ball" aria-hidden="true"></span>
+    <a class="tab" data-tab="home" href="#/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16"/><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="var(--tab-hole, var(--surface))"/><circle cx="19" cy="12" r="2.2" fill="var(--tab-hole, var(--surface))"/><path d="M4 6.5h9M4 17.5h13" opacity=".45"/></svg>
+      路線
+    </a>
+    <a class="tab" data-tab="browse" href="#/browse">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="1.5"/><path d="M4 14.5h16"/><path d="M8 10h8" stroke-linecap="round"/></svg>
+      字卡
+    </a>
+    <a class="tab" data-tab="quiz" href="#/quiz">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg>
+      測驗
+    </a>
+    <a class="tab" data-tab="starred" href="#/starred">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.6l2.5 5.2 5.7.8-4.2 3.9 1 5.6L12 16.4l-5 2.7 1-5.6-4.2-3.9 5.7-.8z"/></svg>
+      <span class="badge-n" hidden></span>
+      不熟
+    </a>
+    <a class="tab" data-tab="settings" href="#/settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h9M18 7h1M5 17h1M10 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+      設定
+    </a>
+  </div>
+</nav>
+<script type="module" src="js/splash.js"></script>
+<script type="module" src="js/app.js"></script>
+<div id="skysw" style="position:fixed;top:8px;right:8px;z-index:99;display:flex;gap:4px;font:600 13px system-ui;background:rgba(255,255,255,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:4px;border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.15)"><button data-sky="A" style="border:0;border-radius:999px;padding:6px 10px;background:transparent">A</button><button data-sky="B" style="border:0;border-radius:999px;padding:6px 10px;background:transparent">B</button><button data-sky="C" style="border:0;border-radius:999px;padding:6px 10px;background:transparent">C</button><button data-sky="D" style="border:0;border-radius:999px;padding:6px 10px;background:transparent">D</button><button data-mode="light" style="border:0;border-radius:999px;padding:6px 8px;background:transparent">淺</button><button data-mode="dark" style="border:0;border-radius:999px;padding:6px 8px;background:transparent">深</button></div>
+<script type="module">
+import { PALETTES, setSkyMode } from './js/sky.js';
+const SK = {"A": {"name": "極光", "desc": "淺色：冰河薄荷、冰河天藍、霜白／深色：深海軍藍、極光綠、紫（極光夜）", "day": ["#a4e8d0", "#8fc3ff", "#f5f3ff"], "dusk": ["#0d1f3d", "#1c8f7a", "#4a3a9c"], "bd": 1.0, "bk": 0.78, "ink": "#0f2a3d", "base": "#bfeadf", "baseD": "#0d1f3d"}, "B": {"name": "冰河", "desc": "淺色：霧藍、冰川藍、近白／深色：深藍灰、鋼藍、墨黑（冰川夜）", "day": ["#cfe6ef", "#86b9d6", "#f4f8fa"], "dusk": ["#12263a", "#2e5a80", "#0a1420"], "bd": 1.0, "bk": 0.85, "ink": "#12304a", "base": "#bcd8e6", "baseD": "#12263a"}, "C": {"name": "火山黑沙", "desc": "淺色：沙色、熔岩赭、地衣灰綠／深色：玄武岩黑、餘燼紅褐（黑沙灘夜）", "day": ["#e9ddcc", "#c78a63", "#9fb3b0"], "dusk": ["#1b1513", "#6a3326", "#0d0b0b"], "bd": 1.0, "bk": 0.9, "ink": "#2b1e17", "base": "#d9c3a8", "baseD": "#1b1513"}, "D": {"name": "苔原", "desc": "淺色：嫩苔、青苔綠、乾草米／深色：深林綠、苔綠、近黑（高地夜）", "day": ["#dbe8c0", "#8fc3a2", "#f1eddc"], "dusk": ["#0f221b", "#2f6a52", "#0a100d"], "bd": 1.0, "bk": 0.85, "ink": "#1c3326", "base": "#cfe0b8", "baseD": "#0f221b"}};
+const qs = new URLSearchParams(location.search);
+let cur = qs.get('sky') || 'A';
+function apply() {
+  const o = SK[cur];
+  PALETTES.day.c = o.day; PALETTES.day.b = o.bd; PALETTES.dusk.c = o.dusk; PALETTES.dusk.b = o.bk;
+  const root = document.documentElement;
+  const dark = root.getAttribute('data-theme') === 'dark' || (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+  if (!dark) { root.style.setProperty('--ink', o.ink); root.style.setProperty('--cta', o.ink); root.style.setProperty('--focus', o.ink); }
+  else { root.style.removeProperty('--ink'); root.style.removeProperty('--cta'); root.style.removeProperty('--focus'); }
+  root.style.setProperty('--sky-base', dark ? o.baseD : o.base);
+  setSkyMode(dark);
+  document.querySelectorAll('#skysw [data-sky]').forEach((b) => { b.style.background = b.dataset.sky === cur ? '#222' : 'transparent'; b.style.color = b.dataset.sky === cur ? '#fff' : '#222'; });
+}
+document.getElementById('skysw').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.sky) { cur = b.dataset.sky; }
+  if (b.dataset.mode) { document.documentElement.setAttribute('data-theme', b.dataset.mode); }
+  apply();
+});
+if (qs.get('mode')) document.documentElement.setAttribute('data-theme', qs.get('mode'));
+setTimeout(apply, 50); setTimeout(apply, 2200);
+</script>
+</body>
+</html>
