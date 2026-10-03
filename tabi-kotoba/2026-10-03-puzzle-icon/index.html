@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>旅ことば 新圖示：拼圖版</title>
+<meta name="theme-color" content="#f2e8d1">
+<style>
+  :root { --bg:#f2e8d1; --ink:#2a2418; --ink2:#6b604a; --card:#faf4e4; --line:rgba(42,36,24,.12); }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#1d1a14; --ink:#f1e9d6; --ink2:#b6ab92; --card:#26221a; --line:rgba(241,233,214,.14); }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Songti TC","Noto Serif TC",serif; -webkit-text-size-adjust:100%; line-height:1.6; }
+  header, main { max-width:560px; margin:0 auto; padding:0 16px; }
+  header { padding-top:calc(env(safe-area-inset-top,0px) + 18px); }
+  .back { color:var(--ink2); text-decoration:none; font-size:14px; }
+  h1 { margin:10px 0 6px; font-size:26px; line-height:1.25; }
+  .lede { margin:0 0 18px; color:var(--ink2); font-size:15px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:16px; margin:0 0 18px; }
+  h2 { margin:0 0 2px; font-size:20px; }
+  h2 small { font-size:13px; color:var(--ink2); font-weight:400; margin-left:6px; }
+  .desc { margin:0 0 12px; font-size:14px; color:var(--ink2); }
+  .big { display:block; width:100%; height:auto; border-radius:22%; border:1px solid var(--line); }
+  .chips { display:flex; gap:6px; margin:12px 0; }
+  .chips i { flex:1; height:22px; border-radius:6px; border:1px solid var(--line); }
+  .sizes { display:flex; align-items:flex-end; justify-content:space-around; gap:16px; padding:14px; border-radius:16px; background:linear-gradient(135deg,#7d93b8,#c9a9a6); }
+  .sizes.dark { background:linear-gradient(135deg,#1f2a44,#3a2f4d); }
+  .sizes figure { margin:0; text-align:center; color:#fff; font:11px/1.3 -apple-system,sans-serif; }
+  .sizes img { display:block; border-radius:22%; margin:0 auto 4px; box-shadow:0 2px 8px rgba(0,0,0,.25); }
+  .row { display:grid; grid-template-columns:1fr; gap:10px; }
+  .sec { margin:26px 0 8px; font-size:18px; }
+  .objs { width:100%; height:auto; border-radius:14px; border:1px solid var(--line); display:block; }
+  .old { display:flex; align-items:center; gap:14px; }
+  .old img { width:84px; height:84px; border-radius:22%; border:1px solid var(--line); }
+  p { margin:0 0 10px; font-size:15px; }
+  .zoom { position:relative; width:100%; aspect-ratio:1; overflow:hidden; border-radius:16px; border:1px solid var(--line); margin-top:12px; background:#f9f2e0; }
+  .zoom img { position:absolute; width:233%; left:-127%; top:-109%; max-width:none; }
+  .cap { margin:6px 2px 0; font-size:12.5px; color:var(--ink2); }
+  footer { max-width:560px; margin:0 auto; padding:8px 16px calc(env(safe-area-inset-bottom,0px) + 40px); color:var(--ink2); font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="../../">← 所有測試</a>
+  <h1>新圖示：拼圖版</h1>
+  <p class="lede">改成「小而多」：35 種日本物件、約 270 片，每片各自轉一個角度，互不重疊地像拼圖一樣塞進圓環，縫隙補到最小（剩下的洞用小圓點補）。每片都是手寫的 SVG、扁平無外框，同一色系只用五個色階。點圖可看原始 SVG（約 200 KB）。</p>
+</header>
+<main>
+
+  <section class="card">
+    <h2>A　藍染 <small>indigo</small></h2>
+    <p class="desc">紺・藍・淺藍，像青花瓷。與 App 現在的墨藍文字、天空藍最接近。</p>
+    <a href="icon-indigo.svg"><img class="big" src="icon-indigo.svg" alt="A　藍染色系圖示"></a>
+    <div class="chips"><i style="background:#1f2c60"></i><i style="background:#3d5ea6"></i><i style="background:#8dabdb"></i><i style="background:#d4e0f3"></i><i style="background:#f9f2e0"></i></div>
+    <div class="row"><div class="sizes "><figure><img src="icon-indigo.svg" width="60" height="60" alt=""><span>60</span></figure><figure><img src="icon-indigo.svg" width="40" height="40" alt=""><span>40</span></figure><figure><img src="icon-indigo.svg" width="29" height="29" alt=""><span>29</span></figure></div><div class="sizes dark"><figure><img src="icon-indigo.svg" width="60" height="60" alt=""><span>60</span></figure><figure><img src="icon-indigo.svg" width="40" height="40" alt=""><span>40</span></figure><figure><img src="icon-indigo.svg" width="29" height="29" alt=""><span>29</span></figure></div></div>
+  </section>
+
+  <div class="zoom"><img src="icon-indigo.svg" alt="局部放大"></div>
+  <p class="cap">↑ 放大看：貓、達摩、櫻花、鯉魚、扇子、拉麵…每片之間留約 4px 的縫。</p>
+  <div style="height:18px"></div>
+
+  <section class="card">
+    <h2>B　朱 <small>vermilion</small></h2>
+    <p class="desc">朱・柿・桃。最有「日本」的第一印象。</p>
+    <a href="icon-vermilion.svg"><img class="big" src="icon-vermilion.svg" alt="B　朱色系圖示"></a>
+    <div class="chips"><i style="background:#7a2a1c"></i><i style="background:#cd4531"></i><i style="background:#ee8b62"></i><i style="background:#f8d0ae"></i><i style="background:#f9f2e0"></i></div>
+    <div class="row"><div class="sizes "><figure><img src="icon-vermilion.svg" width="60" height="60" alt=""><span>60</span></figure><figure><img src="icon-vermilion.svg" width="40" height="40" alt=""><span>40</span></figure><figure><img src="icon-vermilion.svg" width="29" height="29" alt=""><span>29</span></figure></div><div class="sizes dark"><figure><img src="icon-vermilion.svg" width="60" height="60" alt=""><span>60</span></figure><figure><img src="icon-vermilion.svg" width="40" height="40" alt=""><span>40</span></figure><figure><img src="icon-vermilion.svg" width="29" height="29" alt=""><span>29</span></figure></div></div>
+  </section>
+
+  <section class="card">
+    <h2>C　抹茶 <small>matcha</small></h2>
+    <p class="desc">深綠・若竹・淡綠。最安靜，也和韓文版的橘紫不撞。</p>
+    <a href="icon-matcha.svg"><img class="big" src="icon-matcha.svg" alt="C　抹茶色系圖示"></a>
+    <div class="chips"><i style="background:#21483a"></i><i style="background:#3d8a5e"></i><i style="background:#8cc088"></i><i style="background:#d8e9c6"></i><i style="background:#f9f2e0"></i></div>
+    <div class="row"><div class="sizes "><figure><img src="icon-matcha.svg" width="60" height="60" alt=""><span>60</span></figure><figure><img src="icon-matcha.svg" width="40" height="40" alt=""><span>40</span></figure><figure><img src="icon-matcha.svg" width="29" height="29" alt=""><span>29</span></figure></div><div class="sizes dark"><figure><img src="icon-matcha.svg" width="60" height="60" alt=""><span>60</span></figure><figure><img src="icon-matcha.svg" width="40" height="40" alt=""><span>40</span></figure><figure><img src="icon-matcha.svg" width="29" height="29" alt=""><span>29</span></figure></div></div>
+  </section>
+
+
+  <h2 class="sec">現行圖示（對照）</h2>
+  <div class="card old"><img src="old-icon.png" alt="現行圖示"><p style="margin:0">天空漸層＋一個「旅」字。</p></div>
+
+  <h2 class="sec">素材一覽（35 件，藍染版）</h2>
+  <p style="color:var(--ink2);font-size:14px">富士山、鳥居、櫻花、飯糰、招き猫、扇子、壽司、提燈、達摩、和傘、五重塔、鯉のぼり、風鈴、手毬、團子、筷子、德利、豬口杯、抹茶碗、こけし、折り鶴、楓葉、新幹線、御守、拉麵、下駄、團扇、青海波、海苔卷、竹、東京鐵塔，加上花瓣、日の丸、家紋、梅花四個補縫的小件。想加什麼、拿掉什麼，直接告訴我名字。</p>
+  <a href="objects-indigo.svg"><img class="objs" src="objects-indigo.svg" alt="素材一覽"></a>
+
+</main>
+<footer>
+  還沒有動到正式版 App。排法是程式算的（每次「洗牌」結果不同），選定色系後我可以多洗幾種給你挑構圖，再換進 manifest／apple-touch-icon／各尺寸 PNG 並升快取版本。
+</footer>
+</body>
+</html>
