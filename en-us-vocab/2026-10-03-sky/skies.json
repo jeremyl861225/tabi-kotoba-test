@@ -1,0 +1,78 @@
+{
+ "A": {
+  "name": "夕陽公路",
+  "desc": "淺色 Sunset（橘、天藍、金：加州夕陽、66 號公路）／深色 Nighty night（灰紫夜色）",
+  "day": [
+   "#ff7a33",
+   "#33a0ff",
+   "#ffc53d"
+  ],
+  "dusk": [
+   "#606080",
+   "#8d7dca",
+   "#212121"
+  ],
+  "bd": 1.0,
+  "bk": 0.8,
+  "ink": "#1d2238",
+  "base": "#f2b98f",
+  "baseD": "#2a2840"
+ },
+ "B": {
+  "name": "薄荷",
+  "desc": "淺色 Mint（薄荷綠、淺青、白）／深色 Pensive（藍、紫）",
+  "day": [
+   "#94ffd1",
+   "#6bf5ff",
+   "#ffffff"
+  ],
+  "dusk": [
+   "#809bd6",
+   "#910aff",
+   "#af38ff"
+  ],
+  "bd": 0.98,
+  "bk": 0.62,
+  "ink": "#10343a",
+  "base": "#c4f5ea",
+  "baseD": "#2a1c55"
+ },
+ "C": {
+  "name": "星際",
+  "desc": "淺色 Interstella（青綠、橘、淡藍）／深色 Nighty night（灰紫夜色）",
+  "day": [
+   "#73bfc4",
+   "#ff810a",
+   "#8da0ce"
+  ],
+  "dusk": [
+   "#606080",
+   "#8d7dca",
+   "#212121"
+  ],
+  "bd": 1.0,
+  "bk": 0.8,
+  "ink": "#1b2a36",
+  "base": "#cbbfa8",
+  "baseD": "#2a2840"
+ },
+ "D": {
+  "name": "棉花糖",
+  "desc": "淺色 Cotton Candy（極淡的粉、白、淺藍）／深色 Pensive（藍、紫）",
+  "day": [
+   "#ebedff",
+   "#f3f2f8",
+   "#dbf8ff"
+  ],
+  "dusk": [
+   "#809bd6",
+   "#910aff",
+   "#af38ff"
+  ],
+  "bd": 0.96,
+  "bk": 0.62,
+  "ink": "#262a48",
+  "base": "#ecefff",
+  "baseD": "#2a1c55"
+ }
+}

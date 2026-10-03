@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Street Talk｜美國生活英文單字卡</title>
+<meta name="description" content="台灣人在美國生活的英文單字卡：課本沒教的美式說法、俚語、點餐、看病、租屋、開車，附 KK 音標、真人發音、例句與測驗。">
+<meta name="theme-color" content="#e9c8b4">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Street Talk">
+<link rel="preload" href="fonts/zenold-900.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/app.css">
+<script>
+  // 使用者在設定裡指定深淺色時，第一次畫面就套用（開場畫面才不會先閃另一種底色）
+  try { var t = (JSON.parse(localStorage.getItem('street-talk-test/v1') || '{}').settings || {}).theme; if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  // 開場（js/splash.js）：開場期間先藏住 App 本體，開場結束後才淡入；減少動態效果時沒有開場
+  if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) document.documentElement.classList.add('splashing');
+</script>
+</head>
+<body>
+<!--
+THESIS: 旅ことば系列的「暮色玻璃」英文版：背景是慢慢起伏的天空漸層，所有內容浮在液態玻璃上；主角是美式英文（襯線字）與它下面的 KK 音標。
+OWN-WORLD: 照搬韓文版 여행말 v8（著色器天空、玻璃面板、分頁列玻璃珠、下一站玻璃大格、站號章、可拖曳的字卡）。天空色組與家族色暫定（美國生活色），待使用者選。
+STORY: 打開時天空亮起、玻璃上浮出「旅」與「Street Talk」；看到下一站與三條線；字卡用手指拖著換；在美國現場查字、聽發音。
+FIRST VIEWPORT: 開場（約 1.7 秒、點一下跳過）；之後左上「Street Talk」與已學字數；下一站玻璃大格；主題家族 3×3；三條可收合的線。
+FORM: 外觀與互動同旅ことば／여행말；英文版的差異：KK 音標行、字母方塊拼字、看英文選重音正確的 KK、沒有標注（ruby）。
+FINISH: 2026-10-03 搬殼；未做：天空色組、圖示、英文字型打包（KK 的 IPA 字形）、KK 音標課程、離線字典資料。
+-->
+<canvas id="sky" aria-hidden="true"></canvas>
+<div id="splash" aria-hidden="true"><div class="splash-tile"><span lang="zh-Hant">旅</span></div><p class="splash-name" lang="en">Street Talk</p></div>
+<main id="app"></main>
+<nav class="tabbar" aria-label="主要分頁">
+  <div class="tabbar-inner">
+    <!-- 底板：陰影、毛玻璃（clip-path 裁出凹口）、細框與高光；形狀由 js/tabbar.js 畫 -->
+    <svg class="tb-line tb-under" aria-hidden="true" preserveAspectRatio="none"><defs><filter id="tb-blur" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="7"/></filter></defs><path class="tb-shadow" filter="url(#tb-blur)"/></svg>
+    <div class="tb-glass" aria-hidden="true"></div>
+    <svg class="tb-line tb-over" aria-hidden="true" preserveAspectRatio="none"><defs><linearGradient id="tb-hi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path class="tb-hair"/><path class="tb-hi" stroke="url(#tb-hi)"/></svg>
+    <span class="tb-ball" aria-hidden="true"></span>
+    <a class="tab" data-tab="home" href="#/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16"/><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="var(--tab-hole, var(--surface))"/><circle cx="19" cy="12" r="2.2" fill="var(--tab-hole, var(--surface))"/><path d="M4 6.5h9M4 17.5h13" opacity=".45"/></svg>
+      路線
+    </a>
+    <a class="tab" data-tab="browse" href="#/browse">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="1.5"/><path d="M4 14.5h16"/><path d="M8 10h8" stroke-linecap="round"/></svg>
+      字卡
+    </a>
+    <a class="tab" data-tab="quiz" href="#/quiz">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg>
+      測驗
+    </a>
+    <a class="tab" data-tab="starred" href="#/starred">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.6l2.5 5.2 5.7.8-4.2 3.9 1 5.6L12 16.4l-5 2.7 1-5.6-4.2-3.9 5.7-.8z"/></svg>
+      <span class="badge-n" hidden></span>
+      不熟
+    </a>
+    <a class="tab" data-tab="settings" href="#/settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h9M18 7h1M5 17h1M10 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+      設定
+    </a>
+  </div>
+</nav>
+<script type="module" src="js/splash.js"></script>
+<script type="module" src="js/app.js"></script>
+<div id="skysw" style="position:fixed;top:8px;right:8px;z-index:99;display:flex;gap:4px;font:600 13px system-ui;background:rgba(255,255,255,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:4px;border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.15)"><button data-sky="A" style="border:0;border-radius:999px;padding:6px 10px;background:transparent">A</button><button data-sky="B" style="border:0;border-radius:999px;padding:6px 10px;background:transparent">B</button><button data-sky="C" style="border:0;border-radius:999px;padding:6px 10px;background:transparent">C</button><button data-sky="D" style="border:0;border-radius:999px;padding:6px 10px;background:transparent">D</button><button data-mode="light" style="border:0;border-radius:999px;padding:6px 8px;background:transparent">淺</button><button data-mode="dark" style="border:0;border-radius:999px;padding:6px 8px;background:transparent">深</button></div>
+<script type="module">
+import { PALETTES, setSkyMode } from './js/sky.js';
+const SK = {"A": {"name": "夕陽公路", "desc": "淺色 Sunset（橘、天藍、金：加州夕陽、66 號公路）／深色 Nighty night（灰紫夜色）", "day": ["#ff7a33", "#33a0ff", "#ffc53d"], "dusk": ["#606080", "#8d7dca", "#212121"], "bd": 1.0, "bk": 0.8, "ink": "#1d2238", "base": "#f2b98f", "baseD": "#2a2840"}, "B": {"name": "薄荷", "desc": "淺色 Mint（薄荷綠、淺青、白）／深色 Pensive（藍、紫）", "day": ["#94ffd1", "#6bf5ff", "#ffffff"], "dusk": ["#809bd6", "#910aff", "#af38ff"], "bd": 0.98, "bk": 0.62, "ink": "#10343a", "base": "#c4f5ea", "baseD": "#2a1c55"}, "C": {"name": "星際", "desc": "淺色 Interstella（青綠、橘、淡藍）／深色 Nighty night（灰紫夜色）", "day": ["#73bfc4", "#ff810a", "#8da0ce"], "dusk": ["#606080", "#8d7dca", "#212121"], "bd": 1.0, "bk": 0.8, "ink": "#1b2a36", "base": "#cbbfa8", "baseD": "#2a2840"}, "D": {"name": "棉花糖", "desc": "淺色 Cotton Candy（極淡的粉、白、淺藍）／深色 Pensive（藍、紫）", "day": ["#ebedff", "#f3f2f8", "#dbf8ff"], "dusk": ["#809bd6", "#910aff", "#af38ff"], "bd": 0.96, "bk": 0.62, "ink": "#262a48", "base": "#ecefff", "baseD": "#2a1c55"}};
+const qs = new URLSearchParams(location.search);
+let cur = qs.get('sky') || 'A';
+function apply() {
+  const o = SK[cur];
+  PALETTES.day.c = o.day; PALETTES.day.b = o.bd; PALETTES.dusk.c = o.dusk; PALETTES.dusk.b = o.bk;
+  const root = document.documentElement;
+  const dark = root.getAttribute('data-theme') === 'dark' || (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+  if (!dark) { root.style.setProperty('--ink', o.ink); root.style.setProperty('--cta', o.ink); root.style.setProperty('--focus', o.ink); }
+  else { root.style.removeProperty('--ink'); root.style.removeProperty('--cta'); root.style.removeProperty('--focus'); }
+  root.style.setProperty('--sky-base', dark ? o.baseD : o.base);
+  setSkyMode(dark);
+  document.querySelectorAll('#skysw [data-sky]').forEach((b) => { b.style.background = b.dataset.sky === cur ? '#222' : 'transparent'; b.style.color = b.dataset.sky === cur ? '#fff' : '#222'; });
+}
+document.getElementById('skysw').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.sky) { cur = b.dataset.sky; }
+  if (b.dataset.mode) { document.documentElement.setAttribute('data-theme', b.dataset.mode); }
+  apply();
+});
+if (qs.get('mode')) document.documentElement.setAttribute('data-theme', qs.get('mode'));
+setTimeout(apply, 50); setTimeout(apply, 2200);
+</script>
+</body>
+</html>
