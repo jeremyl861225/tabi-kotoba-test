@@ -1,0 +1,1359 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>Radius iPhone 版介面試做</title>
+<style>
+:root{
+  --paper:#fff; --paper-2:#f1f2f1; --paper-3:#e6e8e7;
+  --ink:#141414; --ink-2:#5b615e; --ink-3:#9aa09d;
+  --hair:rgba(20,20,20,.09); --hair-2:rgba(20,20,20,.17);
+  --green:#0d6b54; --green-text:#0d6b54;
+  --glass:rgba(255,255,255,.7); --glass-edge:rgba(255,255,255,.95);
+  --glass-shadow:0 1px 2px rgba(10,30,20,.07),0 8px 22px rgba(10,30,20,.11);
+  --sheet:rgba(248,248,248,.92); --scrim:rgba(0,0,0,.22);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang TC","Noto Sans TC",system-ui,sans-serif;
+  --round:ui-rounded,"SF Pro Rounded",-apple-system,"PingFang TC","Noto Sans TC",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --paper:#000; --paper-2:#161817; --paper-3:#242726;
+  --ink:#f2f3f2; --ink-2:#a3aaa6; --ink-3:#6b726e;
+  --hair:rgba(255,255,255,.1); --hair-2:rgba(255,255,255,.2);
+  --green:#0f7a60; --green-text:#5cc7a2;
+  --glass:rgba(52,56,54,.6); --glass-edge:rgba(255,255,255,.14);
+  --glass-shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.4);
+  --sheet:rgba(30,31,31,.94); --scrim:rgba(0,0,0,.5);
+}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 var(--font);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--green-text);outline-offset:2px}
+img{display:block}
+
+/* 試做外框：切換列與說明（不是 App 的一部分） */
+.proto{display:flex;flex-direction:column;height:100vh;height:100dvh}
+.topline{display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top) + 4px) 14px 0;font-size:12.5px;color:var(--ink-3)}
+.topline a{color:var(--ink-2);text-decoration:none;padding:4px 0}
+.bar{padding:3px 12px 2px}
+.tabs{display:flex;gap:2px;padding:3px;border-radius:12px;background:var(--paper-2)}
+.tabs button{flex:1 1 0;min-width:0;padding:6px 0;border-radius:9px;font-size:14px;color:var(--ink-2);white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--paper);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+@media (prefers-color-scheme:dark){.tabs button[aria-selected="true"]{background:var(--paper-3)}}
+.caption{margin:3px 14px 8px;font-size:13px;line-height:1.45;color:var(--ink-2);min-height:2.9em}
+.device{flex:1;min-height:0;display:flex;justify-content:center}
+.screen{position:relative;width:100%;height:100%;overflow:hidden;overflow:clip;background:var(--paper);isolation:isolate}
+@media (min-width:720px) and (min-height:720px){
+  .topline,.bar,.caption{width:440px;align-self:center}
+  .device{padding:6px 0 28px}
+  .screen{width:390px;height:min(844px,100%);border-radius:46px;box-shadow:0 0 0 9px #161616,0 0 0 10px #3b3b3b,0 30px 70px rgba(0,0,0,.28)}
+}
+
+.scene{position:absolute;inset:0;display:none;flex-direction:column}
+.scene.on{display:flex}
+.demo-files{display:flex;align-items:center;gap:6px;padding:10px 14px 2px;overflow-x:auto;scrollbar-width:none;flex:0 0 auto}
+.demo-files::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;padding:5px 11px;border-radius:999px;font-size:13.5px;color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--hair-2)}
+.chip[aria-checked="true"]{background:var(--ink);color:var(--paper);box-shadow:none}
+.stage-host{position:relative;flex:1;min-height:0}
+
+/* 舞台（水滴、放射共用） */
+.stage{touch-action:none;overflow:hidden;overflow:clip}
+.stage>svg,.stage>canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.stage>canvas{z-index:1}
+.spokes line{stroke:var(--hair-2);stroke-width:1.5;stroke-linecap:round;stroke-dasharray:2 5}
+.opts{position:absolute;inset:0;z-index:2;pointer-events:none}
+.opt{position:absolute;left:0;top:0;pointer-events:auto;min-width:56px;padding:7px 10px 6px;border-radius:17px;text-align:center;color:var(--ink);background:var(--glass);-webkit-backdrop-filter:blur(16px) saturate(1.6);backdrop-filter:blur(16px) saturate(1.6);box-shadow:inset 0 0 0 .5px var(--glass-edge),var(--glass-shadow);transition:background-color .16s,box-shadow .16s,color .16s,opacity .2s;will-change:transform}
+.opt b{display:block;font:650 16px/1.14 var(--round);letter-spacing:-.01em;white-space:pre-line}
+.opt small{display:block;margin-top:2px;font-size:11px;line-height:1.2;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.opt.hot{background-color:transparent;box-shadow:none;color:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}
+.opt.hot small{color:rgba(255,255,255,.85)}
+.opt.dim{opacity:.45}
+.fhead{position:absolute;left:16px;right:16px;top:12px;z-index:3;display:flex;align-items:center;gap:12px;pointer-events:none}
+.fhead img{width:46px;height:46px;border-radius:11px;object-fit:cover;box-shadow:0 0 0 .5px var(--hair-2)}
+.fhead .ph{width:46px;height:46px;border-radius:11px;box-shadow:inset 0 0 0 1.5px var(--hair-2)}
+.fhead b{display:block;font-size:16px;line-height:1.25}
+.fhead span{display:block;font-size:12.5px;color:var(--ink-2)}
+.readout{position:absolute;left:0;right:0;z-index:3;text-align:center;pointer-events:none;padding:0 20px;transition:opacity .18s}
+.readout .r1{font-size:15px;font-weight:600}
+.readout .r2{font-size:13px;color:var(--ink-2);margin-top:2px}
+.readout .big{font:650 36px/1.08 var(--round);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.drop-hint{position:absolute;left:0;right:0;z-index:3;margin:0;text-align:center;font-size:13px;color:var(--ink-3);pointer-events:none;transition:opacity .2s}
+.ghost{position:absolute;left:0;top:0;z-index:5;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(120,120,120,.28);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.7),0 4px 14px rgba(0,0,0,.15);pointer-events:none;opacity:0;transition:opacity .3s}
+.css-drop{position:absolute;z-index:1;width:80px;height:80px;margin:-40px 0 0 -40px;border-radius:50%;background:#1d2422 center/cover;box-shadow:inset 0 0 0 2px rgba(255,255,255,.25)}
+
+/* 放射 */
+.dial-svg line{stroke:var(--ink);stroke-linecap:round;transition:stroke .15s,opacity .15s}
+.dial-svg line.acc,.dial-svg line.sel{stroke:var(--green)}
+.dial-svg line.null{stroke:var(--ink-3);opacity:.45}
+.dial-svg line.fade{opacity:.25}
+.hole{position:absolute;left:0;top:0;z-index:2;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;background:var(--paper-2) center/cover;box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--hair-2),0 6px 16px rgba(0,0,0,.14);transition:opacity .25s}
+.lab{position:absolute;left:0;top:0;z-index:3;padding:6px 10px;border-radius:14px;font:650 14.5px/1.15 var(--round);white-space:nowrap;background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 0 0 .5px var(--glass-edge),var(--glass-shadow);pointer-events:none;opacity:0;transition:background-color .15s,color .15s}
+.lab i{font-style:normal;color:var(--ink-3);margin-left:1px}
+.lab.sel,.lab.chosen{background:var(--green);color:#fff;box-shadow:none}
+.lab.sel i,.lab.chosen i{color:rgba(255,255,255,.8)}
+.dial-stage.sticky .lab{pointer-events:auto}
+.trail{position:absolute;left:0;top:0;z-index:1;height:2px;width:0;background:var(--ink-3);opacity:0;transform-origin:0 50%;border-radius:1px;pointer-events:none;transition:opacity .2s}
+.trail::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--ink-3)}
+.dial-hint{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 16px);margin:0;text-align:center;font-size:13px;color:var(--ink-3);pointer-events:none;transition:opacity .2s}
+.comet{position:absolute;left:0;top:0;z-index:4;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;background:center/cover;box-shadow:0 0 0 2px #fff,0 6px 14px rgba(0,0,0,.2);transition:transform .3s cubic-bezier(.5,0,.75,0),opacity .3s;pointer-events:none}
+
+/* 清單 */
+.list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 16px calc(env(safe-area-inset-bottom) + 28px);touch-action:pan-y}
+.list-head{display:flex;gap:12px;align-items:center;padding:4px 0 6px}
+.list-head img{width:64px;height:64px;border-radius:14px;object-fit:cover;box-shadow:0 0 0 .5px var(--hair-2)}
+.list-head b{display:block;font-size:17px;line-height:1.3}
+.list-head span{display:block;font-size:13px;color:var(--ink-2)}
+.grp h3{margin:16px 2px 8px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{position:relative;overflow:hidden;min-height:62px;padding:10px 11px 9px;border-radius:16px;text-align:left;background:var(--paper-2);display:flex;flex-direction:column;justify-content:space-between;gap:4px}
+.tile.big{min-height:86px}
+.tile b{font:650 17px/1.15 var(--round);letter-spacing:-.01em}
+.tile.big b{font-size:21px}
+.tile small{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile i{font-style:normal;font-size:11px;color:var(--ink-3)}
+.tile::after{content:"";position:absolute;inset:0;z-index:0;background:var(--green);clip-path:circle(0 at var(--x,50%) var(--y,50%));transition:clip-path .45s cubic-bezier(.3,.7,.2,1)}
+.tile>*{position:relative;z-index:1;transition:color .2s}
+.tile.fill::after{clip-path:circle(150% at var(--x,50%) var(--y,50%))}
+.tile.fill b,.tile.fill small,.tile.fill i{color:#fff}
+.home-hello{margin:18px 2px 4px;font:650 26px/1.2 var(--round)}
+.home-sub{margin:0 2px 8px;color:var(--ink-2);font-size:14px}
+.recent{margin-top:6px;border-radius:16px;background:var(--paper-2);overflow:hidden}
+.recent div{display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:14px}
+.recent div+div{box-shadow:inset 0 .5px 0 var(--hair-2)}
+.recent img{width:36px;height:36px;border-radius:8px;object-fit:cover}
+.recent span{color:var(--ink-2);font-size:12.5px;margin-left:auto;white-space:nowrap}
+
+/* 底部面板、按鈕、提示 */
+.scrim{position:absolute;inset:0;z-index:30;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .3s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:31;transform:translateY(106%);visibility:hidden;transition:transform .42s cubic-bezier(.2,.9,.25,1),visibility 0s linear .42s;background:var(--sheet);-webkit-backdrop-filter:blur(30px) saturate(1.6);backdrop-filter:blur(30px) saturate(1.6);border-radius:28px 28px 0 0;padding:8px 18px calc(env(safe-area-inset-bottom) + 16px);box-shadow:0 -8px 40px rgba(0,0,0,.14)}
+.sheet.open{transform:none;visibility:visible;transition:transform .42s cubic-bezier(.2,.9,.25,1),visibility 0s}
+.grabber{width:38px;height:5px;border-radius:3px;background:var(--hair-2);margin:0 auto 12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;border-radius:25px;font-size:17px;font-weight:600}
+.btn.primary{background:var(--green);color:#fff}
+.btn.secondary{background:var(--paper-3);color:var(--ink)}
+.btn.text{height:44px;color:var(--green-text);font-weight:500}
+.row{display:flex;gap:10px}
+.row .btn{flex:1}
+.res-preview{display:flex;justify-content:center;align-items:center;height:168px;margin:2px 0 12px}
+.res-preview img{max-width:78%;max-height:168px;border-radius:12px;box-shadow:0 0 0 .5px var(--hair-2),0 10px 24px rgba(0,0,0,.14)}
+.res-preview .txt{width:100%;height:100%;padding:14px 16px;border-radius:14px;background:var(--paper);box-shadow:inset 0 0 0 .5px var(--hair-2);font-size:17px;line-height:1.6;white-space:pre-line;overflow:hidden;-webkit-user-select:text;user-select:text}
+.res-name{margin:0;font-size:19px;font-weight:650;text-align:center;word-break:break-all}
+.res-size{margin:3px 0 0;text-align:center;font-size:14px;color:var(--ink-2)}
+.res-size b{color:var(--ink);font:650 15px var(--round);font-variant-numeric:tabular-nums;margin-right:6px}
+.res-note{margin:8px 6px 0;text-align:center;font-size:13.5px;color:var(--ink-2);line-height:1.5}
+.res-where{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0 14px;font-size:13px;color:var(--ink-2)}
+.res-where button{color:var(--green-text);font-size:13px}
+.res-actions{display:grid;gap:10px}
+.folder{position:relative;width:132px;height:100px;border-radius:12px;background:linear-gradient(#7cc2e8,#4fa3d6);box-shadow:0 10px 24px rgba(0,0,0,.14)}
+.folder::before{content:"";position:absolute;left:10px;top:-10px;width:50px;height:18px;border-radius:7px 7px 0 0;background:#6cb6e0}
+.folder b{position:absolute;left:0;right:0;bottom:12px;text-align:center;color:#fff;font:650 15px var(--round)}
+.zip{display:flex;align-items:center;justify-content:center;width:96px;height:120px;border-radius:12px;background:var(--paper);box-shadow:0 0 0 .5px var(--hair-2),0 10px 24px rgba(0,0,0,.12);font:700 17px var(--round);color:var(--ink-2);background-image:repeating-linear-gradient(var(--ink-3) 0 6px,transparent 6px 12px);background-size:8px 54px;background-repeat:no-repeat;background-position:center 10px}
+.pk{max-height:min(60vh,520px);overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 -4px 12px;padding:0 4px 2px;touch-action:pan-y}
+.pk h4{margin:14px 2px 8px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.pk h4:first-child{margin-top:0}
+.tile.on{box-shadow:inset 0 0 0 2px var(--green)}
+.pkrow{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:14px;text-align:left}
+.pkrow+.pkrow{margin-top:2px}
+.pkrow:active{background:var(--paper-3)}
+.pkrow img{width:40px;height:40px;border-radius:9px;object-fit:cover}
+.pkrow b{display:block;font-size:16px;font-weight:600}
+.pkrow small{display:block;font-size:12.5px;color:var(--ink-2)}
+.pkrow .ok{margin-left:auto;font-style:normal;color:var(--green-text);font-weight:700}
+.seg2{display:flex;gap:2px;margin:-2px auto 10px;padding:3px;border-radius:12px;background:var(--paper-3);width:max-content}
+.seg2 button{padding:5px 15px;border-radius:9px;font-size:14px;color:var(--ink-2)}
+.seg2 button[aria-checked="true"]{background:var(--paper);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+/* 造句 */
+.sent-stage{display:flex;flex-direction:column}
+.sent{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 20px 8px;display:flex;flex-direction:column;align-items:flex-start;touch-action:pan-y}
+.sent .w{margin:14px 4px 6px;font-size:15px;color:var(--ink-2)}
+.sent .w:first-child{margin-top:4px}
+.sent .soft{color:var(--ink-3);font-size:13.5px}
+.tok{display:inline-flex;align-items:center;gap:10px;max-width:100%;padding:9px 14px 9px 10px;border-radius:18px;background:var(--paper-2);font:650 26px/1.2 var(--round);letter-spacing:-.01em;text-align:left;box-shadow:inset 0 0 0 .5px var(--hair)}
+.tok .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tok img,.tok .ph{flex:0 0 auto;width:40px;height:40px;border-radius:10px;object-fit:cover}
+.tok .ph{box-shadow:inset 0 0 0 1.5px var(--hair-2)}
+.tok .chev{flex:0 0 auto;font-size:14px;color:var(--ink-3)}
+.tok.fmt{padding:9px 18px;background:var(--green);color:#fff;box-shadow:none}
+.tok.fmt .chev{color:rgba(255,255,255,.75)}
+.tok.small{font-size:21px;padding:7px 14px}
+.sent-foot{flex:0 0 auto;padding:10px 16px calc(env(safe-area-inset-bottom) + 14px)}
+.sent-est{margin:0 4px 10px;min-height:1.6em;font-size:14px;color:var(--ink-2)}
+.sent-est b{font:650 18px var(--round);color:var(--ink);font-variant-numeric:tabular-nums}
+.go{position:relative;overflow:hidden}
+.go span{position:relative;z-index:1}
+.go::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.28);transform:translateX(-101%);transition:transform .5s cubic-bezier(.3,.7,.2,1)}
+.go.fill::after{transform:none}
+.go:disabled{opacity:.35}
+/* 功能對照 */
+.tag{display:inline-block;margin-right:6px;padding:1px 7px;border-radius:7px;font-size:11.5px;font-weight:600;line-height:1.6;vertical-align:1px;white-space:nowrap}
+.tag.g{background:#e3f1ec;color:#0b5c48}
+.tag.o{background:#fbecd9;color:#7d4309}
+.tag.p{background:#ece8f7;color:#47378a}
+.tag.n{background:var(--paper-2);color:var(--ink-2)}
+@media (prefers-color-scheme:dark){.tag.g{background:#123a2f;color:#7fd6b4}.tag.o{background:#3d2a12;color:#f0b877}.tag.p{background:#2a2442;color:#bcb0f0}}
+.legend{display:grid;gap:6px;margin:8px 0 6px;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+.mx h3{margin:18px 0 2px;font-size:16px}
+.mx h3 small{font-weight:400;font-size:12.5px;color:var(--ink-2);margin-left:6px}
+.mx ul{list-style:none;padding:0;margin:0}
+.mx li{margin:0;padding:7px 0;font-size:14.5px;line-height:1.55;box-shadow:inset 0 -.5px 0 var(--hair)}
+.choice{margin:10px 0;padding:12px 14px;border-radius:14px;background:var(--paper-2)}
+.choice b{display:block;margin-bottom:2px}
+.choice p{margin:0;font-size:14px;line-height:1.6}
+.sheet h3{margin:0 2px 10px;font-size:17px;text-align:center}
+.toast{position:absolute;top:12px;left:50%;z-index:60;transform:translate(-50%,-160%);visibility:hidden;transition:transform .38s cubic-bezier(.2,.9,.25,1),visibility 0s linear .38s;max-width:88%;padding:10px 16px;border-radius:22px;background:var(--sheet);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 6px 24px rgba(0,0,0,.16);font-size:14px;line-height:1.4;text-align:center}
+.toast.on{transform:translate(-50%,0);visibility:visible;transition:transform .38s cubic-bezier(.2,.9,.25,1),visibility 0s}
+.capsule{position:absolute;top:10px;left:50%;z-index:59;display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;border-radius:24px;background:#000;color:#fff;font-size:13.5px;transform:translate(-50%,-160%) scale(.9);visibility:hidden;transition:transform .45s cubic-bezier(.2,.9,.25,1),visibility 0s linear .45s;box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap}
+.capsule.on{transform:translate(-50%,0) scale(1);visibility:visible;transition:transform .45s cubic-bezier(.2,.9,.25,1),visibility 0s}
+.capsule svg.ring{width:22px;height:22px;transform:rotate(-90deg)}
+.capsule svg.ring circle{fill:none;stroke-width:3}
+.capsule em{font-style:normal;color:rgba(255,255,255,.6);font-size:12px}
+
+/* 分享進來 */
+.photos{position:absolute;inset:0;background:#000;color:#fff;display:flex;flex-direction:column}
+.ph-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px 8px}
+.ph-lib{font-size:16px;color:#5aa9ff;white-space:nowrap}
+.ph-title{text-align:center;line-height:1.2}
+.ph-title b{display:block;font-size:15px}
+.ph-title span{font-size:12px;color:rgba(255,255,255,.6)}
+.seg{display:flex;padding:2px;border-radius:9px;background:rgba(255,255,255,.16)}
+.seg button{padding:3px 9px;border-radius:7px;font-size:12.5px;color:rgba(255,255,255,.8)}
+.seg button[aria-checked="true"]{background:rgba(255,255,255,.9);color:#000;font-weight:600}
+.ph-view{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.ph-one{width:100%;height:auto}
+.ph-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;width:100%;align-self:flex-start;margin-top:12px}
+.ph-grid div{position:relative;aspect-ratio:1;background:center/cover}
+.ph-grid div::after{content:"✓";position:absolute;right:5px;bottom:5px;width:20px;height:20px;border-radius:50%;background:#0a84ff;color:#fff;font-size:12px;line-height:20px;text-align:center;box-shadow:0 0 0 1.5px #fff}
+.ph-bar{display:flex;justify-content:space-around;align-items:center;padding:10px 6px calc(env(safe-area-inset-bottom) + 12px)}
+.ph-bar>*{width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#5aa9ff}
+.ph-bar svg{width:25px;height:25px}
+.coach{position:absolute;z-index:5;padding:7px 12px;border-radius:12px;background:#fff;color:#000;font-size:13.5px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.3);pointer-events:none;white-space:nowrap}
+.coach::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#fff}
+.pulse{animation:pulse 1.6s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(90,169,255,.7)}70%{box-shadow:0 0 0 14px rgba(90,169,255,0)}100%{box-shadow:0 0 0 0 rgba(90,169,255,0)}}
+.ios{background:var(--sheet);padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
+.ios-head{display:flex;align-items:center;gap:10px;padding:0 0 12px;box-shadow:inset 0 -.5px 0 var(--hair-2)}
+.ios-head img{width:44px;height:44px;border-radius:8px;object-fit:cover}
+.ios-head b{display:block;font-size:15px}
+.ios-head span{font-size:13px;color:var(--green-text)}
+.ios-x{margin-left:auto;width:30px;height:30px;border-radius:50%;background:var(--paper-3);font-size:13px;color:var(--ink-2)}
+.ios-apps{display:flex;gap:6px;padding:14px 0;overflow-x:auto;scrollbar-width:none}
+.app{flex:0 0 66px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;color:var(--ink)}
+.app i{display:flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:14px;font-style:normal;color:#fff}
+.app i svg{width:58px;height:58px}
+.ic-airdrop{background:#fff;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15)}
+.ic-msg{background:linear-gradient(#5ff777,#1bd741)}
+.ic-mail{background:linear-gradient(#1e9bff,#0f6cf0)}
+.ic-chat{background:#06c755}
+.app.rx i{border-radius:14px;overflow:hidden}
+.app.rx.pulse i{animation:pulse 1.6s ease-out infinite}
+.ios-acts{border-radius:14px;background:var(--paper);overflow:hidden}
+.ios-acts div{padding:12px 14px;font-size:15px}
+.ios-acts div+div{box-shadow:inset 0 .5px 0 var(--hair)}
+.rx-sheet{top:7%;display:flex;flex-direction:column;padding-left:0;padding-right:0;padding-bottom:0;background:var(--paper)}
+.rx-head{display:flex;align-items:center;justify-content:space-between;padding:0 18px 4px}
+.rx-head button{color:var(--green-text);font-size:16px;width:60px;text-align:left}
+.rx-head b{font-size:16px}
+.rx-head span{width:60px}
+
+/* PDF 整理 */
+.pdf-top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px;flex:0 0 auto}
+.pdf-top button{color:var(--green-text);font-size:16px;min-width:52px}
+.pdf-top button:last-child{text-align:right;font-weight:600}
+.pdf-title{text-align:center;line-height:1.25}
+.pdf-title b{display:block;font-size:16px}
+.pdf-title span{font-size:12.5px;color:var(--ink-2)}
+.pdf-grid{position:relative;flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:grid;grid-template-columns:repeat(3,1fr);gap:14px 12px;padding:10px 16px 110px;align-content:start;touch-action:pan-y}
+.pg{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;touch-action:pan-y}
+.pg .paper{position:relative;width:100%;aspect-ratio:210/297;display:flex;align-items:center;justify-content:center}
+.pg canvas{width:100%;height:100%;border-radius:4px;box-shadow:0 0 0 .5px var(--hair-2),0 3px 10px rgba(0,0,0,.08);transition:box-shadow .2s}
+.pg .n{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.pg .chk{position:absolute;right:-4px;bottom:16px;width:24px;height:24px;border-radius:50%;background:var(--paper);box-shadow:inset 0 0 0 1.5px var(--hair-2),0 1px 3px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;color:transparent;font-size:13px;font-weight:700;opacity:0;transition:opacity .15s}
+.pdf-grid.selecting .pg .chk{opacity:1}
+.pg.sel .chk{background:var(--green);color:#fff;box-shadow:0 0 0 2px var(--paper)}
+.pg.sel canvas{box-shadow:0 0 0 2.5px var(--green)}
+.pg.lift{z-index:5}
+.pg.lift canvas{box-shadow:0 0 0 .5px var(--hair-2),0 16px 34px rgba(0,0,0,.28)}
+.pg.gone{transition:transform .25s,opacity .25s;transform:scale(.6);opacity:0}
+.pdf-bar{position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:6;display:flex;align-items:center;justify-content:space-around;gap:2px;padding:8px 6px;border-radius:24px;background:var(--glass);-webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6);box-shadow:inset 0 0 0 .5px var(--glass-edge),var(--glass-shadow)}
+.pdf-bar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;font-size:11.5px;color:var(--ink)}
+.pdf-bar button svg{width:22px;height:22px}
+.pdf-bar button:disabled{opacity:.3}
+.pdf-bar .warn{color:#d0342c}
+.markup{position:absolute;inset:0;z-index:20;background:var(--paper-2);display:flex;flex-direction:column}
+.mk-page{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px 18px}
+.mk-wrap{position:relative;box-shadow:0 0 0 .5px var(--hair-2),0 10px 30px rgba(0,0,0,.15)}
+.mk-wrap canvas{position:absolute;inset:0;width:100%;height:100%}
+.mk-ink{touch-action:none}
+.mk-tools{display:flex;justify-content:space-around;margin:0 12px calc(env(safe-area-inset-bottom) + 12px);padding:8px 6px;border-radius:24px;background:var(--glass);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:inset 0 0 0 .5px var(--glass-edge),var(--glass-shadow)}
+.mk-tools button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px;font-size:11.5px;border-radius:14px}
+.mk-tools button[aria-pressed="true"]{background:var(--paper)}
+.mk-tools .dot{width:22px;height:22px;border-radius:50%}
+
+/* 說明 */
+.notes{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 20px calc(env(safe-area-inset-bottom) + 40px);-webkit-user-select:text;user-select:text;touch-action:pan-y}
+.notes h2{margin:22px 0 6px;font-size:17px;line-height:1.35}
+.notes h2:first-of-type{margin-top:6px}
+.notes p,.notes li{font-size:15px;line-height:1.65;color:var(--ink)}
+.notes p{margin:0 0 8px}
+.notes ul{margin:0 0 8px;padding-left:1.2em}
+.notes li{margin:3px 0}
+.notes .icon-row{display:flex;align-items:center;gap:14px;margin:4px 0 6px}
+.notes .icon-row p{margin:0;color:var(--ink-2);font-size:14px}
+.notes .muted{color:var(--ink-2)}
+@media (prefers-reduced-motion:reduce){.sheet,.toast,.capsule,.tile::after{transition-duration:.01s}.pulse,.app.rx.pulse i{animation:none}}
+</style>
+</head>
+<body>
+<div class="proto">
+  <div class="topline"><a href="../../">← 所有測試</a><span>Radius iPhone 版試做</span></div>
+  <header class="bar">
+    <nav class="tabs" role="tablist" aria-label="切換試做畫面">
+      <button role="tab" data-s="drop">水滴</button>
+      <button role="tab" data-s="dial">放射</button>
+      <button role="tab" data-s="list">清單</button>
+      <button role="tab" data-s="sent">造句</button>
+      <button role="tab" data-s="share">分享</button>
+      <button role="tab" data-s="pdf">PDF</button>
+      <button role="tab" data-s="notes">說明</button>
+    </nav>
+  </header>
+  <p class="caption" id="caption"></p>
+  <div class="device">
+    <div class="screen" id="screen">
+      <section class="scene" id="s-drop"><div class="demo-files" data-for="drop"></div><div class="stage-host" id="drop-host"></div></section>
+      <section class="scene" id="s-dial"><div class="demo-files" data-for="dial"></div><div class="stage-host" id="dial-host"></div></section>
+      <section class="scene" id="s-list"><div class="demo-files" data-for="list"></div><div class="list" id="list-host"></div></section>
+      <section class="scene" id="s-sent"><div class="demo-files" data-for="sent"></div><div class="stage-host" id="sent-host"></div></section>
+
+      <section class="scene" id="s-share">
+        <div class="photos">
+          <div class="ph-top">
+            <span class="ph-lib">‹ 圖庫</span>
+            <div class="ph-title"><b>今天</b><span>下午 3:12</span></div>
+            <div class="seg" role="radiogroup" aria-label="選幾張">
+              <button role="radio" aria-checked="true" data-n="1">1 張</button><button role="radio" aria-checked="false" data-n="12">12 張</button>
+            </div>
+          </div>
+          <div class="ph-view"><img class="ph-one" alt="示範照片"><div class="ph-grid" hidden></div></div>
+          <div class="ph-bar">
+            <button class="ph-share" aria-label="分享"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 9.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7.5a2 2 0 0 0-2-2h-1.5M12 3v11M8.5 6.5 12 3l3.5 3.5"/></svg></button>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.2a4.2 4.2 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z"/></svg></span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.1"/></svg></span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15M9.5 6.5V4.5h5v2M6.5 6.5l1 13h9l1-13M10.2 10v6.5M13.8 10v6.5"/></svg></span>
+          </div>
+          <div class="coach" id="coach">按分享</div>
+        </div>
+        <div class="scrim" id="share-scrim"></div>
+        <div class="sheet ios" id="ios-share" aria-label="分享選單（示意）">
+          <div class="grabber"></div>
+          <div class="ios-head"><img alt=""><div><b id="ios-count">1 張照片</b><span>選項 ›</span></div><button class="ios-x" aria-label="關閉">✕</button></div>
+          <div class="ios-apps">
+            <div class="app"><i class="ic-airdrop"><svg viewBox="0 0 58 58"><g fill="none" stroke="#1e8bff" stroke-width="2.6"><circle cx="29" cy="29" r="6"/><path d="M19.5 37.5a13 13 0 1 1 19 0M14.3 42.6a20 20 0 1 1 29.4 0" stroke-linecap="round"/></g></svg></i><span>AirDrop</span></div>
+            <div class="app"><i class="ic-msg"><svg viewBox="0 0 58 58"><ellipse cx="29" cy="28" rx="15" ry="12" fill="#fff"/><path d="M18 36l-3 6 8-3z" fill="#fff"/></svg></i><span>訊息</span></div>
+            <div class="app"><i class="ic-mail"><svg viewBox="0 0 58 58"><rect x="14" y="19" width="30" height="21" rx="3" fill="#fff"/><path d="M15 21l14 10 14-10" fill="none" stroke="#1e7dff" stroke-width="2"/></svg></i><span>郵件</span></div>
+            <div class="app"><i class="ic-chat"><svg viewBox="0 0 58 58"><rect x="13" y="16" width="32" height="24" rx="11" fill="#fff"/><path d="M24 39l-1 6 7-6z" fill="#fff"/></svg></i><span>LINE</span></div>
+            <button class="app rx pulse" id="rx-app"><i id="rx-icon"></i><span>Radius</span></button>
+          </div>
+          <div class="ios-acts"><div>拷貝</div><div>加入共享相簿</div><div>加入相簿</div><div>儲存到「檔案」</div><div>列印</div></div>
+        </div>
+        <div class="sheet rx-sheet" id="rx-sheet" aria-label="Radius 分享延伸（示意）">
+          <div class="grabber"></div>
+          <div class="rx-head"><button class="rx-cancel">取消</button><b>Radius</b><span></span></div>
+          <div class="stage-host" id="share-host"></div>
+        </div>
+      </section>
+
+      <section class="scene" id="s-pdf">
+        <div class="pdf-top"><button id="pdf-undo">復原</button><div class="pdf-title"><b>會議紀錄.pdf</b><span id="pdf-count">8 頁</span></div><button id="pdf-save">儲存</button></div>
+        <div class="pdf-grid" id="pdf-grid"></div>
+        <div class="pdf-bar" id="pdf-bar"></div>
+        <div class="markup" id="markup" hidden>
+          <div class="pdf-top"><button id="mk-cancel">取消</button><div class="pdf-title"><b>標註</b><span id="mk-page">第 1 頁</span></div><button id="mk-done">完成</button></div>
+          <div class="mk-page"><div class="mk-wrap" id="mk-wrap"><canvas id="mk-bg"></canvas><canvas class="mk-ink" id="mk-ink"></canvas></div></div>
+          <div class="mk-tools" id="mk-tools">
+            <button data-t="pen" aria-pressed="true"><span class="dot" style="background:#1b1b1b"></span>筆</button>
+            <button data-t="hl" aria-pressed="false"><span class="dot" style="background:#ffd60a"></span>螢光筆</button>
+            <button data-t="sign" aria-pressed="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 17c3-1 4-9 6-9s-1 8 1 8 3-5 4-5 0 4 2 4 3-2 5-2M3 21h18"/></svg>簽名</button>
+            <button data-t="undo" aria-pressed="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7 4.5 11.5 9 16M5 11.5h9a5 5 0 0 1 0 10h-2"/></svg>復原</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="s-notes"><article class="notes" id="notes"></article></section>
+
+      <div class="scrim" id="scrim"></div>
+      <div class="sheet" id="result" role="dialog" aria-label="轉好了"></div>
+      <div class="sheet" id="more" role="dialog" aria-label="更多格式"></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <div class="capsule" id="capsule" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const SVGNS='http://www.w3.org/2000/svg';
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x)), lerp=(a,b,t)=>a+(b-a)*t, ease=t=>1-Math.pow(1-clamp(t,0,1),3);
+const RM=matchMedia('(prefers-reduced-motion: reduce)'), DARK=matchMedia('(prefers-color-scheme: dark)');
+function el(tag,cls,html){const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e}
+const plain=s=>String(s).replace(/\n/g,'');
+
+/* ---------- 彈簧與動畫迴圈 ---------- */
+class Spring{constructor(x=0,k=200,c=20){this.x=x;this.v=0;this.t=x;this.k=k;this.c=c}
+  step(dt){const a=this.k*(this.t-this.x)-this.c*this.v;this.v+=a*dt;this.x+=this.v*dt}
+  snap(x){this.x=this.t=x;this.v=0}}
+function stepAll(list,dt){const n=Math.max(1,Math.ceil(dt*240)),h=dt/n;for(let i=0;i<n;i++)for(const s of list)s.step(h)}
+const ticks=new Set();let lastT=0;
+function frame(now){const dt=lastT?Math.min(.05,(now-lastT)/1000):1/60;lastT=now;for(const f of ticks)f(dt,now/1000);requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+
+/* iOS 18 起 Safari 的開關元件會帶觸覺回饋；其他瀏覽器沒有作用，不影響操作。 */
+let hapticEl=null;
+function haptic(){try{if(navigator.vibrate)navigator.vibrate(8)}catch(e){}
+  if(!hapticEl){hapticEl=document.createElement('label');hapticEl.setAttribute('aria-hidden','true');hapticEl.style.cssText='position:fixed;left:-200px;top:0;width:1px;height:1px;overflow:hidden';const i=document.createElement('input');i.type='checkbox';i.setAttribute('switch','');i.tabIndex=-1;hapticEl.appendChild(i);document.body.appendChild(hapticEl)}
+  hapticEl.click()}
+
+function fmtB(b){if(b==null)return'';if(b>=1e9)return(b/1e9).toFixed(1)+' GB';if(b>=1e6){const m=b/1e6;return(m>=10?Math.round(m):m.toFixed(1))+' MB'}if(b>=1e3)return Math.round(b/1e3)+' KB';return b+' B'}
+function delta(o,s){const r=o/s;if(r>=2)return'大 '+(r<10?r.toFixed(1).replace(/\.0$/,''):Math.round(r))+' 倍';const p=Math.round((r-1)*100);if(Math.abs(p)<4)return'和原本差不多';return p>0?'比原本大 '+p+'%':'比原本小 '+(-p)+'%'}
+
+/* ---------- 示範用的圖（全部用程式畫，沒有外部圖檔） ---------- */
+function cv(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
+function rng(seed){let s=(seed*2654435761)>>>0||1;return()=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>=0;return s/4294967296}}
+function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+const hsl=(h,s,l,a=1)=>`hsla(${h},${s}%,${l}%,${a})`;
+function paintPhoto(w,h,v=0){
+  const c=cv(w,h),g=c.getContext('2d'),r=rng(7+v*13),hs=[0,24,-18,40,-36,12,58,-8,30,-26,18,-44][v%12];
+  const sky=g.createLinearGradient(0,0,0,h*.66);sky.addColorStop(0,hsl(205+hs,46,62));sky.addColorStop(1,hsl(38+hs*.3,55,86));
+  g.fillStyle=sky;g.fillRect(0,0,w,h);
+  g.fillStyle='rgba(255,247,226,.92)';g.beginPath();g.arc(w*.28,h*.33,h*.065,0,7);g.fill();
+  const ridge=(base,amp,col,step)=>{g.fillStyle=col;g.beginPath();g.moveTo(0,h);for(let x=0;x<=w+step;x+=step)g.lineTo(x,base-amp*(.35+.65*r()));g.lineTo(w,h);g.closePath();g.fill()};
+  ridge(h*.56,h*.16,hsl(200+hs,16,62),w/7);ridge(h*.64,h*.12,hsl(150+hs,18,42),w/10);
+  g.fillStyle=hsl(150+hs,30,22);
+  for(let i=0;i<28;i++){const x=r()*w,y=h*(.66+.1*r()),s=h*(.05+.06*r());g.beginPath();g.moveTo(x,y-s*2.3);g.lineTo(x-s*.7,y);g.lineTo(x+s*.7,y);g.closePath();g.fill()}
+  const gr=g.createLinearGradient(0,h*.72,0,h);gr.addColorStop(0,hsl(95+hs,28,38));gr.addColorStop(1,hsl(85+hs,30,24));g.fillStyle=gr;g.fillRect(0,h*.74,w,h*.26);
+  g.fillStyle=hsl(35,30,72,.85);g.beginPath();g.moveTo(w*.38,h);g.quadraticCurveTo(w*.49,h*.86,w*.55,h*.74);g.lineTo(w*.59,h*.74);g.quadraticCurveTo(w*.61,h*.87,w*.72,h);g.closePath();g.fill();
+  if(v===0){const bx=w*.64,by=h*.42,bw=w*.28,bh=h*.17;
+    g.fillStyle='#5a3d26';g.fillRect(bx+bw*.46,by+bh*.8,bw*.08,h*.38);
+    g.fillStyle='#6e4a2c';rr(g,bx,by,bw,bh,h*.015);g.fill();
+    g.fillStyle='#f4ead6';g.textAlign='center';g.textBaseline='middle';
+    g.font=`700 ${Math.round(bh*.33)}px -apple-system,"PingFang TC","Noto Sans TC",sans-serif`;g.fillText('山頂步道',bx+bw/2,by+bh*.36);
+    g.font=`600 ${Math.round(bh*.24)}px -apple-system,sans-serif`;g.fillText('1.2 km',bx+bw/2,by+bh*.72)}
+  return c}
+function paintPage(w,h,o={}){
+  const c=cv(w,h),g=c.getContext('2d'),r=rng(o.seed||1),m=w*.1;
+  g.fillStyle=o.kind==='scan'?'#efede6':(o.tint||'#fff');g.fillRect(0,0,w,h);
+  let y=m;
+  if(o.title){g.fillStyle=o.kind==='doc'?'#1f4f45':'#1d1d1d';g.font=`700 ${w*.075}px -apple-system,"PingFang TC","Noto Sans TC",sans-serif`;g.textBaseline='top';g.textAlign='left';g.fillText(o.title,m,y);y+=w*.12;g.fillStyle='#d4d8d6';g.fillRect(m,y,w-2*m,Math.max(1,w*.006));y+=w*.05}
+  if(o.photo){const pw=w-2*m,ph=pw*.75;g.drawImage(o.photo,m,y,pw,ph);y+=ph+w*.05}
+  const lh=w*.052;
+  while(y<h-m*1.5){
+    if(o.kind!=='scan'&&r()<.07&&y<h*.62){const bh=w*.26;g.strokeStyle='#cfd4d2';g.lineWidth=Math.max(1,w*.004);g.strokeRect(m,y,w-2*m,bh);
+      g.fillStyle=o.kind==='doc'?'#94bcae':'#b7c0bc';for(let i=0;i<5;i++){const bw=(w-2*m)/6,hh=bh*(.25+.6*r());g.fillRect(m+bw*(i+.7),y+bh-hh-w*.02,bw*.55,hh)}y+=bh+lh;continue}
+    const lw=(w-2*m)*(r()<.18?.4+.3*r():.82+.18*r());
+    g.fillStyle=o.kind==='scan'?'#9c9a94':'#c8ccca';g.fillRect(m,y,lw,lh*.42);y+=lh;if(r()<.12)y+=lh*.6}
+  if(o.page){g.fillStyle='#a6aba8';g.font=`500 ${w*.04}px -apple-system,sans-serif`;g.textAlign='center';g.textBaseline='alphabetic';g.fillText(String(o.page),w/2,h-m*.5)}
+  return c}
+function paintVideo(w,h){const c=cv(w,h),g=c.getContext('2d');
+  const s=g.createLinearGradient(0,0,0,h*.62);s.addColorStop(0,'#283252');s.addColorStop(.62,'#b8607a');s.addColorStop(1,'#f2a25c');g.fillStyle=s;g.fillRect(0,0,w,h);
+  g.fillStyle='#ffdca6';g.beginPath();g.arc(w*.5,h*.62,h*.1,Math.PI,0);g.fill();
+  const sea=g.createLinearGradient(0,h*.62,0,h);sea.addColorStop(0,'#3a3f66');sea.addColorStop(1,'#121831');g.fillStyle=sea;g.fillRect(0,h*.62,w,h*.38);
+  g.fillStyle='rgba(255,200,140,.55)';for(let i=0;i<9;i++){const y=h*.65+i*h*.035,ww=w*(.17-i*.013);g.fillRect(w*.5-ww/2,y,ww,h*.008)}
+  return c}
+function paintSlide(w,h,img,title){const c=cv(w,h),g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,w,h);
+  if(title){g.fillStyle='#1d1d1d';g.font=`700 ${h*.07}px -apple-system,"PingFang TC",sans-serif`;g.textBaseline='top';g.fillText(title,w*.06,h*.06)}
+  const ih=h*(title?.72:.84),iw=Math.min(w*.88,ih*img.width/img.height);g.drawImage(img,(w-iw)/2,title?h*.2:h*.08,iw,ih);return c}
+function paintWave(w,h){const c=cv(w,h),g=c.getContext('2d'),r=rng(5);g.fillStyle='#14211d';rr(g,0,0,w,h,h*.08);g.fill();g.fillStyle='#4dbb97';
+  const n=46,bw=w/n;for(let i=0;i<n;i++){const a=(.15+.85*Math.abs(Math.sin(i*.37))*(.4+.6*r()))*h*.36;g.fillRect(i*bw+bw*.25,h/2-a,bw*.5,a*2)}return c}
+function mosaic(){const c=cv(512,512),g=c.getContext('2d');for(let i=0;i<4;i++){const p=paintPhoto(256,256,i*3+1);g.drawImage(p,(i%2)*256,(i>>1)*256)}g.fillStyle='rgba(255,255,255,.9)';g.fillRect(254,0,4,512);g.fillRect(0,254,512,4);return c}
+
+function paintGif(w,h){const c=cv(w,h),g=c.getContext('2d');g.fillStyle='#ffe9a8';g.fillRect(0,0,w,h);
+  const r=Math.min(w,h)*.3,cx=w/2,cy=h/2;g.fillStyle='#ffc93c';g.beginPath();g.arc(cx,cy,r,0,7);g.fill();
+  g.fillStyle='#4a3200';g.beginPath();g.ellipse(cx-r*.35,cy-r*.2,r*.1,r*.16,0,0,7);g.ellipse(cx+r*.35,cy-r*.2,r*.1,r*.16,0,0,7);g.fill();
+  g.strokeStyle='#4a3200';g.lineWidth=r*.1;g.lineCap='round';g.beginPath();g.arc(cx,cy+r*.05,r*.5,.15*Math.PI,.85*Math.PI);g.stroke();
+  g.strokeStyle='rgba(240,130,0,.55)';g.lineWidth=r*.07;for(let i=0;i<3;i++){g.beginPath();g.arc(cx,cy,r*(1.14+i*.15),-.38*Math.PI,-.14*Math.PI);g.stroke()}
+  return c}
+function paintPpt(w,h){const c=cv(w,h),g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,w,h);
+  g.fillStyle='#0d6b54';g.fillRect(0,0,w,h*.16);g.fillStyle='#fff';g.font=`700 ${h*.08}px -apple-system,"PingFang TC",sans-serif`;g.textBaseline='middle';g.fillText('晨會報告',w*.05,h*.08);
+  const bx=w*.08,by=h*.28,bw=w*.5,bh=h*.6;g.strokeStyle='#d5dad8';g.lineWidth=2;g.beginPath();g.moveTo(bx,by);g.lineTo(bx,by+bh);g.lineTo(bx+bw,by+bh);g.stroke();
+  [.42,.58,.5,.74,.66,.86].forEach((v,i,a)=>{const cw=bw/a.length;g.fillStyle=i===5?'#0d6b54':'#9ec4b6';g.fillRect(bx+cw*i+cw*.2,by+bh-bh*v,cw*.6,bh*v)});
+  g.fillStyle='#c8ccca';for(let i=0;i<4;i++)g.fillRect(w*.64,h*(.32+i*.12),w*(.28-(i%2)*.08),h*.04);return c}
+function paintTxt(w,h){const c=cv(w,h),g=c.getContext('2d'),m=w*.1;g.fillStyle='#fff';g.fillRect(0,0,w,h);
+  g.fillStyle='#1d1d1d';g.font=`700 ${w*.07}px -apple-system,"PingFang TC",sans-serif`;g.textBaseline='top';g.fillText('交班筆記',m,m);
+  g.font=`400 ${w*.045}px -apple-system,"PingFang TC",sans-serif`;g.fillStyle='#3a3a3a';
+  ['明天 7:30 晨會，改到 8 樓','值班表週五前交','投影機要先借','記得帶延長線','週三下午教學門診','更新聯絡電話'].forEach((t,i)=>g.fillText('• '+t,m,m+w*.14+i*w*.075));
+  g.fillStyle='#d0d4d2';for(let i=0;i<9;i++)g.fillRect(m,m+w*.64+i*w*.06,(w-2*m)*(.5+.5*Math.abs(Math.sin(i*1.7))),w*.018);return c}
+function paintSrt(w,h){const c=cv(w,h),g=c.getContext('2d');g.drawImage(art('video'),0,0,w,h);g.fillStyle='rgba(0,0,0,.3)';g.fillRect(0,0,w,h);
+  g.font=`600 ${h*.075}px -apple-system,"PingFang TC",sans-serif`;g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';g.lineWidth=h*.014;g.strokeStyle='rgba(0,0,0,.85)';
+  g.strokeText('各位早安，今天要報告的是…',w/2,h*.83);g.fillStyle='#fff';g.fillText('各位早安，今天要報告的是…',w/2,h*.83);return c}
+function paintBox(w,h){const c=cv(w,h),g=c.getContext('2d');g.fillStyle='#efe6d4';g.fillRect(0,0,w,h);
+  const bw=w*.56,bh=h*.62,x=(w-bw)/2,y=(h-bh)/2;g.fillStyle='#8b6b46';rr(g,x,y,bw,bh,w*.05);g.fill();g.fillStyle='#6f5436';g.fillRect(x,y+bh*.18,bw,bh*.08);
+  g.fillStyle='#e8dcc2';for(let i=0;i<7;i++)g.fillRect(w/2-w*.03,y+bh*.3+i*bh*.09,w*.06,bh*.045);
+  g.fillStyle='#fff';g.font=`700 ${w*.09}px -apple-system,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText('RAR',w/2,y+bh*.09);return c}
+function paintFolder(w,h){const c=cv(w,h),g=c.getContext('2d');g.fillStyle='#e7f1f8';g.fillRect(0,0,w,h);
+  const x=w*.18,y=h*.3,fw=w*.64,fh=h*.48;g.fillStyle='#5aaedc';rr(g,x,y-h*.07,fw*.42,h*.14,w*.03);g.fill();g.fillStyle='#4fa3d6';rr(g,x,y,fw,fh,w*.04);g.fill();
+  g.fillStyle='#7cc2e8';rr(g,x,y+fh*.14,fw,fh*.86,w*.04);g.fill();return c}
+const ART={};
+function art(k){if(ART[k])return ART[k];let c;const [p,a]=k.split(':');
+  if(a!==undefined){
+    if(p==='page')c=paintPage(420,594,{photo:art(a),seed:21});
+    else if(p==='doc')c=a==='none'?paintPage(420,594,{title:'會議紀錄',seed:31,kind:'doc'}):paintPage(420,594,{title:'IMG_4127',photo:art(a),seed:22,kind:'doc'});
+    else if(p==='slide')c=paintSlide(800,450,art(a));
+  }else switch(k){
+    case'photo':c=paintPhoto(800,600,0);break;
+    case'gif':c=paintGif(600,600);break;
+    case'pdf1':c=paintPage(420,594,{title:'會議紀錄',seed:3,page:1});break;
+    case'doc1':c=paintPage(420,594,{title:'年度報告',seed:11,page:1,kind:'doc'});break;
+    case'ppt1':c=paintPpt(800,450);break;
+    case'video':c=paintVideo(800,450);break;
+    case'wave':c=paintWave(600,220);break;
+    case'txt':c=paintTxt(420,594);break;
+    case'srt':c=paintSrt(800,450);break;
+    case'rar':c=paintBox(512,512);break;
+    case'folder':c=paintFolder(512,512);break;
+    case'multi':c=mosaic();break;
+  }return ART[k]=c}
+const URL_={};const urlOf=k=>URL_[k]||(URL_[k]=art(k).toDataURL('image/jpeg',.86));
+function texOf(f){const src=art(f.art),s=256,c=cv(s,s),g=c.getContext('2d');
+  if(f.crop==='top'){const sw=src.width*.86;g.fillStyle='#fff';g.fillRect(0,0,s,s);g.drawImage(src,(src.width-sw)/2,src.width*.04,sw,sw,0,0,s,s)}
+  else{const m=Math.min(src.width,src.height);g.drawImage(src,(src.width-m)/2,(src.height-m)/2,m,m,0,0,s,s)}
+  return c}
+const TEXURL={};const thumbURL=k=>TEXURL[k]||(TEXURL[k]=texOf(FILES[k]).toDataURL('image/jpeg',.86));
+
+/* ---------- 檔案與選項：照 Mac 版 Formats.targets 一項不少（大小是合理量級的示意） ---------- */
+const O=(label,out,ext,res,note,x={})=>Object.assign({label,out,ext,res,note},x);
+const ZIPNOTE='壓縮檔格式可以選 ZIP、7z 或 tar.gz。';
+const FILES={
+  photo:{name:'IMG_4127.HEIC',base:'IMG_4127',size:2.4e6,meta:'HEIC 照片　4032 × 3024',art:'photo',crop:'center',
+    order:['jpg','pdf','ocr','png','docx','pptx','webp','tiff','gif','bmp','zip'],
+    groups:[['常用',['jpg','pdf','ocr']],['圖片格式',['png','webp','tiff','gif','bmp']],['做成文件',['docx','pptx']],['其他',['zip']]],
+    opts:{
+      jpg:O('JPG',3.9e6,'jpg','img:photo','JPG 到處都能開，但比 HEIC 佔空間。',{q:1}),
+      pdf:O('PDF',3.9e6,'pdf','page:photo','一張圖一頁，寄給別人最不會出問題。'),
+      ocr:{label:'辨識\n文字',sizeText:'文字',res:'text',pick:'ocr',text:'山頂步道\n1.2 km',note:'在 iPhone 上辨識，不上傳；繁中、簡中、英文、日文、韓文自動判斷。'},
+      png:O('PNG',17.8e6,'png','img:photo','PNG 不失真、檔案大，適合截圖。'),
+      docx:O('Word',4.0e6,'docx','doc:photo','照片放進一份 Word 文件。'),
+      pptx:O('簡報',4.1e6,'pptx','slide:photo','一張照片一頁投影片。'),
+      webp:O('WebP',3.0e6,'webp','img:photo','網頁常用，比 JPG 小。',{q:1}),
+      tiff:O('TIFF',34e6,'tiff','img:photo','印刷用、不壓縮，檔案很大。'),
+      gif:O('GIF',5.1e6,'gif','img:photo','只有 256 色，照片會出現色階。'),
+      bmp:O('BMP',36e6,'bmp','img:photo','舊式格式，不壓縮。'),
+      zip:O('壓縮',2.4e6,'zip','zip','照片本來就壓縮過，壓縮檔不會更小。'+ZIPNOTE,{pick:'arc'})}},
+  gif:{name:'笑臉.gif',base:'笑臉',size:3.1e6,meta:'GIF 動圖　480 × 480　2.4 秒',art:'gif',crop:'center',
+    order:['mp4','mov','webp','jpg','png','pdf','webm','mkv','avi','wmv','heic','tiff','bmp','docx','pptx','ocr','zip'],
+    groups:[['常用',['mp4','mov','webp']],['轉成影片',['webm','mkv','avi','wmv']],['圖片（取第一格）',['jpg','png','heic','tiff','bmp']],['做成文件',['pdf','docx','pptx']],['其他',['ocr','zip']]],
+    opts:{
+      mp4:O('MP4',.42e6,'mp4','video:gif','動圖變影片，小很多，LINE 也能直接播。',{long:true}),
+      mov:O('MOV',.45e6,'mov','video:gif','動圖變影片。',{long:true}),
+      webp:O('WebP',1.2e6,'webp','img:gif','保留動畫，比 GIF 小。'),
+      jpg:O('JPG',90e3,'jpg','img:gif','只取第一格。',{q:1}),
+      png:O('PNG',210e3,'png','img:gif','只取第一格。'),
+      pdf:O('PDF',120e3,'pdf','page:gif','只取第一格。'),
+      webm:O('WebM',.38e6,'webm','video:gif','',{long:true}),
+      mkv:O('MKV',.44e6,'mkv','video:gif','',{long:true}),
+      avi:O('AVI',.9e6,'avi','video:gif','',{long:true}),
+      wmv:O('WMV',.6e6,'wmv','video:gif','',{long:true}),
+      heic:O('HEIC',60e3,'heic','img:gif','只取第一格。'),
+      tiff:O('TIFF',.7e6,'tiff','img:gif','只取第一格。'),
+      bmp:O('BMP',.7e6,'bmp','img:gif','只取第一格。'),
+      docx:O('Word',130e3,'docx','doc:gif','只取第一格。'),
+      pptx:O('簡報',140e3,'pptx','slide:gif','只取第一格。'),
+      ocr:{label:'辨識\n文字',sizeText:'文字',res:'text',pick:'ocr',text:'（沒有找到文字）',note:'圖裡沒有字時會直接說沒有，不會亂猜。'},
+      zip:O('壓縮',3.0e6,'zip','zip',ZIPNOTE,{pick:'arc'})}},
+  pdf:{name:'會議紀錄.pdf',base:'會議紀錄',size:2.4e6,meta:'PDF　8 頁',art:'pdf1',crop:'top',
+    order:['docx','organize','shrink','jpg','png','txt','pptx','split','strip','zip'],
+    groups:[['常用',['organize','docx','shrink']],['轉成',['jpg','png','txt','pptx']],['工具',['split','strip','zip']]],
+    opts:{
+      organize:{label:'整理',sizeText:'排序刪頁',res:'organize',hint:'放開就打開整理畫面'},
+      docx:O('Word',46e3,'docx','doc:none','只取文字與段落，不保留版面；掃描檔會先辨識文字（和 Mac 版相同）。'),
+      shrink:O('縮小',.64e6,'pdf','img:pdf1','圖片降解析度，文字仍可選取；連結與書籤不保留。',{suffix:' 已縮小'}),
+      jpg:O('JPG',3.1e6,'jpg','folder','8 頁存成 8 張圖，放在「會議紀錄」資料夾。',{count:8,pick:'dpi'}),
+      png:O('PNG',9.6e6,'png','folder','8 頁存成 8 張 PNG，放在「會議紀錄」資料夾。',{count:8,pick:'dpi'}),
+      txt:O('TXT',12e3,'txt','text','只取文字；掃描檔會先辨識文字。',{text:'會議紀錄\n時間：10 月 3 日 下午 2 時\n地點：8 樓會議室\n一、上月決議追蹤…'}),
+      pptx:O('簡報',3.4e6,'pptx','slide:pdf1','每一頁變成一張投影片（以圖片呈現，文字不能改）。'),
+      split:{label:'拆分',sizeText:'8 個檔',res:'folder',count:8,folderName:'會議紀錄 拆分',note:'每一頁一個 PDF，放進同一個資料夾。'},
+      strip:O('清除\n隱私',2.4e6,'pdf','img:pdf1','拿掉作者、建立軟體等資訊；內容不變。',{exact:true,suffix:' 已清除'}),
+      zip:O('壓縮',2.2e6,'zip','zip','PDF 本來就壓縮過，壓縮檔只會小一點。'+ZIPNOTE,{pick:'arc'})}},
+  doc:{name:'年度報告.docx',base:'年度報告',size:.86e6,meta:'Word 文件　6 頁',art:'doc1',crop:'top',
+    order:['pdf','txt','zip'],
+    groups:[['轉成',['pdf','txt']],['其他',['zip']]],
+    opts:{
+      pdf:O('PDF',1.1e6,'pdf','img:doc1','排版引擎和 Mac 版一樣是 LibreOffice（做法見「說明」）。'),
+      txt:O('TXT',9e3,'txt','text','自己讀 Word 檔，只取文字（和 Mac 版相同）。',{text:'年度報告\n一、前言\n本年度門診量較去年成長…'}),
+      zip:O('壓縮',.79e6,'zip','zip','Word 檔本身就是壓縮格式，只會小一點。'+ZIPNOTE,{pick:'arc'})}},
+  ppt:{name:'晨會報告.pptx',base:'晨會報告',size:5.2e6,meta:'簡報　12 張',art:'ppt1',crop:'center',
+    order:['pdf','jpg','png','zip'],
+    groups:[['轉成',['pdf','jpg','png']],['其他',['zip']]],
+    opts:{
+      pdf:O('PDF',2.8e6,'pdf','img:ppt1','一張投影片一頁。排版引擎見「說明」。'),
+      jpg:O('JPG',3.6e6,'jpg','folder','每張投影片一張圖，放在「晨會報告」資料夾。',{count:12}),
+      png:O('PNG',9.1e6,'png','folder','每張投影片一張 PNG。',{count:12}),
+      zip:O('壓縮',4.9e6,'zip','zip','簡報本身就是壓縮格式，只會小一點。'+ZIPNOTE,{pick:'arc'})}},
+  video:{name:'IMG_0233.MOV',base:'IMG_0233',size:48e6,meta:'影片　0:32　4K',art:'video',crop:'center',
+    order:['mp4','gif','mp3','m4a','wav','strip','mkv','webm','avi','wmv','flv','mpg','threegp','zip'],
+    groups:[['常用',['mp4','gif','mp3']],['只要聲音',['m4a','wav']],['其他影片格式',['mkv','webm','avi','wmv','flv','mpg','threegp']],['工具',['strip','zip']]],
+    opts:{
+      mp4:O('MP4',47e6,'mp4','video:video','只換封裝、不重新壓縮，畫質不變。',{long:true}),
+      gif:O('GIF',12e6,'gif','video:video','寬 480、每秒 15 格。',{long:true}),
+      mp3:O('MP3',.51e6,'mp3','audio','只取聲音。'),
+      m4a:O('M4A',.52e6,'m4a','audio','只取聲音（AAC）。'),
+      wav:O('WAV',5.6e6,'wav','audio','不壓縮的聲音。'),
+      strip:O('清除\n隱私',48e6,'mov','video:video','拿掉拍攝地點與裝置資訊；不重新壓縮。',{exact:true,suffix:' 已清除'}),
+      mkv:O('MKV',47e6,'mkv','video:video','只換封裝、不重新壓縮。',{long:true}),
+      webm:O('WebM',21e6,'webm','video:video','重新壓縮成網頁用的 VP9。',{long:true}),
+      avi:O('AVI',52e6,'avi','video:video','給舊電腦、舊機器用。',{long:true}),
+      wmv:O('WMV',30e6,'wmv','video:video','給舊版 Windows 播放器用。',{long:true}),
+      flv:O('FLV',26e6,'flv','video:video','舊式網頁影片格式。',{long:true}),
+      mpg:O('MPEG',58e6,'mpg','video:video','給 DVD 播放器、舊機器用。',{long:true}),
+      threegp:O('3GP',6e6,'3gp','video:video','給舊手機用，畫質較低。',{long:true}),
+      zip:O('壓縮',47e6,'zip','zip','影片本來就壓縮過，壓縮檔不會更小。'+ZIPNOTE,{pick:'arc'})}},
+  audio:{name:'晨會錄音.m4a',base:'晨會錄音',size:6.1e6,meta:'聲音　6:24　AAC',art:'wave',crop:'center',
+    order:['mp3','wav','flac','opus','ogg','aiff','wma','strip','zip'],
+    groups:[['常用',['mp3','wav','flac']],['其他格式',['opus','ogg','aiff','wma']],['工具',['strip','zip']]],
+    opts:{
+      mp3:O('MP3',6.2e6,'mp3','audio','到處都能播。'),
+      wav:O('WAV',68e6,'wav','audio','不壓縮，檔案大很多。'),
+      flac:O('FLAC',31e6,'flac','audio','不失真壓縮。'),
+      opus:O('Opus',2.9e6,'opus','audio','同樣音質下最小。'),
+      ogg:O('OGG',4.6e6,'ogg','audio',''),
+      aiff:O('AIFF',68e6,'aiff','audio','不壓縮，Mac 常用。'),
+      wma:O('WMA',4.7e6,'wma','audio','給舊版 Windows 用。'),
+      strip:O('清除\n隱私',6.1e6,'m4a','audio','拿掉錄音裝置、地點等資訊；聲音不變。',{exact:true,suffix:' 已清除'}),
+      zip:O('壓縮',6.0e6,'zip','zip','聲音檔本來就壓縮過，壓縮檔不會更小。'+ZIPNOTE,{pick:'arc'})}},
+  text:{name:'交班筆記.txt',base:'交班筆記',size:12e3,meta:'純文字　UTF-8',art:'txt',crop:'top',
+    order:['pdf','docx','png','jpg','srt','vtt','zip'],
+    groups:[['常用',['pdf','docx']],['圖片',['png','jpg']],['字幕',['srt','vtt']],['其他',['zip']]],
+    opts:{
+      pdf:O('PDF',48e3,'pdf','img:txt','A4；中文會自動換成有那個字的字型。'),
+      docx:O('Word',9e3,'docx','doc:none','一行一段。'),
+      png:O('PNG',.31e6,'png','folder','每頁一張圖。',{count:2}),
+      jpg:O('JPG',.24e6,'jpg','folder','每頁一張圖。',{count:2}),
+      srt:O('SRT',14e3,'srt','text','一行一句，依字數估每句的顯示時間（只是起點，要再對軸）。',{text:'1\n00:00:00,000 --> 00:00:02,400\n明天 7:30 晨會，改到 8 樓'}),
+      vtt:O('VTT',13e3,'vtt','text','同上，網頁播放器用的字幕格式。',{text:'WEBVTT\n\n00:00.000 --> 00:02.400\n明天 7:30 晨會，改到 8 樓'}),
+      zip:O('壓縮',5e3,'zip','zip','文字壓縮後會小很多。'+ZIPNOTE,{pick:'arc'})}},
+  srt:{name:'演講.srt',base:'演講',size:38e3,meta:'字幕　SRT　Big5 舊編碼',art:'srt',crop:'center',
+    order:['vtt','txt','zip'],
+    groups:[['轉成',['vtt','txt']],['其他',['zip']]],
+    opts:{
+      vtt:O('VTT',36e3,'vtt','text','時間軸不變；舊式 Big5 編碼也能正確讀出。',{text:'WEBVTT\n\n00:00:01.200 --> 00:00:03.800\n各位早安，今天要報告的是…'}),
+      txt:O('TXT',21e3,'txt','text','只留台詞。',{text:'各位早安，今天要報告的是…\n先看上個月的數字'}),
+      zip:O('壓縮',11e3,'zip','zip',ZIPNOTE,{pick:'arc'})}},
+  rar:{name:'旅行照片.rar',base:'旅行照片',size:18e6,meta:'壓縮檔　RAR　46 個檔案',art:'rar',crop:'center',
+    order:['extract','zip','sevenz','targz'],
+    groups:[['常用',['extract']],['換成別種壓縮檔',['zip','sevenz','targz']]],
+    opts:{
+      extract:{label:'解壓縮',sizeText:'46 個檔',res:'folder',count:46,folderName:'旅行照片',note:'解到同名資料夾；同名自動加編號，不會蓋掉。'},
+      zip:O('ZIP',18e6,'zip','zip','最通用，Windows 也能直接開。'),
+      sevenz:O('7z',16e6,'7z','zip','壓縮率最好。'),
+      targz:O('tar.gz',17e6,'tar.gz','zip','Linux、伺服器常用。')}},
+  folder:{name:'掃描文件',base:'掃描文件',size:84e6,meta:'資料夾　23 個檔案',art:'folder',crop:'center',
+    order:['zip','sevenz','targz'],
+    groups:[['壓縮成',['zip','sevenz','targz']]],
+    opts:{
+      zip:O('ZIP',80e6,'zip','zip','最通用，Windows 也能直接開。'),
+      sevenz:O('7z',76e6,'7z','zip','壓縮率最好。'),
+      targz:O('tar.gz',79e6,'tar.gz','zip','Linux、伺服器常用。')}},
+  multi:{name:'12 張照片',base:'照片',size:31e6,meta:'12 張 HEIC',art:'multi',crop:'center',count:12,
+    order:['pdf','jpg','pptx','png','zip'],
+    groups:[['合併',['pdf','pptx']],['每張各自轉',['jpg','png']],['其他',['zip']]],
+    opts:{
+      pdf:O('合併\nPDF',47e6,'pdf','page:multi','12 張依拍攝時間排成一份 PDF。',{name:'照片 合併.pdf'}),
+      jpg:O('全部\nJPG',46e6,'jpg','folder','12 張各轉一張 JPG。',{count:12,folderName:'照片 JPG'}),
+      pptx:O('合併\n簡報',48e6,'pptx','slide:photo','一張照片一頁，合成一份簡報。',{name:'照片 合併.pptx'}),
+      png:O('全部\nPNG',210e6,'png','folder','12 張各轉一張 PNG。',{count:12,folderName:'照片 PNG'}),
+      zip:O('壓縮',31e6,'zip','zip','打包成一個壓縮檔，方便一次寄。'+ZIPNOTE,{pick:'arc',name:'照片.zip'})}},
+  empty:{name:null,base:'',size:0,art:null,order:[],groups:[],
+    ring:['src-photo','src-files','src-scan','src-paste'],
+    opts:{'src-photo':{label:'照片',sizeText:'從相簿挑',load:'photo'},'src-files':{label:'檔案',sizeText:'iCloud 等',load:'doc'},'src-scan':{label:'掃描',sizeText:'用相機',load:'pdf'},'src-paste':{label:'貼上',sizeText:'剪貼簿',load:'photo'}}}
+};
+/* 水滴的弧線：最常用的在正上方，往兩邊遞減；超過 6 個時最右邊放「更多」。
+   放射：最常用的放 4 點鐘（圖示上那條綠線），其次是長線、再來短線；超過 12 個時 11 點鐘放「更多」。 */
+function centerOut(n){return[...Array(n).keys()].sort((a,b)=>Math.abs(a-(n-1)/2)-Math.abs(b-(n-1)/2)||a-b)}
+const DIAL_SLOTS=[4,0,2,6,8,10,1,3,5,7,9,11];
+for(const f of Object.values(FILES)){
+  if(!f.ring){const ks=f.order,n=ks.length>6?7:ks.length,sl=centerOut(n),ring=Array(n);ks.slice(0,n===7?6:n).forEach((k,i)=>{ring[sl[i]]=k});if(n===7)ring[6]='more';f.ring=ring}
+  const dial=Array(12).fill(null),cap=f.order.length>12?11:12;f.order.slice(0,cap).forEach((k,i)=>{dial[DIAL_SLOTS[i]]=k});if(f.order.length>12)dial[11]='more';f.dial=dial}
+const DEMO_FILES=[['photo','照片'],['gif','GIF'],['pdf','PDF'],['doc','Word'],['ppt','簡報'],['video','影片'],['audio','聲音'],['text','文字'],['srt','字幕'],['rar','壓縮檔'],['folder','資料夾'],['empty','首頁']];
+function headHTML(key){const f=FILES[key];return f.art?`<img src="${thumbURL(key)}" alt=""><div><b>${f.name}</b><span>${f.meta}　${fmtB(f.size)}</span></div>`:`<div class="ph"></div><div><b>還沒有檔案</b><span>點一個來源，或在別的 App 按分享 › Radius</span></div>`}
+function restOf(f,shown){return f.order.filter(k=>!shown.includes(k))}
+function sizeLine(o){if(o.sizeText)return o.sizeText;return fmtB(o.out)}
+
+/* ---------- Radius 圖示（照 Mac 版 RadiusIcon.drawGlyph：12 條、長短交錯、4 點鐘那條墨綠） ---------- */
+let iconSeq=0;
+function radiusIcon(size,{tile=true,mono=null}={}){
+  const d=size*(tile?.72:1),c=size/2,inner=d*.2,id='rg'+(iconSeq++);let lines='';
+  for(let i=0;i<12;i++){const th=i*Math.PI/6,dx=Math.sin(th),dy=-Math.cos(th),outer=i%2?d*.38:d*.5;
+    const col=mono||(i===4?'#0d6b54':'#141414');
+    lines+=`<line x1="${(c+dx*inner).toFixed(2)}" y1="${(c+dy*inner).toFixed(2)}" x2="${(c+dx*outer).toFixed(2)}" y2="${(c+dy*outer).toFixed(2)}" stroke="${col}" stroke-width="${(d*.07).toFixed(2)}" stroke-linecap="round"/>`}
+  const bg=tile?`<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#ececec"/></linearGradient></defs><rect x=".5" y=".5" width="${size-1}" height="${size-1}" rx="${size*.225}" fill="url(#${id})" stroke="rgba(0,0,0,.1)"/>`:'';
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" aria-hidden="true">${bg}${lines}</svg>`}
+
+/* ---------- 液態玻璃水滴（WebGL：距離場平滑聯集＝會融合的水；表面法線打光；水滴裡看得到檔案） ---------- */
+const FRAG=`
+precision highp float;
+uniform vec2 u_res;uniform float u_dpr;uniform float u_time;
+uniform vec2 u_body;uniform float u_bodyR;uniform float u_wob;
+uniform vec2 u_pts[8];uniform float u_rad[8];uniform float u_strand;
+uniform vec2 u_tip;uniform float u_tipR;uniform float u_tipK;
+uniform vec4 u_box;uniform float u_boxR;uniform float u_conn;
+uniform float u_ripple;uniform float u_dark;
+uniform sampler2D u_thumb;uniform float u_thumbA;
+uniform vec3 u_glass;uniform vec3 u_green;
+float smin(float a,float b,float k){k=max(k,.001);float h=clamp(.5+.5*(b-a)/k,0.,1.);return mix(b,a,h)-k*h*(1.-h);}
+float seg(vec2 p,vec2 a,vec2 b,float r1,float r2){vec2 pa=p-a,ba=b-a;float h=clamp(dot(pa,ba)/max(dot(ba,ba),.001),0.,1.);return length(pa-ba*h)-mix(r1,r2,h);}
+float rbox(vec2 p,vec2 b,float r){vec2 q=abs(p)-b+r;return length(max(q,0.))+min(max(q.x,q.y),0.)-r;}
+float bodySD(vec2 p){vec2 q=p-u_body;float a=atan(q.y,q.x);
+  float w=u_wob*(sin(a*3.+u_time*1.7)*.9+sin(a*5.-u_time*2.3)*.55+sin(a*2.+u_time*1.1)*.6);
+  return length(q)-(u_bodyR+w);}
+float scene(vec2 p){
+  float d=bodySD(p);
+  if(u_strand>.002){float s=1e5;for(int i=0;i<7;i++){s=min(s,seg(p,u_pts[i],u_pts[i+1],u_rad[i],u_rad[i+1]));}d=smin(d,s,12.*u_strand+1.);}
+  d=smin(d,length(p-u_tip)-u_tipR,u_tipK);
+  if(u_conn>.002){float b=rbox(p-u_box.xy,u_box.zw,u_boxR)+(1.-u_conn)*(min(u_box.z,u_box.w)+2.);d=smin(d,b,14.*u_conn+1.);}
+  return d;}
+void main(){
+  vec2 p=vec2(gl_FragCoord.x,u_res.y*u_dpr-gl_FragCoord.y)/u_dpr;
+  float d=scene(p);
+  float rb=length(p-u_body);
+  if(d>26.&&(u_ripple<.01||rb>u_bodyR+56.)){gl_FragColor=vec4(0.);return;}
+  float aa=.9/u_dpr;
+  float e=.8;
+  vec2 g=vec2(scene(p+vec2(e,0.))-d,scene(p+vec2(0.,e))-d);
+  float gn=length(g);g=gn>1e-5?g/gn:vec2(0.);
+  float cover=1.-smoothstep(-aa,aa,d);
+  float inside=clamp(-d/15.,0.,1.);
+  float edge=1.-inside;
+  vec3 n=normalize(vec3(g*edge*edge*2.6,1.));
+  vec3 L=normalize(vec3(-.45,-.7,.75));
+  vec3 H=normalize(L+vec3(0.,0.,1.));
+  float spec=pow(max(dot(n,H),0.),70.);
+  float diff=dot(n,L);
+  vec3 base=mix(u_glass,u_green,u_conn);
+  vec3 col=base*(.86+.22*diff);
+  float bd=bodySD(p);
+  float inB=(1.-smoothstep(-10.,-1.,bd))*u_thumbA;
+  if(inB>.001){vec2 uv=(p-u_body)/(max(u_bodyR,1.)*2.)+.5+n.xy*.07*edge;
+    vec3 th=texture2D(u_thumb,uv).rgb;col=mix(col,th*(.9+.12*diff),inB*(1.-.55*u_conn));}
+  col+=pow(edge,3.)*mix(.18,.32,u_dark);
+  col+=spec*.9;
+  col*=1.-.22*clamp(dot(g,vec2(.55,.83)),0.,1.)*edge*edge;
+  float la=cover*.97;
+  float ds=scene(p-vec2(0.,7.));
+  float sh=(1.-smoothstep(-8.,20.,ds))*mix(.14,.4,u_dark)*(1.-cover);
+  float rip=0.;
+  if(u_ripple>.01){for(int k=0;k<3;k++){float ph=fract(u_time/2.4+float(k)/3.);
+      float rr=u_bodyR+4.+ph*46.;float w=1.+ph*.8;
+      float ring=1.-smoothstep(w-aa,w+aa,abs(rb-rr));
+      rip=max(rip,ring*pow(1.-ph,1.7)*.42);}
+    rip*=u_ripple*(1.-cover);}
+  vec3 rc=mix(u_glass,vec3(.82),u_dark);
+  vec4 acc=vec4(0.,0.,0.,sh);
+  acc=vec4(rc*rip,rip)+acc*(1.-rip);
+  acc=vec4(col*la,la)+acc*(1.-la);
+  gl_FragColor=acc;
+}`;
+class Liquid{
+  constructor(canvas){this.c=canvas;const gl=canvas.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false,stencil:false});
+    this.gl=gl;this.ok=!!gl;if(!gl)return;
+    const sh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){console.error(gl.getShaderInfoLog(s));this.ok=false}return s};
+    const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}'));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,FRAG));
+    gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS)){console.error(gl.getProgramInfoLog(p));this.ok=false;return}
+    gl.useProgram(p);
+    const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+    const loc=gl.getAttribLocation(p,'a');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    this.u={};for(const n of['u_res','u_dpr','u_time','u_body','u_bodyR','u_wob','u_strand','u_tip','u_tipR','u_tipK','u_box','u_boxR','u_conn','u_ripple','u_dark','u_thumb','u_thumbA','u_glass','u_green'])this.u[n]=gl.getUniformLocation(p,n);
+    this.u.pts=gl.getUniformLocation(p,'u_pts[0]');this.u.rad=gl.getUniformLocation(p,'u_rad[0]');
+    this.tex=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.tex);
+    for(const [k,v] of [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]])gl.texParameteri(gl.TEXTURE_2D,k,v);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([200,200,200,255]));gl.uniform1i(this.u.u_thumb,0)}
+  thumb(src){if(!this.ok)return;const gl=this.gl;gl.bindTexture(gl.TEXTURE_2D,this.tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src)}
+  size(w,h){if(!this.ok)return;const d=Math.min(2,devicePixelRatio||1);this.dpr=d;this.w=w;this.h=h;this.c.width=Math.max(1,Math.round(w*d));this.c.height=Math.max(1,Math.round(h*d));this.gl.viewport(0,0,this.c.width,this.c.height)}
+  draw(s){if(!this.ok||!this.w)return;const gl=this.gl,u=this.u;
+    gl.uniform2f(u.u_res,this.w,this.h);gl.uniform1f(u.u_dpr,this.dpr);gl.uniform1f(u.u_time,s.time);
+    gl.uniform2f(u.u_body,s.bx,s.by);gl.uniform1f(u.u_bodyR,s.bodyR);gl.uniform1f(u.u_wob,s.wob);
+    gl.uniform2fv(u.pts,s.pts);gl.uniform1fv(u.rad,s.rad);gl.uniform1f(u.u_strand,s.strand);
+    gl.uniform2f(u.u_tip,s.tx,s.ty);gl.uniform1f(u.u_tipR,s.tipR);gl.uniform1f(u.u_tipK,s.tipK);
+    gl.uniform4f(u.u_box,s.box[0],s.box[1],s.box[2],s.box[3]);gl.uniform1f(u.u_boxR,s.boxR);gl.uniform1f(u.u_conn,s.conn);
+    gl.uniform1f(u.u_ripple,s.ripple);gl.uniform1f(u.u_dark,s.dark);gl.uniform1f(u.u_thumbA,s.thumbA);
+    gl.uniform3fv(u.u_glass,s.glass);gl.uniform3fv(u.u_green,s.green);
+    gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLES,0,3)}}
+
+/* ---------- 方向一：水滴 ---------- */
+class DropStage{
+  constructor(root,{onChoose,compact=false}={}){
+    this.root=root;this.onChoose=onChoose;this.compact=compact;root.classList.add('stage','drop-stage');
+    this.svg=document.createElementNS(SVGNS,'svg');this.svg.setAttribute('class','spokes');root.append(this.svg);
+    this.cv=document.createElement('canvas');root.append(this.cv);
+    this.layer=el('div','opts');root.append(this.layer);
+    this.rd=el('div','readout');root.append(this.rd);
+    this.head=el('div','fhead');root.append(this.head);this.hintEl=el('p','drop-hint');root.append(this.hintEl);
+    this.ghost=el('div','ghost');root.append(this.ghost);
+    this.liq=new Liquid(this.cv);
+    if(!this.liq.ok){this.fallback=el('div','css-drop');root.append(this.fallback)}
+    this.R=compact?36:40;this.B={x:0,y:0};
+    this.bodyR=new Spring(0,190,15);this.tx=new Spring(0,520,40);this.ty=new Spring(0,520,40);
+    this.lx=new Spring(0,110,17);this.ly=new Spring(0,110,17);
+    this.strand=new Spring(1,260,28);this.conn=new Spring(0,260,24);this.rip=new Spring(0,40,12);this.thA=new Spring(0,90,16);this.press=new Spring(0,400,26);
+    this.springs=[this.bodyR,this.tx,this.ty,this.lx,this.ly,this.strand,this.conn,this.rip,this.thA,this.press];
+    this.items=[];this.hot=-1;this.mode='idle';this.finger=null;this.broken=false;this.lastBox=[0,0,1,1];
+    this.pts=new Float32Array(16);this.rad=new Float32Array(8);
+    new ResizeObserver(()=>this.layout()).observe(root);
+    root.addEventListener('pointerdown',e=>this.down(e));root.addEventListener('pointermove',e=>this.move(e));
+    root.addEventListener('pointerup',e=>this.up(e));root.addEventListener('pointercancel',e=>this.up(e,true));
+    this.tickFn=(dt,t)=>this.tick(dt,t)}
+  start(){ticks.add(this.tickFn)} stop(){ticks.delete(this.tickFn)}
+  load(key,{splash=false}={}){
+    this.key=key;this.file=FILES[key];const f=this.file;this.head.innerHTML=headHTML(key);
+    if(f.art){const t=texOf(f);this.liq.thumb(t);if(this.fallback)this.fallback.style.backgroundImage=`url(${t.toDataURL()})`}
+    this.thA.t=f.art?1:0;if(!splash)this.thA.snap(this.thA.t);else{this.thA.snap(0);this.bodyR.x=this.R*.55}
+    this.build();this.layout();this.reset(!splash);if(splash){haptic()}}
+  build(){
+    this.layer.innerHTML='';this.items=[];const f=this.file;
+    for(const k of f.ring){const o=k==='more'?{label:'更多',sizeText:restOf(f,f.ring).length+' 種'}:f.opts[k];
+      const b=el('button','opt');b.type='button';b.dataset.k=k;b.innerHTML=`<b>${o.label}</b><small>${sizeLine(o)}</small>`;
+      this.layer.append(b);this.items.push({k,o,el:b,x:0,y:0,w:60,h:44,pop:new Spring(0,300,22),lift:new Spring(1,420,26)})}
+    this.itemSprings=this.items.flatMap(it=>[it.pop,it.lift])}
+  layout(){
+    const W=this.root.clientWidth,H=this.root.clientHeight;if(!W||!H)return;this.W=W;this.H=H;this.liq.size(W,H);
+    const R=this.R,headB=(this.head.offsetTop+this.head.offsetHeight)||70;this.B={x:W/2,y:H-R-(this.compact?46:54)};
+    const n=this.items.length,span=n>=6?75:n===5?66:n===4?50:40;
+    const rx=Math.min(W/2-40,this.compact?156:168),ry=Math.max(110,Math.min(rx*1.12,this.B.y-headB-112));
+    this.items.forEach((it,i)=>{const a=(n===1?0:-span+i*(2*span/(n-1)))*Math.PI/180;
+      it.w=it.el.offsetWidth||60;it.h=it.el.offsetHeight||44;
+      it.x=clamp(this.B.x+rx*Math.sin(a),it.w/2+8,W-it.w/2-8);it.y=this.B.y-ry*Math.cos(a)});
+    let s='';for(const it of this.items){const dx=it.x-this.B.x,dy=it.y-this.B.y,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,a=R+14,b=L-Math.max(it.w,it.h)/2-8;
+      if(b>a)s+=`<line x1="${(this.B.x+ux*a).toFixed(1)}" y1="${(this.B.y+uy*a).toFixed(1)}" x2="${(this.B.x+ux*b).toFixed(1)}" y2="${(this.B.y+uy*b).toFixed(1)}"/>`}
+    this.svg.innerHTML=s;
+    this.rd.style.top=(headB+16)+'px';this.hintEl.style.top=(this.B.y+R+12)+'px';
+    if(this.fallback){this.fallback.style.left=this.B.x+'px';this.fallback.style.top=this.B.y+'px'}
+    if(this.mode==='idle'){this.tx.snap(this.B.x);this.ty.snap(this.B.y);this.lx.snap(this.B.x);this.ly.snap(this.B.y)}}
+  reset(initial=false){
+    this.mode='idle';this.hot=-1;this.broken=false;this.finger=null;this.script=null;this.ghost.style.opacity=0;
+    this.bodyR.k=190;this.bodyR.c=15;this.bodyR.t=this.R*(this.file.art?1:.86);if(initial)this.bodyR.x=this.R*.2;
+    this.tx.snap(this.B.x);this.ty.snap(this.B.y);this.lx.snap(this.B.x);this.ly.snap(this.B.y);this.strand.snap(1);this.conn.t=0;
+    this.items.forEach((it,i)=>{it.pop.x=0;it.pop.t=0;setTimeout(()=>{it.pop.t=1},(initial?160:60)+i*55);
+      it.el.classList.remove('hot','dim');if(it.k==='more'){it.override=null;it.el.innerHTML=`<b>更多</b><small>${restOf(this.file,this.file.ring).length} 種</small>`}
+      else it.el.querySelector('small').textContent=sizeLine(it.o)});
+    this.setRead()}
+  local(e){const r=this.root.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+  down(e){
+    if(this.mode==='pour'||(this.script&&!this.script.demo))return;
+    if(this.script&&this.script.demo)this.endDemo();
+    const p=this.local(e),pill=e.target.closest('.opt');
+    this.tapPill=pill?{k:pill.dataset.k,x:p.x,y:p.y}:null;if(pill)return;
+    if(!this.file.art){this.press.t=1;setTimeout(()=>{this.press.t=0},140);return}
+    if(Math.hypot(p.x-this.B.x,p.y-this.B.y)<this.R+44){
+      e.preventDefault();try{this.root.setPointerCapture(e.pointerId)}catch(_){}
+      this.mode='drag';this.finger=p;this.press.t=1;this.setRead()}}
+  move(e){if(this.mode!=='drag')return;this.finger=this.local(e);this.hitTest()}
+  up(e,cancel){
+    if(this.mode==='drag'){this.press.t=0;
+      if(this.hot>=0&&!cancel){haptic();this.commit(this.hot)}
+      else{this.mode='idle';this.setHot(-1);this.broken=false}
+      return}
+    if(this.tapPill&&!cancel){const p=this.local(e);if(Math.hypot(p.x-this.tapPill.x,p.y-this.tapPill.y)<14){const i=this.items.findIndex(it=>it.k===this.tapPill.k);if(i>=0)this.tapTo(i)}}
+    this.tapPill=null}
+  setHot(i){if(i===this.hot&&this.mode!=='idle')return;this.hot=i;this.items.forEach((it,j)=>{it.el.classList.toggle('hot',j===i);it.el.classList.toggle('dim',i>=0&&j!==i);it.lift.t=j===i?1.08:1});this.setRead()}
+  hitTest(){
+    const f=this.finger,b={x:f.x,y:f.y-28};let best=-1,bd=1e9;
+    this.items.forEach((it,i)=>{const m=i===this.hot?30:12,inside=q=>Math.abs(q.x-it.x)<it.w/2+m&&Math.abs(q.y-it.y)<it.h/2+m;
+      if(inside(f)||inside(b)){const d=Math.hypot(b.x-it.x,b.y-it.y);if(d<bd){bd=d;best=i}}});
+    if(best!==this.hot){this.setHot(best);if(best>=0)haptic()}
+    const L=Math.hypot(b.x-this.B.x,b.y-this.B.y),far=this.reach()+70;
+    if(best<0&&!this.broken&&L>far)this.broken=true;
+    if(this.broken&&(L<far-50||best>=0))this.broken=false}
+  reach(){return Math.max(60,...this.items.map(it=>Math.hypot(it.x-this.B.x,it.y-this.B.y)))}
+  tapTo(i){const it=this.items[i];
+    if(it.o.load){this.load(it.o.load,{splash:true});this.onSource&&this.onSource(it.o.load);return}
+    if(it.k==='more'&&!it.override){More.open(this.key,k=>this.pickMore(k),restOf(this.file,this.file.ring));return}
+    if(!this.file.art)return;
+    this.mode='script';this.script={i,t:0,dur:.34,from:{x:this.B.x,y:this.B.y}};this.setHot(-1)}
+  pickMore(k){const i=this.items.findIndex(it=>it.k==='more');if(i<0)return;const it=this.items[i],o=this.file.opts[k];
+    it.override={k,o};it.el.innerHTML=`<b>${o.label}</b><small>${sizeLine(o)}</small>`;
+    requestAnimationFrame(()=>{it.w=it.el.offsetWidth;it.h=it.el.offsetHeight;this.tapTo(i)})}
+  demo(k){const i=this.items.findIndex(it=>it.k===k);if(i<0||this.mode!=='idle')return;this.mode='script';this.script={i,t:0,dur:.9,demo:true,from:{x:this.B.x,y:this.B.y}}}
+  endDemo(){this.script=null;this.mode='idle';this.ghost.style.opacity=0;this.setHot(-1);this.finger=null}
+  commit(i){const it=this.items[i];const k=it.override?it.override.k:it.k,o=it.override?it.override.o:it.o;
+    if(k==='more'){this.mode='idle';this.setHot(-1);More.open(this.key,kk=>this.pickMore(kk),restOf(this.file,this.file.ring));return}
+    this.mode='pour';this.pourKey=k;this.setRead();
+    this.bodyR.k=60;this.bodyR.c=15;this.bodyR.t=0;
+    it.el.querySelector('small').textContent='轉換中…';
+    setTimeout(()=>{if(this.mode==='pour')this.strand.t=0},420);
+    setTimeout(()=>{this.onChoose&&this.onChoose(k,this)},o.long?560:800)}
+  setRead(){const f=this.file;let h='',hint='';
+    if(this.mode==='pour'){const o=f.opts[this.pourKey];h=`<div class="big">${plain(o.label)}</div><div class="r2">${o.long?'正在轉，影片比較久，可以先切到別的 App':'正在轉…'}</div>`}
+    else if(this.hot>=0){const it=this.items[this.hot],o=it.override?it.override.o:it.o;
+      if(it.k==='more'&&!it.override)h=`<div class="big">更多</div><div class="r2">放開看其他格式</div>`;
+      else if(o.out!=null)h=`<div class="big">${o.exact?'':'約 '}${fmtB(o.out)}</div><div class="r2">轉成 ${plain(o.label)}，${delta(o.out,f.size)}</div>`;
+      else h=`<div class="big">${plain(o.label)}</div><div class="r2">${o.hint||'放開就開始'}</div>`}
+    else if(!f.art)hint='點一個來源';
+    else if(this.mode==='drag')h=`<div class="r2">${this.broken?'拉太遠了，回來一點':'拉到格式上，碰到就會連起來'}</div>`;
+    else hint='按住水滴往上拉';
+    if(h!==this._rd){this._rd=h;this.rd.innerHTML=h}
+    if(hint!==this._hint){this._hint=hint;this.hintEl.textContent=hint}}
+  tick(dt,time){
+    if(!this.W)return;const B=this.B;
+    if(this.script){const s=this.script,it=this.items[s.i];s.t+=dt/s.dur;const k=ease(s.t);
+      this.finger={x:lerp(s.from.x,it.x,k),y:lerp(s.from.y,it.y,k)};
+      if(s.t>=1&&this.hot!==s.i)this.setHot(s.i);
+      if(s.demo){this.ghost.style.opacity=s.t<1.6?.95:0;this.ghost.style.transform=`translate(${this.finger.x}px,${this.finger.y+30}px)`;if(s.t>=1.9)this.endDemo()}
+      else if(s.t>=1.35){this.script=null;this.commit(s.i)}}
+    let gx=B.x,gy=B.y;
+    if(this.mode!=='idle'){if(this.hot>=0){const it=this.items[this.hot];gx=it.x;gy=it.y}else if(this.finger){gx=this.finger.x;gy=this.finger.y-(this.mode==='drag'?28:0)}}
+    this.tx.t=clamp(gx,8,this.W-8);this.ty.t=clamp(gy,8,this.H-8);this.lx.t=this.tx.x;this.ly.t=this.ty.x;
+    this.conn.t=this.hot>=0&&this.mode!=='idle'?1:0;
+    if(this.mode!=='pour')this.strand.t=this.broken?0:1;
+    this.rip.t=(this.mode==='idle'&&this.file.art&&!RM.matches)?1:0;
+    stepAll(this.springs,dt);stepAll(this.itemSprings,dt);
+    const tx=this.tx.x,ty=this.ty.x,dx=tx-B.x,dy=ty-B.y,L=Math.hypot(dx,dy);
+    const off=this.mode==='idle'||this.broken?0:Math.min(7,L*.035);
+    const bx=B.x+(L?dx/L*off:0),by=B.y+(L?dy/L*off:0);
+    const cx=bx+(this.lx.x-bx)*.55,cy=by+(this.ly.x-by)*.55;
+    const full=clamp(this.bodyR.x/this.R,0,1.2),thin=clamp(1.25-L/380,.55,1),st=clamp(this.strand.x,0,1),cn=clamp(this.conn.x,0,1);
+    const r0=lerp(19,22,cn)*thin*(.4+.6*Math.min(1,full))*st,r1=lerp(9,12,cn)*thin*(.5+.5*Math.min(1,full))*st;
+    for(let i=0;i<8;i++){const t=i/7,a=(1-t)*(1-t),b2=2*(1-t)*t,c=t*t;this.pts[2*i]=a*bx+b2*cx+c*tx;this.pts[2*i+1]=a*by+b2*cy+c*ty;this.rad[i]=lerp(r0,r1,t)*(1-.16*Math.sin(Math.PI*t))}
+    let box=this.lastBox;if(this.hot>=0){const it=this.items[this.hot],sc=it.lift.x;box=[it.x,it.y,it.w/2*sc,it.h/2*sc];this.lastBox=box}
+    const dark=DARK.matches;
+    this.liq.draw({time,bx,by,bodyR:Math.max(0,this.bodyR.x*(1-.05*this.press.x)),wob:RM.matches?0:(this.mode==='idle'?1.4:.8)*Math.min(1,full),
+      pts:this.pts,rad:this.rad,strand:st,tx,ty,tipR:(this.broken?15:16)*(this.mode==='pour'?.5+.5*Math.min(1,full):1),tipK:10*st+.5,
+      box,boxR:17*(box[2]/Math.max(1,box[2])),conn:cn,ripple:this.rip.x,dark:dark?1:0,thumbA:clamp(this.thA.x,0,1),
+      glass:dark?[.24,.28,.26]:[.11,.14,.13],green:dark?[.06,.48,.38]:[.051,.42,.33]});
+    let pops=0;for(const it of this.items){const p=clamp(it.pop.x,0,1.2);pops+=Math.min(1,p);
+      it.el.style.transform=`translate(${it.x.toFixed(1)}px,${it.y.toFixed(1)}px) translate(-50%,-50%) scale(${((.62+.38*p)*it.lift.x).toFixed(3)})`;
+      if(!it.el.classList.contains('dim'))it.el.style.opacity=Math.min(1,p).toFixed(3);else it.el.style.opacity=''}
+    this.svg.style.opacity=((this.items.length?pops/this.items.length:0)*(this.hot>=0?.35:1)).toFixed(3);
+    if(this.mode==='drag'&&this._brk!==this.broken){this._brk=this.broken;this.setRead()}}
+}
+
+/* ---------- 方向二：放射 ---------- */
+class DialStage{
+  constructor(root,{onChoose}){
+    this.root=root;this.onChoose=onChoose;root.classList.add('stage','dial-stage');
+    this.svg=document.createElementNS(SVGNS,'svg');this.svg.setAttribute('class','dial-svg');root.append(this.svg);
+    this.lines=[...Array(12)].map(()=>{const l=document.createElementNS(SVGNS,'line');this.svg.append(l);return l});
+    this.head=el('div','fhead');root.append(this.head);
+    this.hole=el('div','hole');root.append(this.hole);
+    this.labs=[...Array(12)].map((_,i)=>{const b=el('button','lab');b.type='button';b.dataset.i=i;root.append(b);return b});
+    this.trail=el('div','trail');root.append(this.trail);
+    this.rd=el('div','readout');root.append(this.rd);
+    this.hint=el('p','dial-hint');root.append(this.hint);
+    this.exp=new Spring(0,230,21);this.ext=[...Array(12)].map(()=>new Spring(0,360,26));this.pop=[...Array(12)].map(()=>new Spring(0,300,22));
+    this.all=[this.exp,...this.ext,...this.pop];this.sel=-1;this.press=null;this.sticky=false;this.busy=false;this.cls=[];
+    new ResizeObserver(()=>this.layout()).observe(root);
+    root.addEventListener('pointerdown',e=>this.down(e));root.addEventListener('pointermove',e=>this.move(e));
+    root.addEventListener('pointerup',e=>this.up(e));root.addEventListener('pointercancel',e=>this.up(e,true));
+    this.tickFn=dt=>this.tick(dt)}
+  start(){ticks.add(this.tickFn)} stop(){ticks.delete(this.tickFn)}
+  load(key){this.key=key;this.file=FILES[key];const f=this.file;
+    this.map=f.dial;
+    this.labs.forEach((b,i)=>{const k=this.map[i];b.hidden=!k;if(k)b.textContent=k==='more'?'更多…':plain(f.opts[k].label)});
+    this.head.innerHTML=headHTML(key);this.hole.style.backgroundImage=f.art?`url(${thumbURL(key)})`:'none';this.reset();this.layout()}
+  layout(){const W=this.root.clientWidth,H=this.root.clientHeight;if(!W||!H)return;this.W=W;this.H=H;
+    const headB=(this.head.offsetTop+this.head.offsetHeight)||70,top=headB+96,bottom=H-50;
+    this.RL=Math.max(96,Math.min(146,W/2-42,(bottom-top)/2-18));this.C={x:W/2,y:Math.max(top+this.RL+16,(top+bottom)/2)};
+    this.svg.setAttribute('viewBox',`0 0 ${W} ${H}`);this.hole.style.transform=`translate(${this.C.x}px,${this.C.y}px)`;
+    this.rd.style.top=(headB+16)+'px'}
+  local(e){const r=this.root.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+  down(e){if(this.busy||!this.file.art)return;const p=this.local(e);
+    if(this.sticky){const b=e.target.closest('.lab');if(b){this.tapLab=+b.dataset.i;return}this.collapse();return}
+    e.preventDefault();try{this.root.setPointerCapture(e.pointerId)}catch(_){}
+    this.press={x:p.x,y:p.y,t:performance.now()};this.exp.t=1;this.hint.style.opacity=0;this.setSel(-1);
+    this.trail.style.width='0px';this.trail.style.transform=`translate(${p.x}px,${p.y}px)`;this.trail.style.opacity=.9}
+  move(e){if(!this.press)return;const p=this.local(e),vx=p.x-this.press.x,vy=p.y-this.press.y,d=Math.hypot(vx,vy);
+    this.trail.style.width=d+'px';this.trail.style.transform=`translate(${this.press.x}px,${this.press.y}px) rotate(${Math.atan2(vy,vx)}rad)`;
+    if(d<20){this.setSel(-1);return}
+    let a=Math.atan2(vx,-vy);if(a<0)a+=2*Math.PI;const i=Math.round(a/(Math.PI/6))%12;const n=this.map[i]?i:-1;if(n!==this.sel){this.setSel(n);if(n>=0)haptic()}}
+  up(e,cancel){
+    if(this.tapLab!=null){const i=this.tapLab;this.tapLab=null;if(!cancel&&this.map[i])this.shoot(i);return}
+    if(!this.press)return;const p=this.local(e),d=Math.hypot(p.x-this.press.x,p.y-this.press.y),quick=performance.now()-this.press.t<300;
+    this.press=null;this.trail.style.opacity=0;
+    if(!cancel&&this.sel>=0){haptic();this.shoot(this.sel);return}
+    if(!cancel&&quick&&d<10){this.sticky=true;this.root.classList.add('sticky');this.hint.textContent='點一個格式；點空白的地方收起來';this.hint.style.opacity=1;return}
+    this.collapse()}
+  collapse(){this.sticky=false;this.root.classList.remove('sticky');this.exp.t=0;this.setSel(-1);this.hint.textContent='在畫面任何地方按住，往一個方向滑';this.hint.style.opacity=1}
+  setSel(i){this.sel=i;this.ext.forEach((s,j)=>{s.t=j===i?1:0});this.labs.forEach((b,j)=>b.classList.toggle('sel',j===i));this.readout()}
+  shoot(i){if(this.map[i]==='more'){this.collapse();More.open(this.key,k=>{this.busy=true;this.onChoose&&this.onChoose(k,this)},restOf(this.file,this.map));return}
+    this.busy=true;this.setSel(i);const C=this.C,th=i*Math.PI/6,x=C.x+Math.sin(th)*this.RL,y=C.y-Math.cos(th)*this.RL;
+    const c=el('div','comet');c.style.backgroundImage=this.hole.style.backgroundImage;c.style.transform=`translate(${C.x}px,${C.y}px)`;this.root.append(c);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{c.style.transform=`translate(${x}px,${y}px) scale(.4)`;c.style.opacity=.15}));
+    this.hole.style.opacity=.25;this.readout(true);
+    setTimeout(()=>{c.remove();this.labs[i].classList.add('chosen')},320);
+    setTimeout(()=>{this.onChoose&&this.onChoose(this.map[i],this)},640)}
+  reset(){this.busy=false;this.press=null;this.trail.style.opacity=0;this.labs.forEach(b=>b.classList.remove('chosen'));this.hole.style.opacity=1;this.collapse();
+    if(!this.file.art){this.hint.textContent='先選一個檔案（上面「照片」「PDF」…）'}}
+  readout(pouring){const f=this.file;let h='';
+    if(!f.art)h='';
+    else if(this.sel>=0&&this.map[this.sel]==='more')h=`<div class="big">更多</div><div class="r2">放開看其他格式</div>`;
+    else if(this.sel>=0){const o=f.opts[this.map[this.sel]];
+      if(pouring)h=`<div class="big">${plain(o.label)}</div><div class="r2">正在轉…</div>`;
+      else if(o.out!=null)h=`<div class="big">${o.exact?'':'約 '}${fmtB(o.out)}</div><div class="r2">轉成 ${plain(o.label)}，${delta(o.out,f.size)}</div>`;
+      else h=`<div class="big">${plain(o.label)}</div><div class="r2">${o.hint||'放開就開始'}</div>`}
+    else h=`<div class="r2">右下那條綠的，是這類檔案最常用的格式</div>`;
+    if(h!==this._rd){this._rd=h;this.rd.innerHTML=h}}
+  tick(dt){if(!this.W)return;stepAll(this.all,dt);const C=this.C,e=clamp(this.exp.x,0,1.1);
+    for(let i=0;i<12;i++){const k=this.map[i],th=i*Math.PI/6,ux=Math.sin(th),uy=-Math.cos(th),s=36;
+      const L=(i%2===0?70:54)*(k?1:.5),len=L*(.42+.58*e)+26*this.ext[i].x;const l=this.lines[i];
+      l.setAttribute('x1',(C.x+ux*s).toFixed(1));l.setAttribute('y1',(C.y+uy*s).toFixed(1));l.setAttribute('x2',(C.x+ux*(s+len)).toFixed(1));l.setAttribute('y2',(C.y+uy*(s+len)).toFixed(1));
+      l.setAttribute('stroke-width',(5+1.6*e).toFixed(2));
+      const cls=(!k?'null ':'')+(i===this.sel?'sel ':'')+(i===4&&this.sel<0?'acc ':'')+(this.sel>=0&&i!==this.sel?'fade':'');
+      if(cls!==this.cls[i]){this.cls[i]=cls;l.setAttribute('class',cls)}
+      if(k){const p=this.pop[i];p.t=e>.3+i*.03?1:0;const q=clamp(p.x,0,1.15),r=this.RL-10*(1-Math.min(1,q))+(i===this.sel?6:0);
+        const b=this.labs[i];b.style.transform=`translate(${(C.x+ux*r).toFixed(1)}px,${(C.y+uy*r).toFixed(1)}px) translate(-50%,-50%) scale(${(.72+.28*q).toFixed(3)})`;b.style.opacity=Math.min(1,q).toFixed(3)}}}
+}
+
+/* ---------- 方向三：清單 ---------- */
+class ListStage{
+  constructor(root,{onChoose}){this.root=root;this.onChoose=onChoose;root.addEventListener('click',e=>{const t=e.target.closest('.tile');if(t)this.tap(t,e)})}
+  load(key){this.key=key;const f=this.file=FILES[key];let h='';
+    if(!f.art){h=`<p class="home-hello">要轉什麼？</p><p class="home-sub">或是在照片、LINE、郵件裡按分享 › Radius。</p>
+      <div class="tiles">${['src-photo','src-files','src-scan','src-paste'].map(k=>`<button class="tile big" data-k="${k}"><b>${f.opts[k].label}</b><small>${f.opts[k].sizeText}</small></button>`).join('')}</div>
+      <section class="grp"><h3>最近轉的</h3><div class="recent">
+      <div><img src="${thumbURL('photo')}" alt="">IMG_4127.jpg<span>3.9 MB　剛剛</span></div>
+      <div><img src="${thumbURL('pdf')}" alt="">會議紀錄 已縮小.pdf<span>640 KB　昨天</span></div></div></section>`}
+    else{h=`<div class="list-head"><img src="${thumbURL(key)}" alt=""><div><b>${f.name}</b><span>${f.meta}</span><span>${fmtB(f.size)}</span></div></div>`;
+      for(const [title,keys] of f.groups){h+=`<section class="grp"><h3>${title}</h3><div class="tiles">${keys.map(k=>{const o=f.opts[k];
+        return `<button class="tile${title==='常用'?' big':''}" data-k="${k}"><b>${plain(o.label)}</b><small>${o.sizeText||(o.exact?'':'約 ')+fmtB(o.out)}</small></button>`}).join('')}</div></section>`}}
+    this.root.innerHTML=h;this.root.scrollTop=0;this.busy=false}
+  tap(t,e){if(this.busy)return;const r=t.getBoundingClientRect();t.style.setProperty('--x',(e.clientX-r.left)+'px');t.style.setProperty('--y',(e.clientY-r.top)+'px');t.classList.add('fill');haptic();
+    const k=t.dataset.k,o=this.file.opts[k];this.busy=true;
+    if(o.load){setTimeout(()=>{this.load(o.load);setDemoChip('list',o.load)},420);return}
+    setTimeout(()=>{const s=t.querySelector('small');if(s)s.textContent='轉換中…'},200);
+    setTimeout(()=>this.onChoose(k,this),620)}
+  reset(){this.busy=false;$$('.tile.fill',this.root).forEach(t=>{t.classList.remove('fill');const o=this.file.opts[t.dataset.k];const s=t.querySelector('small');if(s&&o)s.textContent=o.sizeText||(o.exact?'':'約 ')+fmtB(o.out)})}
+}
+
+/* ---------- 方向四：造句（不用拖；每個詞點了就能換） ---------- */
+const DESTS={radius:['Radius 資料夾','iCloud 雲碟，Mac 上也看得到'],photos:['照片','只適用圖片和影片'],files:['選一個資料夾…','檔案 App 裡任何地方：iCloud、Google Drive、OneDrive…'],share:['直接分享…','轉好馬上叫出分享選單']};
+const PHOTOABLE=['jpg','png','heic','webp','tiff','gif','bmp','mp4','mov'];
+function subOf(o){if(!o)return null;
+  if(o.pick==='arc')return{label:'格式',items:[['zip','ZIP'],['7z','7z'],['tar.gz','tar.gz']]};
+  if(o.pick==='ocr')return{label:'存成',items:[['txt','TXT'],['docx','Word']]};
+  if(o.pick==='dpi')return{label:'解析度',items:[['150','150 dpi'],['300','300 dpi']]};
+  if(o.q)return{label:'品質',items:[['hi','高'],['mid','中'],['lo','小，適合傳 LINE']]};
+  return null}
+function subSize(o,sub,base){let s=base;if(sub==='mid')s*=.55;if(sub==='lo')s*=.28;if(sub==='300')s*=2.6;if(sub==='7z')s*=.93;if(sub==='tar.gz')s*=.98;return s}
+function tileHTML(f,k,big,cur){const o=f.opts[k];return `<button class="tile${big?' big':''}${k===cur?' on':''}" data-v="${k}"><b>${plain(o.label)}</b><small>${o.sizeText||(o.exact?'':'約 ')+fmtB(o.out)}</small></button>`}
+function formatPickerHTML(f,cur){const sug=f.order.slice(0,3),rest=f.groups.map(([t,ks])=>[t,ks.filter(k=>!sug.includes(k))]).filter(([,ks])=>ks.length);
+  return `<h4>${rest.length?'建議':'全部'}</h4><div class="tiles">${sug.map(k=>tileHTML(f,k,true,cur)).join('')}</div>`+rest.map(([t,ks])=>`<h4>${t}</h4><div class="tiles">${ks.map(k=>tileHTML(f,k,false,cur)).join('')}</div>`).join('')}
+class SentenceStage{
+  constructor(root,{onChoose}){this.root=root;this.onChoose=onChoose;root.classList.add('sent-stage');
+    root.innerHTML=`<div class="sent"></div><div class="sent-foot"><p class="sent-est"></p><button class="btn primary go" type="button"><span>轉換</span></button></div>`;
+    this.box=$('.sent',root);this.est=$('.sent-est',root);this.go=$('.go',root);
+    this.box.addEventListener('click',e=>{const t=e.target.closest('.tok');if(t)this.pick(t.dataset.t)});
+    this.go.addEventListener('click',()=>this.run())}
+  load(key){this.key=key;this.file=FILES[key];this.fmt=this.file.art?this.file.order[0]:null;this.sub=null;this.dest=null;this.reset();this.render()}
+  opt(){return this.fmt?this.file.opts[this.fmt]:null}
+  photoable(){const o=this.opt();return !!o&&o.pick!=='arc'&&o.res!=='text'&&PHOTOABLE.includes(o.ext)}
+  destOf(){if(this.dest&&(this.dest!=='photos'||this.photoable()))return this.dest;return this.photoable()?'photos':'radius'}
+  render(){const f=this.file,o=this.opt();
+    if(!f.art){this.box.innerHTML=`<p class="w">把</p><button class="tok" data-t="file"><span class="ph"></span><span class="nm">選一個檔案</span><span class="chev">▾</span></button><p class="w soft">或在照片、LINE、郵件裡按分享 › Radius</p>`;this.est.textContent='';this.go.disabled=true;return}
+    const sub=subOf(o);if(sub&&!sub.items.some(x=>x[0]===this.sub))this.sub=sub.items[0][0];if(!sub)this.sub=null;
+    const dest=this.destOf(),org=o.res==='organize';
+    this.box.innerHTML=`<p class="w">把</p><button class="tok" data-t="file"><img src="${thumbURL(this.key)}" alt=""><span class="nm">${f.name}</span><span class="chev">▾</span></button>
+      <p class="w">${org?'拿來':'轉成'}</p><button class="tok fmt" data-t="fmt">${plain(o.label)}<span class="chev">▾</span></button>
+      ${sub?`<p class="w">${sub.label}</p><button class="tok small" data-t="sub">${sub.items.find(x=>x[0]===this.sub)[1]}<span class="chev">▾</span></button>`:''}
+      ${org?'':`<p class="w">存到</p><button class="tok small" data-t="dest">${DESTS[dest][0]}<span class="chev">▾</span></button>`}`;
+    if(o.out!=null){const sz=subSize(o,this.sub,o.out);this.est.innerHTML=`<b>${o.exact?'':'約 '}${fmtB(sz)}</b>　${delta(sz,f.size)}`}else this.est.textContent=o.sizeText||'';
+    this.go.disabled=false;this.go.querySelector('span').textContent=org?'打開整理':'轉換'}
+  pick(t){const f=this.file,o=this.opt();
+    if(t==='file'){Picker.open('選一個檔案',DEMO_FILES.filter(([k])=>k!=='empty').map(([k,l])=>`<button class="pkrow" data-v="${k}"><img src="${thumbURL(k)}" alt=""><span><b>${l}</b><small>${FILES[k].name}</small></span>${k===this.key?'<i class="ok">✓</i>':''}</button>`).join(''),v=>{this.load(v);setDemoChip('sent',v)});return}
+    if(t==='fmt'){Picker.open('轉成',formatPickerHTML(f,this.fmt),v=>{this.fmt=v;this.sub=null;this.render()});return}
+    if(t==='sub'){const sb=subOf(o);Picker.open(sb.label,sb.items.map(([v,l])=>`<button class="pkrow" data-v="${v}"><span><b>${l}</b>${o.out!=null?`<small>約 ${fmtB(subSize(o,v,o.out))}</small>`:''}</span>${v===this.sub?'<i class="ok">✓</i>':''}</button>`).join(''),v=>{this.sub=v;this.render()});return}
+    if(t==='dest'){const cur=this.destOf();Picker.open('存到',Object.entries(DESTS).filter(([k])=>k!=='photos'||this.photoable()).map(([k,[l,d]])=>`<button class="pkrow" data-v="${k}"><span><b>${l}</b><small>${d}</small></span>${k===cur?'<i class="ok">✓</i>':''}</button>`).join(''),v=>{this.dest=v;this.render()})}}
+  run(){if(this.busy||!this.fmt)return;this.busy=true;haptic();this.go.classList.add('fill');
+    setTimeout(()=>this.onChoose(this.fmt,this,{dest:this.destOf(),sub:this.sub}),520)}
+  reset(){this.busy=false;this.go.classList.remove('fill')}
+}
+
+/* ---------- 共用：提示、進度膠囊、結果、選單 ---------- */
+const screenEl=$('#screen');
+for(const n of[screenEl,...$$('.scene')])n.addEventListener('scroll',()=>{if(n.scrollTop||n.scrollLeft){n.scrollTop=0;n.scrollLeft=0}});
+let toastTimer=0;
+function toast(msg,ms=2200){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('on'),ms)}
+const Capsule={run(text,secs,done){const c=$('#capsule');
+  c.innerHTML=`${radiusIcon(22,{tile:false,mono:'#fff'})}<span>${text}<br><em>可以先切到別的 App</em></span><svg class="ring" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" stroke="rgba(255,255,255,.25)"/><circle class="pg" cx="11" cy="11" r="8.5" stroke="#4dbb97" stroke-dasharray="53.4" stroke-dashoffset="53.4" stroke-linecap="round"/></svg>`;
+  c.classList.add('on');const pg=c.querySelector('.pg');requestAnimationFrame(()=>requestAnimationFrame(()=>{pg.style.transition=`stroke-dashoffset ${secs}s linear`;pg.style.strokeDashoffset='0'}));
+  setTimeout(()=>{c.classList.remove('on');done()},secs*1000+250)}};
+const scrim=$('#scrim');
+function previewHTML(fk,o){const [kind,a]=(o.res||'').split(':');
+  switch(kind){
+    case'img':case'video':return `<img src="${urlOf(a)}" alt="">`;
+    case'page':case'doc':case'slide':return `<img src="${urlOf(o.res)}" alt="">`;
+    case'audio':return `<img src="${urlOf('wave')}" alt="">`;
+    case'text':return `<div class="txt">${o.text}</div>`;
+    case'folder':return `<div class="folder"><b>${o.count} 個檔案</b></div>`;
+    case'zip':return `<div class="zip">${o.pick==='arc'?'ZIP':o.label}</div>`;
+  }return''}
+function outName(f,o,sub){
+  if(o.res==='folder')return `「${o.folderName||f.base}」資料夾`;
+  if(o.pick==='arc'){const ext=sub||'zip';return o.name?o.name.replace(/\.zip$/,'.'+ext):f.name+'.'+ext}
+  if(o.name)return o.name;
+  return f.base+(o.suffix||'')+'.'+o.ext}
+const Result={
+  open(fk,k,{share=false,onClose,dest='radius',sub=null}={}){const f=FILES[fk],o=f.opts[k],sh=$('#result');this.onClose=onClose;this.share=share;
+    this.ctx={fk,k,sub:o.pick==='arc'?(sub||'zip'):sub};
+    const ocr=o.pick==='ocr',photoable=o.pick!=='arc'&&o.res!=='text'&&PHOTOABLE.includes(o.ext);let acts;
+    if(ocr)acts=`<button class="btn primary" data-a="copy">拷貝文字</button><div class="row"><button class="btn secondary" data-a="txt">存成 TXT</button><button class="btn secondary" data-a="word">存成 Word</button></div>`;
+    else if(share)acts=`${photoable?'<button class="btn primary" data-a="photos">存到照片</button>':''}<div class="row"><button class="btn ${photoable?'secondary':'primary'}" data-a="files">存到檔案</button><button class="btn secondary" data-a="share">分享…</button></div>`;
+    else acts=`<button class="btn primary" data-a="share">分享…</button><div class="row">${photoable&&dest!=='photos'?'<button class="btn secondary" data-a="photos">存到照片</button>':''}<button class="btn secondary" data-a="files">${dest==='files'?'換個資料夾':'存到檔案'}</button></div>`;
+    const where=share?'轉好了，選要放哪裡':ocr?'也存了一份 TXT 在 Radius 資料夾':{radius:'已存在 Radius 資料夾',photos:'已存到「照片」',files:'已存到你選的資料夾',share:'轉好了，選一個 App 傳出去'}[dest];
+    sh.innerHTML=`<div class="grabber"></div><div class="res-preview">${previewHTML(fk,o)}</div>
+      ${o.pick==='arc'?`<div class="seg2" role="radiogroup" aria-label="壓縮檔格式">${[['zip','ZIP'],['7z','7z'],['tar.gz','tar.gz']].map(([v,l])=>`<button role="radio" data-arc="${v}" aria-checked="${v===this.ctx.sub}">${l}</button>`).join('')}</div>`:''}
+      <p class="res-name">${ocr?'辨識出的文字':''}</p><p class="res-size"></p>
+      ${o.note?`<p class="res-note">${o.note}</p>`:''}
+      <p class="res-where">${where}${share||ocr||dest!=='radius'?'':'<button data-a="where">更改</button>'}</p>
+      <div class="res-actions">${acts}<button class="btn text" data-a="close">${share?'完成':'再轉一個'}</button></div>`;
+    this.fill();scrim.classList.add('on');requestAnimationFrame(()=>sh.classList.add('open'))},
+  fill(){const {fk,k,sub}=this.ctx,f=FILES[fk],o=f.opts[k],sh=$('#result');
+    if(o.pick!=='ocr')$('.res-name',sh).textContent=outName(f,o,sub);
+    const sz=o.out!=null&&o.pick!=='ocr'?subSize(o,sub,o.out):null;
+    $('.res-size',sh).innerHTML=sz!=null?`<b>${fmtB(sz)}</b>原本 ${fmtB(f.size)}，${delta(sz,f.size).replace('比原本','').replace('和原本差不多','差不多')}`:'';
+    const z=$('.zip',sh);if(z&&o.pick==='arc')z.textContent=(sub||'zip').toUpperCase()},
+  close(){$('#result').classList.remove('open');scrim.classList.remove('on');const cb=this.onClose;this.onClose=null;cb&&cb()}};
+$('#result').addEventListener('click',e=>{
+  const arc=e.target.closest('[data-arc]');if(arc){Result.ctx.sub=arc.dataset.arc;$$('#result [data-arc]').forEach(b=>b.setAttribute('aria-checked',String(b===arc)));Result.fill();return}
+  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  const msg={copy:'已拷貝，可以直接貼到別的 App',txt:'已存成 TXT',word:'已存成 Word',photos:'已存到「照片」',files:'會打開「檔案」讓你挑資料夾（iCloud、Google Drive…）',share:'會叫出 iPhone 的分享選單（LINE、AirDrop、郵件…）',where:'可以改成任何資料夾；Mac 版的 Radius 也看得到同一個 iCloud 資料夾'}[a];
+  if(a==='close'){Result.close();return}if(msg)toast(msg);if(Result.share&&(a==='photos'||a==='files'))setTimeout(()=>Result.close(),900)});
+const Picker={
+  open(title,html,onTap){const sh=$('#more');this.onTap=onTap;sh.innerHTML=`<div class="grabber"></div><h3>${title}</h3><div class="pk">${html}</div><button class="btn secondary" data-x type="button">取消</button>`;
+    scrim.classList.add('on');requestAnimationFrame(()=>sh.classList.add('open'))},
+  close(v){$('#more').classList.remove('open');if(!$('#result').classList.contains('open'))scrim.classList.remove('on');const cb=this.onTap;this.onTap=null;if(v!=null&&cb)cb(v)}};
+$('#more').addEventListener('click',e=>{if(e.target.closest('[data-x]')){Picker.close();return}const t=e.target.closest('[data-v]');if(t){haptic();Picker.close(t.dataset.v)}});
+const More={open(fk,onPick,keys){const f=FILES[fk];Picker.open('更多格式',`<div class="tiles">${keys.map(k=>tileHTML(f,k)).join('')}</div>`,onPick)}};
+scrim.addEventListener('click',()=>{if($('#more').classList.contains('open'))Picker.close();else if($('#result').classList.contains('open'))Result.close()});
+
+/* 選好格式之後：影片走進度膠囊（示意動態島），其他直接出結果 */
+function chosen(fk,k,stage,{share=false,dest='radius',sub=null}={}){const f=FILES[fk],o=f.opts[k];
+  if(o.res==='organize'){toast('打開 PDF 整理');setTimeout(()=>{show('pdf');stage.reset()},350);return}
+  const go=()=>Result.open(fk,k,{share,dest,sub,onClose:()=>{stage.reset();if(share)Share.done()}});
+  if(o.long)Capsule.run(`${f.base} 轉成 ${plain(o.label)}`,2.6,go);else go()}
+
+/* ---------- 示範檔案切換 ---------- */
+const current={drop:'photo',dial:'photo',list:'photo',sent:'photo'};
+function setDemoChip(scene,key){current[scene]=key;$$(`.demo-files[data-for="${scene}"] .chip`).forEach(c=>c.setAttribute('aria-checked',String(c.dataset.k===key)))}
+$$('.demo-files').forEach(box=>{const sc=box.dataset.for;
+  box.innerHTML=DEMO_FILES.filter(([k])=>!(sc==='dial'&&k==='empty')).map(([k,l])=>`<button class="chip" role="radio" data-k="${k}" aria-checked="${k==='photo'}">${l}</button>`).join('');
+  box.setAttribute('role','radiogroup');
+  box.addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;setDemoChip(sc,c.dataset.k);
+    if(sc==='drop')Drop.load(c.dataset.k);else if(sc==='dial')Dial.load(c.dataset.k);else if(sc==='sent')Sent.load(c.dataset.k);else List.load(c.dataset.k)})});
+
+/* ---------- 三個方向的實例 ---------- */
+let Drop,Dial,List,Sent;
+function initDrop(){if(Drop)return;Drop=new DropStage($('#drop-host'),{onChoose:(k,s)=>chosen(s.key,k,s)});Drop.onSource=key=>setDemoChip('drop',key);Drop.load('photo')}
+function initDial(){if(Dial)return;Dial=new DialStage($('#dial-host'),{onChoose:(k,s)=>chosen(s.key,k,s)});Dial.load('photo')}
+function initList(){if(List)return;List=new ListStage($('#list-host'),{onChoose:(k,s)=>chosen(s.key,k,s)});List.load('photo')}
+function initSent(){if(Sent)return;Sent=new SentenceStage($('#sent-host'),{onChoose:(k,s,x)=>chosen(s.key,k,s,x)});Sent.load('photo')}
+
+/* ---------- 分享進來 ---------- */
+const Share={n:1,stage:null,
+  init(){if(this.ready)return;this.ready=true;
+    $('.ph-one').src=urlOf('photo');
+    const grid=$('.ph-grid');grid.innerHTML=[...Array(12)].map((_,i)=>`<div style="background-image:url(${paintPhoto(240,240,i).toDataURL('image/jpeg',.8)})"></div>`).join('');
+    $('#rx-icon').innerHTML=radiusIcon(58);
+    $('.seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;this.n=+b.dataset.n;$$('.seg button').forEach(x=>x.setAttribute('aria-checked',String(x===b)));
+      $('.ph-one').hidden=this.n!==1;grid.hidden=this.n===1});
+    $('.ph-share').addEventListener('click',()=>this.openSheet());
+    $('#share-scrim').addEventListener('click',()=>this.closeAll());$('.ios-x').addEventListener('click',()=>this.closeAll());
+    $('#rx-app').addEventListener('click',()=>this.openRadius());
+    $('.rx-cancel').addEventListener('click',()=>this.closeAll());
+    requestAnimationFrame(()=>this.placeCoach())},
+  placeCoach(){const c=$('#coach'),b=$('.ph-share'),sr=screenEl.getBoundingClientRect(),r=b.getBoundingClientRect();if(!r.width)return;
+    c.style.left=(r.left-sr.left+r.width/2-c.offsetWidth/2)+'px';c.style.top=(r.top-sr.top-c.offsetHeight-8)+'px';c.hidden=false},
+  openSheet(){haptic();$('#coach').hidden=true;$('#ios-count').textContent=this.n===1?'1 張照片':'12 張照片';
+    $('.ios-head img').src=this.n===1?thumbURL('photo'):thumbURL('multi');
+    $('#share-scrim').classList.add('on');$('#ios-share').classList.add('open')},
+  openRadius(){haptic();$('#ios-share').classList.remove('open');
+    if(!this.stage){this.stage=new DropStage($('#share-host'),{compact:true,onChoose:(k,s)=>chosen(s.key,k,s,{share:true})})}
+    this.stage.load(this.n===1?'photo':'multi');this.stage.start();
+    setTimeout(()=>$('#rx-sheet').classList.add('open'),120)},
+  done(){this.closeAll()},
+  closeAll(){$('#ios-share').classList.remove('open');$('#rx-sheet').classList.remove('open');$('#share-scrim').classList.remove('on');
+    if(this.stage)setTimeout(()=>this.stage.stop(),450);setTimeout(()=>this.placeCoach(),460)}};
+
+/* ---------- PDF 整理 ---------- */
+const PDFX={pages:[],sel:new Set(),nextId:1,cache:{},
+  init(){if(this.ready)return;this.ready=true;this.grid=$('#pdf-grid');this.bar=$('#pdf-bar');this.fresh();this.bindGrid();this.bindMarkup();
+    $('#pdf-save').addEventListener('click',()=>toast(`已存成「會議紀錄 已整理.pdf」（${this.pages.length} 頁）`));
+    $('#pdf-undo').addEventListener('click',()=>{this.fresh();toast('回到原本的 8 頁')});
+    this.bar.addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled)this.act(b.dataset.a)})},
+  fresh(){this.pages=[];this.sel.clear();this.nextId=1;for(let i=1;i<=8;i++)this.pages.push({id:this.nextId++,src:'base',n:i,rot:0,strokes:[]});this.render()},
+  pageArt(p){const key=p.src+p.n;if(this.cache[key])return this.cache[key];
+    const o=p.src==='base'?{title:p.n===1?'會議紀錄':null,seed:3+p.n*7,page:p.n}:p.src==='other'?{title:p.n===1?'附件：簽到表':null,seed:90+p.n,page:p.n,tint:'#fbfaf5'}:{seed:120+p.n,kind:'scan'};
+    return this.cache[key]=paintPage(420,594,o)},
+  draw(p,canvas,W){const H=Math.round(W*297/210);canvas.width=W*2;canvas.height=H*2;const g=canvas.getContext('2d');g.scale(2,2);g.fillStyle='#fff';
+    const src=this.pageArt(p),rot=((p.rot%360)+360)%360;g.save();g.translate(W/2,H/2);g.rotate(rot*Math.PI/180);
+    const side=rot%180!==0,sw=side?H:W,shh=side?W:H,s=Math.min(W/shh,H/sw);const dw=(side?W:W)*s*(side?1:1);
+    let w=W,h=H;if(side){h=W;w=W*W/H;}
+    g.drawImage(src,-w/2,-h/2,w,h);this.drawStrokes(g,p,w,h,-w/2,-h/2);g.restore()},
+  drawStrokes(g,p,w,h,ox,oy){for(const s of p.strokes){g.save();g.lineCap=s.t==='hl'?'butt':'round';g.lineJoin='round';
+      g.strokeStyle=s.t==='hl'?'rgba(255,214,10,.45)':'#1b1b1b';g.lineWidth=(s.t==='hl'?.035:.006)*w*(s.t==='sign'?1.4:1);
+      g.beginPath();s.pts.forEach((q,i)=>{const x=ox+q[0]*w,y=oy+q[1]*h;i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke();g.restore()}},
+  render(){this.grid.innerHTML='';
+    this.pages.forEach((p,i)=>{const d=el('div','pg'+(this.sel.has(p.id)?' sel':''));d.dataset.id=p.id;
+      d.innerHTML=`<div class="paper"><canvas></canvas></div><span class="n">${i+1}</span><span class="chk">✓</span>`;this.grid.append(d)});
+    requestAnimationFrame(()=>{$$('.pg',this.grid).forEach(d=>{const p=this.byId(+d.dataset.id);this.draw(p,d.querySelector('canvas'),Math.max(60,Math.round(d.querySelector('.paper').clientWidth)))})});
+    this.update()},
+  byId(id){return this.pages.find(p=>p.id===id)},
+  update(){$('#pdf-count').textContent=this.sel.size?`已選 ${this.sel.size} 頁`:`${this.pages.length} 頁`;
+    this.grid.classList.toggle('selecting',this.sel.size>0);
+    $$('.pg',this.grid).forEach((d,i)=>{d.classList.toggle('sel',this.sel.has(+d.dataset.id));d.querySelector('.n').textContent=i+1});
+    const ic={add:'<path d="M12 5v14M5 12h14"/>',scan:'<path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M7 12h10"/>',all:'<rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
+      rot:'<path d="M18.5 9A7 7 0 1 0 19 13"/><path d="M19 4.5V9h-4.5"/>',dup:'<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>',
+      mark:'<path d="M4 20l4-1 10.5-10.5a2.1 2.1 0 0 0-3-3L5 16z"/>',out:'<path d="M14 4.5h5.5V10M19.5 4.5 11 13M10 6H6a1.5 1.5 0 0 0-1.5 1.5v10.5A1.5 1.5 0 0 0 6 19.5h10.5A1.5 1.5 0 0 0 18 18v-4"/>',del:'<path d="M4.5 6.5h15M9.5 6.5V4.5h5v2M6.5 6.5l1 13h9l1-13"/>'};
+    const B=(a,l,dis,cls='')=>`<button data-a="${a}" class="${cls}" ${dis?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ic[a]}</svg>${l}</button>`;
+    this.bar.innerHTML=this.sel.size?B('rot','旋轉')+B('dup','複製')+B('mark','標註',this.sel.size!==1)+B('out','拆出')+B('del','刪除',false,'warn')
+      :B('add','加入 PDF')+B('scan','掃描')+B('all','全選',!this.pages.length)},
+  act(a){const ids=[...this.sel];
+    if(a==='all'){this.pages.forEach(p=>this.sel.add(p.id));this.update();return}
+    if(a==='add'){const n=this.pages.length;for(let i=1;i<=2;i++)this.pages.push({id:this.nextId++,src:'other',n:i,rot:0,strokes:[]});this.render();toast('從「檔案」加入「附件.pdf」2 頁');setTimeout(()=>this.grid.scrollTo({top:this.grid.scrollHeight,behavior:'smooth'}),50);return}
+    if(a==='scan'){this.pages.push({id:this.nextId++,src:'scan',n:this.nextId,rot:0,strokes:[]});this.render();toast('用相機掃描的頁面已加在最後');setTimeout(()=>this.grid.scrollTo({top:this.grid.scrollHeight,behavior:'smooth'}),50);return}
+    if(a==='rot'){ids.forEach(id=>{const p=this.byId(id);p.rot+=90});this.redraw(ids);return}
+    if(a==='dup'){ids.forEach(id=>{const i=this.pages.findIndex(p=>p.id===id),p=this.pages[i];this.pages.splice(i+1,0,{...p,id:this.nextId++,strokes:p.strokes.slice()})});this.sel.clear();this.render();toast(`已複製 ${ids.length} 頁`);return}
+    if(a==='del'){ids.forEach(id=>{const d=this.grid.querySelector(`.pg[data-id="${id}"]`);d&&d.classList.add('gone')});
+      setTimeout(()=>{this.pages=this.pages.filter(p=>!this.sel.has(p.id));this.sel.clear();this.render()},240);return}
+    if(a==='out'){const nums=this.pages.map((p,i)=>this.sel.has(p.id)?i+1:0).filter(Boolean);toast(`已把第 ${nums.join('、')} 頁存成新的 PDF`);this.sel.clear();this.update();return}
+    if(a==='mark'){this.openMarkup(this.byId(ids[0]))}},
+  redraw(ids){ids.forEach(id=>{const d=this.grid.querySelector(`.pg[data-id="${id}"]`);if(d)this.draw(this.byId(id),d.querySelector('canvas'),Math.round(d.querySelector('.paper').clientWidth))})},
+  bindGrid(){const g=this.grid;let st=null,timer=0,lifted=null;
+    const pos=e=>{const r=g.getBoundingClientRect();return{x:e.clientX-r.left+g.scrollLeft,y:e.clientY-r.top+g.scrollTop}};
+    g.addEventListener('touchmove',e=>{if(lifted)e.preventDefault()},{passive:false});
+    g.addEventListener('contextmenu',e=>e.preventDefault());
+    g.addEventListener('pointerdown',e=>{const d=e.target.closest('.pg');if(!d)return;const p=pos(e);st={d,p,moved:false,id:e.pointerId};
+      timer=setTimeout(()=>{if(!st||st.moved)return;lifted={d,gx:p.x-d.offsetLeft,gy:p.y-d.offsetTop};d.classList.add('lift');haptic();try{g.setPointerCapture(st.id)}catch(_){};this.dragMove(p,lifted)},330)});
+    g.addEventListener('pointermove',e=>{if(!st)return;const p=pos(e);if(!lifted){if(Math.hypot(p.x-st.p.x,p.y-st.p.y)>8){st.moved=true;clearTimeout(timer)}return}this.dragMove(p,lifted);
+      const r=g.getBoundingClientRect();if(e.clientY>r.bottom-70)g.scrollTop+=8;else if(e.clientY<r.top+50)g.scrollTop-=8});
+    const end=e=>{clearTimeout(timer);if(!st)return;
+      if(lifted){const d=lifted.d;d.style.transition='transform .22s cubic-bezier(.2,.8,.2,1)';d.style.transform='';d.classList.remove('lift');setTimeout(()=>{d.style.transition=''},240);lifted=null;this.update()}
+      else if(!st.moved&&e.type==='pointerup'){const id=+st.d.dataset.id;this.sel.has(id)?this.sel.delete(id):this.sel.add(id);this.update()}
+      st=null};
+    g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end)},
+  dragMove(p,L){const d=L.d;d.style.transform=`translate(${p.x-L.gx-d.offsetLeft}px,${p.y-L.gy-d.offsetTop}px) scale(1.06)`;
+    const tiles=$$('.pg',this.grid);const from=tiles.indexOf(d);let to=-1;
+    tiles.forEach((t,i)=>{if(t===d)return;if(p.x>=t.offsetLeft&&p.x<=t.offsetLeft+t.offsetWidth&&p.y>=t.offsetTop&&p.y<=t.offsetTop+t.offsetHeight)to=i});
+    if(to<0||to===from)return;
+    const before=new Map(tiles.map(t=>[t,{x:t.offsetLeft,y:t.offsetTop}]));
+    const [moved]=this.pages.splice(from,1);this.pages.splice(to,0,moved);
+    if(to>from)this.grid.insertBefore(d,tiles[to].nextSibling);else this.grid.insertBefore(d,tiles[to]);
+    tiles.forEach(t=>{if(t===d)return;const b=before.get(t),dx=b.x-t.offsetLeft,dy=b.y-t.offsetTop;if(!dx&&!dy)return;
+      t.style.transition='none';t.style.transform=`translate(${dx}px,${dy}px)`;requestAnimationFrame(()=>{t.style.transition='transform .25s cubic-bezier(.2,.8,.2,1)';t.style.transform=''})});
+    d.style.transform=`translate(${p.x-L.gx-d.offsetLeft}px,${p.y-L.gy-d.offsetTop}px) scale(1.06)`;
+    $$('.pg .n',this.grid).forEach((n,i)=>{n.textContent=i+1})},
+  /* 標註：筆、螢光筆、簽名、復原 */
+  bindMarkup(){const ink=$('#mk-ink');let tool='pen',cur=null;
+    $('#mk-tools').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+      if(b.dataset.t==='undo'){this.mk.strokes.pop();this.paintInk();return}
+      tool=b.dataset.t;$$('#mk-tools button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));if(tool==='sign')toast('點頁面上要簽名的位置')});
+    const P=e=>{const r=ink.getBoundingClientRect();return[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]};
+    ink.addEventListener('pointerdown',e=>{e.preventDefault();const q=P(e);
+      if(tool==='sign'){const pts=[];for(let i=0;i<=80;i++){const t=i/80;pts.push([q[0]-.12+t*.26+.018*Math.sin(t*26),q[1]+.022*Math.sin(t*15)*(1-.4*t)-.01*t])}this.mk.strokes.push({t:'sign',pts});this.paintInk();haptic();return}
+      try{ink.setPointerCapture(e.pointerId)}catch(_){}cur={t:tool,pts:[q]};this.mk.strokes.push(cur);this.paintInk()});
+    ink.addEventListener('pointermove',e=>{if(!cur)return;cur.pts.push(P(e));this.paintInk()});
+    const stop=()=>{cur=null};ink.addEventListener('pointerup',stop);ink.addEventListener('pointercancel',stop);
+    $('#mk-cancel').addEventListener('click',()=>{this.mk.strokes.length=this.mk.keep;$('#markup').hidden=true});
+    $('#mk-done').addEventListener('click',()=>{$('#markup').hidden=true;this.redraw([this.mk.id]);if(this.mk.strokes.length>this.mk.keep)toast('標註已加上；存檔時會一起寫進 PDF')})},
+  openMarkup(p){this.mk=p;p.keep=p.strokes.length;this.mk.keep=p.strokes.length;$('#markup').hidden=false;
+    $('#mk-page').textContent=`第 ${this.pages.indexOf(p)+1} 頁`;
+    requestAnimationFrame(()=>{const box=$('.mk-page'),wrap=$('#mk-wrap'),maxW=box.clientWidth-36,maxH=box.clientHeight-16;
+      let w=maxW,h=w*297/210;if(h>maxH){h=maxH;w=h*210/297}wrap.style.width=w+'px';wrap.style.height=h+'px';
+      for(const c of[$('#mk-bg'),$('#mk-ink')]){c.width=Math.round(w*2);c.height=Math.round(h*2)}
+      const g=$('#mk-bg').getContext('2d');g.drawImage(this.pageArt(p),0,0,w*2,h*2);this.paintInk()})},
+  paintInk(){const c=$('#mk-ink'),g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);this.drawStrokes(g,this.mk,c.width,c.height,0,0)}};
+
+/* ---------- 說明＋功能對照 ---------- */
+function initNotes(){const n=$('#notes');if(n.dataset.ready)return;n.dataset.ready=1;
+  const T={g:'<span class="tag g">直接搬</span>',o:'<span class="tag o">內附引擎</span>',p:'<span class="tag p">換做法</span>',n:'<span class="tag n">新增</span>'};
+  n.innerHTML=`<div class="icon-row">${radiusIcon(60)}<p>Radius for iPhone<br>介面試做，2026 年 10 月 5 日</p></div>
+  <h2>四種選格式的方式</h2>
+  <ul><li><b>水滴</b>：最接近 Mac 版。水滴在拇指搆得到的下方，格式排成一道弧，按住往上拉；水滴裡看得到檔案。手會擋住下半部，所以大小寫在最上面。</li>
+  <li><b>放射</b>：用圖示的 12 條線。按住任何地方往一個方向滑，方向固定，熟了不用看；右下那條綠線是這類檔案最常用的格式。</li>
+  <li><b>清單</b>：點一下就轉，所有格式都攤開。</li>
+  <li><b>造句</b>：「把〔檔案〕轉成〔格式〕存到〔哪裡〕」，每個詞點了就能換；品質、解析度、壓縮格式這類選項也在這裡。</li></ul>
+  <p class="muted">四種都能直接點選，不一定要拖。可以只留一種，也可以讓使用者在設定裡挑。</p>
+  <h2>檔案從哪裡進來</h2>
+  <ul><li><b>分享選單</b>：在照片、檔案、LINE、郵件按分享 › Radius，原地轉好，不用切 App。這是 iPhone 上最主要的入口（看「分享」）。第一次要在分享選單的「更多」裡把 Radius 拉到前面。</li>
+  <li><b>打開 Radius</b>：從照片、檔案挑，用相機掃描紙本，或貼上剪貼簿。</li>
+  <li><b>捷徑</b>：例如把「這張轉成 PDF」設成一個捷徑或動作按鈕。</li></ul>
+  <h2>轉好以後</h2>
+  <p>預設存到 Radius 資料夾，另外可以分享、存到照片、存到檔案。資料夾放在 iCloud 雲碟的話，Mac 上馬上看得到；這要付費的開發者帳號，免費帳號先放在「我的 iPhone › Radius」。</p>
+  <h2>功能對照：Mac 版有的，iPhone 版全部都有</h2>
+  <div class="legend"><span>${T.g}iPhone 系統本來就有，Mac 版的程式幾乎直接搬</span><span>${T.o}Mac 版是叫外部程式來做，iPhone 不准，要把引擎編進 App</span><span>${T.p}Mac 版用的是 Mac 才有的功能，iPhone 要換做法</span></div>
+  <div class="mx">
+  <h3>圖片<small>JPG PNG HEIC TIFF GIF BMP WebP AVIF RAW SVG</small></h3><ul>
+   <li>${T.g}轉 JPG、PNG、HEIC、TIFF、GIF、BMP、PDF</li>
+   <li>${T.g}做成 Word、簡報；多張合併成一份 PDF 或簡報</li>
+   <li>${T.g}辨識文字，存成 TXT 或 Word</li>
+   <li>${T.g}清除隱私（JPG、PNG）</li>
+   <li>${T.g}GIF 動圖轉 MP4、MOV</li>
+   <li>${T.o}轉 WebP；GIF 動圖轉 MKV、WebM、AVI、WMV</li>
+   <li>${T.p}讀 SVG：改用 iPhone 的網頁引擎畫出來</li></ul>
+  <h3>影片<small>MP4 MOV MKV WebM AVI WMV FLV MPEG 3GP m3u8</small></h3><ul>
+   <li>${T.g}MP4、MOV、3GP 之間互轉；轉 GIF；抽出 M4A、WAV；清除隱私</li>
+   <li>${T.o}讀寫 MKV、WebM、AVI、WMV、FLV、MPEG；抽出 MP3；m3u8 串流</li>
+   <li>${T.n}轉得久的可以切到別的 App，進度顯示在動態島與鎖定畫面</li></ul>
+  <h3>聲音<small>MP3 M4A WAV FLAC Opus OGG AIFF WMA</small></h3><ul>
+   <li>${T.g}轉 M4A、WAV、AIFF；清除隱私</li>
+   <li>${T.o}轉 MP3、FLAC、Opus、OGG、WMA</li></ul>
+  <h3>PDF</h3><ul>
+   <li>${T.g}每頁轉 PNG、JPG；轉 TXT、Word、簡報；拆分、整理、合併、清除隱私</li>
+   <li>${T.p}縮小：Mac 用的「縮小檔案」濾鏡 iPhone 沒有，要自己把頁面裡的圖重新壓縮</li>
+   <li>${T.n}標註、螢光筆、簽名</li></ul>
+  <h3>文字與字幕<small>TXT SRT VTT</small></h3><ul>
+   <li>${T.g}TXT 轉 PDF、Word、PNG、JPG、SRT、VTT；字幕互轉、轉純文字；Big5、簡體、日韓舊編碼自動判斷</li></ul>
+  <h3>Word 與簡報<small>doc docx rtf odt ppt pptx odp</small></h3><ul>
+   <li>${T.g}Word 轉 TXT（docx、odt、rtf）</li>
+   <li>${T.p}Word、簡報轉 PDF；簡報轉 PNG、JPG；和其他檔案合併成 PDF；舊版 .doc 轉 TXT——要選一條路，見下面</li></ul>
+  <h3>壓縮檔與資料夾<small>ZIP 7z RAR tar.gz</small></h3><ul>
+   <li>${T.o}解壓縮 ZIP、7z、RAR、tar 系列；壓縮成 ZIP、7z、tar.gz</li>
+   <li>有密碼的壓縮檔：和 Mac 版一樣，會先說明不支援</li></ul>
+  <h3>其他</h3><ul>
+   <li>${T.g}轉出後大小預估</li>
+   <li>${T.p}輸出位置：iPhone 沒有「存在原檔旁邊」，改成 Radius 資料夾、照片、檔案、分享</li>
+   <li>${T.p}互動教學：改成手機版</li></ul></div>
+  <h2>Word、簡報要選一條路</h2>
+  <div class="choice"><b>A　用 iPhone 內建的 Office 預覽排版</b><p>App 小、做得快。.docx、.pptx 大致可以，但已知頁首圖片、浮水印會掉，舊版 .doc 可能打不開。</p></div>
+  <div class="choice"><b>B　把 LibreOffice 編進 App</b><p>和 Mac 版同一個引擎，每種格式都轉得動、結果和 Mac 版一樣。App 會多 300 MB 左右，建置最費工；已經有 App（Collabora Office）這樣做並上架。</p></div>
+  <p>要「功能一個都不少」，建議走 B；開發途中可以先用 A 讓你試用。</p>
+  <h2>要做出來需要的</h2>
+  <ul><li>這台 Mac 要升級到 macOS 26.6 以上（或最新的 27），再裝 Xcode 27（免費）；現在的 14.5 只能裝到舊的 Xcode 16.2。</li>
+  <li>免費 Apple ID：可以裝到你自己的 iPhone，但每 7 天要重裝一次，也不能用 iCloud 資料夾。</li>
+  <li>付費開發者帳號（每年 99 美元）：TestFlight、上架、iCloud 資料夾都可以，裝一次用一年。</li></ul>`}
+
+/* ---------- 場景切換 ---------- */
+const CAPTIONS={
+  drop:'按住水滴往上拉，碰到格式會連起來，放開就轉；直接點格式也可以。上面可以換別種檔案試。',
+  dial:'在畫面任何地方按住，往一個方向滑，放開就轉。每個格式的方向固定，熟了不用看；點一下則會攤開讓你點。',
+  list:'點一下就轉。所有格式都攤開，最好找；換成「首頁」就是打開 App 的樣子。',
+  sent:'不用拖：「把〔檔案〕轉成〔格式〕存到〔哪裡〕」，每個詞點了就能換，選項也最完整。',
+  share:'iPhone 上檔案多半在別的 App 裡：在照片按分享、選 Radius，原地就轉好。右上可以切換選 1 張或 12 張。',
+  pdf:'點頁面選取，再用下面的工具；長按可以拖曳排序。選一頁按「標註」可以手寫、畫重點、簽名。',
+  notes:'整體構想，以及 Mac 版每一項功能在 iPhone 上怎麼做。'};
+let cur=null;
+function show(name){if(!CAPTIONS[name])name='drop';if(cur===name)return;
+  if(Result.onClose||$('#result').classList.contains('open'))Result.close();
+  cur=name;$$('.scene').forEach(s=>s.classList.toggle('on',s.id==='s-'+name));
+  $$('.tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.s===name)));
+  $('#caption').textContent=CAPTIONS[name];
+  try{history.replaceState(null,'','#'+name)}catch(_){}
+  Drop&&Drop.stop();Dial&&Dial.stop();Share.stage&&Share.stage.stop();
+  if($('#more').classList.contains('open'))Picker.close();
+  if(name==='drop'){initDrop();Drop.start();requestAnimationFrame(()=>Drop.layout());if(!show.demoed){show.demoed=true;setTimeout(()=>{if(cur==='drop'&&Drop.key==='photo')Drop.demo('jpg')},1300)}}
+  if(name==='dial'){initDial();Dial.start();requestAnimationFrame(()=>Dial.layout())}
+  if(name==='list')initList();
+  if(name==='sent')initSent();
+  if(name==='share'){Share.init();requestAnimationFrame(()=>Share.placeCoach());if($('#rx-sheet').classList.contains('open'))Share.stage.start()}
+  if(name==='pdf')PDFX.init();
+  if(name==='notes')initNotes()}
+$('.tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)show(b.dataset.s)});
+addEventListener('resize',()=>{if(cur==='share')Share.placeCoach()});
+show((location.hash||'').slice(1)||'drop');
+</script>
+</body>
+</html>
