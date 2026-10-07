@@ -1,0 +1,72 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Typeday 原生版進度</title>
+<style>
+:root{--bg:#F8F7F2;--ink:#133E50;--muted:#49646F;--line:#DCD9CE;--card:#FFFEFC}
+@media (prefers-color-scheme:dark){:root{--bg:#111214;--ink:#ECEEF1;--muted:#8A9097;--line:#34383D;--card:#181A1D}}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,system-ui,sans-serif}
+main{max-width:900px;margin:0 auto;padding:16px}
+a{color:inherit} .back{font-size:13px;color:var(--muted);text-decoration:none}
+h1{font-size:22px;margin:10px 0 4px} h2{font-size:18px;margin:28px 0 8px} h3{font-size:15px;margin:0 0 8px}
+p{margin:0 0 10px;color:var(--muted)}
+.pair{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:0 0 14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+figure{margin:0} img{width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--line)}
+figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:4px}
+.strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px} .strip figure{flex:0 0 150px}
+</style></head><body><main>
+<a class="back" href="../../">← 所有測試</a>
+<h1>Typeday 原生版進度</h1>
+<p>原生 iPhone App（SwiftUI）跟網頁版 Checkly 同一份假資料、同一天（2026-10-07）的逐頁對照。左邊是原生、右邊是網頁版。
+兩種外觀（打字機、糖果紙）都做好了；標頭的名字已經換成 Typeday（網頁版還是 Checkly，所以那一塊本來就不一樣）。</p>
+<h2>開場 C（打勾清單）</h2>
+<p>每一格是開場停在第幾秒的樣子（逐格跟選擇頁的原型對過）：三行依序打勾劃掉 → 清單收起 → 名字跳出來 → 飛到標頭。</p>
+<div class="strip"><figure><img src="img/intro-0.2.jpg" loading="lazy"><figcaption>0.2 秒</figcaption></figure><figure><img src="img/intro-0.6.jpg" loading="lazy"><figcaption>0.6 秒</figcaption></figure><figure><img src="img/intro-1.2.jpg" loading="lazy"><figcaption>1.2 秒</figcaption></figure><figure><img src="img/intro-1.6.jpg" loading="lazy"><figcaption>1.6 秒</figcaption></figure><figure><img src="img/intro-2.2.jpg" loading="lazy"><figcaption>2.2 秒</figcaption></figure><figure><img src="img/intro-2.45.jpg" loading="lazy"><figcaption>2.45 秒</figcaption></figure><figure><img src="img/intro-2.6.jpg" loading="lazy"><figcaption>2.6 秒</figcaption></figure></div>
+<h2>頁面與面板</h2>
+<section class="pair"><h3>打字機・淺色・重複排程</h3><div class="two">
+  <figure><img src="img/typewriter-light-list-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/typewriter-light-list-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>打字機・淺色・月曆</h3><div class="two">
+  <figure><img src="img/typewriter-light-cal-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/typewriter-light-cal-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>打字機・淺色・近期任務</h3><div class="two">
+  <figure><img src="img/typewriter-light-task-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/typewriter-light-task-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>打字機・淺色・未完成</h3><div class="two">
+  <figure><img src="img/typewriter-light-pend-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/typewriter-light-pend-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>打字機・深色・重複排程</h3><div class="two">
+  <figure><img src="img/typewriter-dark-list-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/typewriter-dark-list-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>打字機・深色・月曆</h3><div class="two">
+  <figure><img src="img/typewriter-dark-cal-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/typewriter-dark-cal-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>打字機・深色・近期任務</h3><div class="two">
+  <figure><img src="img/typewriter-dark-task-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/typewriter-dark-task-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>打字機・深色・未完成</h3><div class="two">
+  <figure><img src="img/typewriter-dark-pend-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/typewriter-dark-pend-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>打字機・詳細內容（月曆點開）</h3><div class="two">
+  <figure><img src="img/typewriter-detail-s30-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/typewriter-detail-s30-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>打字機・任務詳細內容</h3><div class="two">
+  <figure><img src="img/typewriter-task-t01-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/typewriter-task-t01-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>打字機・排程表單</h3><div class="two">
+  <figure><img src="img/typewriter-form-s01-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/typewriter-form-s01-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>糖果紙・淺色・重複排程</h3><div class="two">
+  <figure><img src="img/candy-light-list-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/candy-light-list-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>糖果紙・淺色・月曆</h3><div class="two">
+  <figure><img src="img/candy-light-cal-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/candy-light-cal-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>糖果紙・淺色・近期任務</h3><div class="two">
+  <figure><img src="img/candy-light-task-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/candy-light-task-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>糖果紙・淺色・未完成</h3><div class="two">
+  <figure><img src="img/candy-light-pend-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/candy-light-pend-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>糖果紙・深色・重複排程</h3><div class="two">
+  <figure><img src="img/candy-dark-list-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/candy-dark-list-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>糖果紙・深色・月曆</h3><div class="two">
+  <figure><img src="img/candy-dark-cal-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/candy-dark-cal-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>糖果紙・深色・近期任務</h3><div class="two">
+  <figure><img src="img/candy-dark-task-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/candy-dark-task-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>糖果紙・深色・未完成</h3><div class="two">
+  <figure><img src="img/candy-dark-pend-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/candy-dark-pend-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>糖果紙・詳細內容（月曆點開）</h3><div class="two">
+  <figure><img src="img/candy-detail-s30-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/candy-detail-s30-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>糖果紙・任務詳細內容</h3><div class="two">
+  <figure><img src="img/candy-task-t01-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/candy-task-t01-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section><section class="pair"><h3>糖果紙・排程表單</h3><div class="two">
+  <figure><img src="img/candy-form-s01-n.jpg" loading="lazy" alt="原生"><figcaption>原生 Typeday</figcaption></figure>
+  <figure><img src="img/candy-form-s01-w.jpg" loading="lazy" alt="網頁版"><figcaption>網頁版 Checkly</figcaption></figure></div></section>
+<h2>桌面小工具與鎖定畫面桌布</h2>
+<section class="pair"><h3>桌面小工具（左：原生，右：網頁版的小工具預覽頁，同一份資料）</h3><img src="img/widget.jpg" loading="lazy"></section><section class="pair"><h3>鎖定畫面週曆桌布（左：原生，右：網頁版預覽）</h3><img src="img/wall.jpg" loading="lazy"></section>
+</main></body></html>
