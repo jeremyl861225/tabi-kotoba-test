@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>新名字 × 開場動畫</title>
+<meta name="theme-color" content="#F8F7F2">
+<style>
+@font-face{font-family:"JetBrains Mono";src:url("app/fonts/JetBrainsMono-Bold.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url("app/fonts/JetBrainsMono-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
+:root{--bg:#F8F7F2;--card:#FFFFFF;--ink:#133E50;--ink2:#3D6070;--muted:#5A6F78;--line:#D9DDD0;--sel:#133E50;--on-sel:#F8F7F2;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#111214;--card:#1A1C1F;--ink:#ECEEF1;--ink2:#B6BBC1;--muted:#8A9097;--line:#2C2F34;--sel:#ECEEF1;--on-sel:#111214;color-scheme:dark}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 40px)}
+a.back{color:var(--muted);text-decoration:none;font-size:14px}
+h1{font-size:24px;line-height:1.3;margin:10px 0 6px}
+p.lead{margin:0 0 18px;color:var(--ink2)}
+h2{font-size:15px;letter-spacing:.06em;color:var(--muted);margin:22px 0 8px;font-weight:600}
+.names{display:grid;gap:8px}
+.opt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:var(--card);color:inherit;
+  border:1px solid var(--line);padding:12px 14px;font:inherit;cursor:pointer;border-radius:0}
+.opt .nm{font:700 20px/1.2 var(--mono);min-width:6.2em;letter-spacing:0}
+.opt .ds{font-size:14px;line-height:1.5;color:var(--ink2)}
+.opt .ds small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.opt[aria-pressed="true"]{background:var(--sel);color:var(--on-sel);border-color:var(--sel)}
+.opt[aria-pressed="true"] .ds,.opt[aria-pressed="true"] .ds small{color:var(--on-sel);opacity:.86}
+.own{display:flex;gap:8px;margin-top:8px}
+.own input{flex:1;min-width:0;font:700 18px/1.2 var(--mono);padding:10px 12px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:0}
+.own button{font:600 15px/1 system-ui,sans-serif;padding:0 14px;border:1px solid var(--sel);background:var(--sel);color:var(--on-sel);border-radius:0;cursor:pointer}
+.intros{display:grid;gap:8px}
+.intros .opt .nm{font-size:18px;min-width:1.6em}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line)}
+.seg button{font:600 14px/1 system-ui,sans-serif;padding:10px 14px;border:0;background:var(--card);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--sel);color:var(--on-sel)}
+.phone{margin:14px auto 0;max-width:402px;border:1px solid var(--line);background:#000}
+.phone iframe{display:block;width:100%;height:min(78vh,874px);border:0;background:var(--bg)}
+.acts{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.acts button,.acts a{font:600 15px/1 system-ui,sans-serif;padding:12px 16px;border:1px solid var(--sel);background:var(--card);color:var(--ink);text-decoration:none;cursor:pointer;border-radius:0}
+.acts .primary{background:var(--sel);color:var(--on-sel)}
+.now{text-align:center;margin-top:12px;font:700 16px/1.4 var(--mono)}
+.note{font-size:13.5px;color:var(--muted);margin-top:18px}
+.note li{margin:4px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../../">← 所有測試</a>
+  <h1>新名字 × 開場動畫</h1>
+  <p class="lead">上架版要換名字，開場也跟著換。先選名字、再選開場，下面的手機畫面會用你選的名字播放；點畫面可以跳過，按「重播」再看一次。開場播完就是 App 的真實畫面（試用資料是虛構的），可以照常點。</p>
+
+  <h2>① 名字（App Store 美國、台灣兩區都查無同名 App）</h2>
+  <div class="names" id="names"></div>
+  <div class="own">
+    <input id="own" maxlength="12" placeholder="自己取（英文）" autocomplete="off" autocapitalize="words" spellcheck="false">
+    <button id="own-go" type="button">用這個</button>
+  </div>
+
+  <h2>② 開場</h2>
+  <div class="intros" id="intros"></div>
+
+  <h2>③ 看起來</h2>
+  <div class="row">
+    <div class="seg" id="scheme">
+      <button type="button" data-v="light">淺色</button>
+      <button type="button" data-v="dark">深色</button>
+    </div>
+  </div>
+
+  <div class="phone"><iframe id="frame" title="開場預覽" loading="eager"></iframe></div>
+  <div class="now" id="now"></div>
+  <div class="acts">
+    <button type="button" class="primary" id="replay">▶ 重播</button>
+    <a id="full" target="_blank" rel="noopener">全螢幕看</a>
+  </div>
+
+  <ul class="note">
+    <li>選好了就回覆「名字＋開場代號」，例如「Typeday＋B」。也可以只回名字、開場之後再改。</li>
+    <li>原本的 Checkly 不能用：App Store 已經有一個同名的待辦 App（Checkly: Get Things Right），「CHECKLY」也是美國一家軟體公司的註冊商標。</li>
+    <li>這裡是網頁模擬，原生 App 會照選定的那一種重做，時間與節奏相同。</li>
+  </ul>
+</div>
+<script>
+(function(){
+  var NAMES = [
+    { n: 'Typeday',  d: '每天打一行：打字機＋日子。' },
+    { n: 'Ticktype', d: '打勾＋打字：[x] 和打字機兩個招牌一次說完。', s: '開頭跟大型待辦 App「TickTick」一樣是 Tick。' },
+    { n: 'Linefeed', d: '打字機的「換行」：一天過完，紙捲到下一行。' },
+    { n: 'Tabstop',  d: '打字機的跳格鍵：一按就跳到下一件該做的事。' },
+    { n: 'Tickline', d: '一行一個勾。' },
+    { n: 'Typebar',  d: '打字機上敲字的那根字桿。' }
+  ];
+  var INTROS = [
+    { k: 'a', t: 'A', d: '亂碼跳字：跟現在一樣，Recurring → Calendar → Upcoming 跳成亂碼再換字，最後停在新名字，飛到標頭。' },
+    { k: 'b', t: 'B', d: '打字機逐字打：三個英文頁名一行一行打出來、紙往上捲，最後在大字那一行打出名字，游標閃兩下後飛到標頭。' },
+    { k: 'c', t: 'C', d: '打勾清單：[ ] Recurring／Calendar／Upcoming 依序打勾劃掉，清單收起後名字從亂碼跳出來，飛到標頭。' }
+  ];
+  var st = { name: 'Typeday', intro: 'a', scheme: (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') };
+  // 網址 #name=…&intro=…&scheme=… 記住目前的選擇（重新整理不會跑掉）
+  try{
+    var h = new URLSearchParams(location.hash.slice(1));
+    if(h.get('name')) st.name = clean(h.get('name')) || st.name;
+    if(/^[abc]$/.test(h.get('intro') || '')) st.intro = h.get('intro');
+    if(/^(light|dark)$/.test(h.get('scheme') || '')) st.scheme = h.get('scheme');
+  }catch(e){}
+  function clean(v){ return String(v || '').replace(/[^A-Za-z0-9 ]/g, '').trim().slice(0, 12); }
+  function esc(v){ return String(v).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  var $names = document.getElementById('names'), $intros = document.getElementById('intros');
+  $names.innerHTML = NAMES.map(function(o){
+    return '<button type="button" class="opt" data-n="' + esc(o.n) + '"><span class="nm">' + esc(o.n) + '</span><span class="ds">' + esc(o.d) +
+      (o.s ? '<small>' + esc(o.s) + '</small>' : '') + '</span></button>';
+  }).join('');
+  $intros.innerHTML = INTROS.map(function(o){
+    return '<button type="button" class="opt" data-k="' + o.k + '"><span class="nm">' + o.t + '</span><span class="ds">' + esc(o.d) + '</span></button>';
+  }).join('');
+
+  function url(){
+    return 'app/index.html?demo=1&force=1&name=' + encodeURIComponent(st.name) + '&intro=' + st.intro + '&scheme=' + st.scheme;
+  }
+  function sync(reload){
+    Array.prototype.forEach.call($names.children, function(b){ b.setAttribute('aria-pressed', String(b.getAttribute('data-n') === st.name)); });
+    Array.prototype.forEach.call($intros.children, function(b){ b.setAttribute('aria-pressed', String(b.getAttribute('data-k') === st.intro)); });
+    Array.prototype.forEach.call(document.querySelectorAll('#scheme button'), function(b){ b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === st.scheme)); });
+    document.getElementById('now').textContent = st.name + ' ＋ ' + st.intro.toUpperCase();
+    document.getElementById('full').href = url();
+    try{ history.replaceState(null, '', '#name=' + encodeURIComponent(st.name) + '&intro=' + st.intro + '&scheme=' + st.scheme); }catch(e){}
+    if(!reload) return;
+    var fr = document.getElementById('frame');
+    // 使用者點了選項：先把手機畫面捲進視野再開始播，免得開場在畫面外就播完了
+    if(reload === 'scroll'){
+      fr.src = 'about:blank';
+      fr.parentNode.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      clearTimeout(sync.t); sync.t = setTimeout(function(){ fr.src = url() + '&t=' + Date.now(); }, 520);
+    }else fr.src = url() + '&t=' + Date.now();
+  }
+  $names.addEventListener('click', function(e){ var b = e.target.closest('.opt'); if(!b) return; st.name = b.getAttribute('data-n'); sync('scroll'); });
+  $intros.addEventListener('click', function(e){ var b = e.target.closest('.opt'); if(!b) return; st.intro = b.getAttribute('data-k'); sync('scroll'); });
+  document.getElementById('scheme').addEventListener('click', function(e){ var b = e.target.closest('button'); if(!b) return; st.scheme = b.getAttribute('data-v'); sync('scroll'); });
+  document.getElementById('replay').addEventListener('click', function(){ sync(true); });
+  function useOwn(){ var v = clean(document.getElementById('own').value); if(!v) return; st.name = v; sync('scroll'); }
+  document.getElementById('own-go').addEventListener('click', useOwn);
+  document.getElementById('own').addEventListener('keydown', function(e){ if(e.key === 'Enter') useOwn(); });
+  sync(true);
+})();
+</script>
+</body>
+</html>
