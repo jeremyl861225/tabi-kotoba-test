@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>여행말 男聲重選</title>
+<style>
+  :root { --bg: #f6f4fb; --card: #fff; --ink: #24233a; --ink2: #5d5b78; --line: #e3dfef; --accent: #4b3fb0; --bad: #c2410c; --good: #15803d; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #17162a; --card: #232239; --ink: #f1effa; --ink2: #b6b2d3; --line: #36345a; --accent: #b3a9ff; --bad: #fb923c; --good: #4ade80; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom)); }
+  a.back { color: var(--accent); text-decoration: none; font-size: 15px; }
+  h1 { font-size: 22px; margin: 12px 0 6px; }
+  p { margin: 6px 0; color: var(--ink2); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin: 14px 0; }
+  .card h2 { font-size: 18px; margin: 0 0 2px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .tag { font-size: 13px; font-weight: 600; padding: 1px 8px; border-radius: 99px; border: 1px solid currentColor; }
+  .tag.bad { color: var(--bad); } .tag.good { color: var(--good); } .tag.ref { color: var(--ink2); }
+  .score { font-size: 14px; color: var(--ink2); margin: 0 0 8px; }
+  ol { margin: 0; padding: 0; list-style: none; }
+  li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+  li:first-child { border-top: 0; }
+  button { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--accent); color: var(--card); font-size: 15px; cursor: pointer; }
+  button.playing { opacity: .6; }
+  .ko { font-size: 17px; }
+  .note { font-size: 13px; color: var(--bad); }
+  .tip { background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="../../">← 所有測試</a>
+  <h1>여행말：男聲要重選</h1>
+  <p>發音改用 Azure 語音服務重做後，你之前選的男聲 <b>InJoon</b> 在 Azure 上的版本會把很多句尾的「<b>요</b>」吃掉（例如「어디예요?」念成「어디에?」）。字卡會變成教半語，不能用。</p>
+  <p>下面每個聲音念同樣 6 句：第 1–3 句是 InJoon 會出錯的句子，第 4–6 句是一般句子。<b>聽完選一個男聲</b>；女聲 SunHi 沒有問題、維持不變（最下面附上當對照）。</p>
+
+  <section class="card tip">
+    <p style="margin:0">用語音辨識檢查了 InJoon 出錯的 56 句（各念一次）：</p>
+    <p style="margin:4px 0 0">InJoon 6／56 有「요」（試了三次都一樣）；Hyunsu 51、Hyunsu 多語 51、GookMin 51、BongJin 50（剩下幾句多半是辨識誤差）。</p>
+  </section>
+
+  <div id="list"></div>
+</main>
+<script>
+  const texts = ['탈의실이 어디예요?', '버스 정류장이 어디예요?', '혹시 여기 카드 돼요?', '공항까지 얼마나 걸려요?', '두 건물 사이에 있어요.', '도와주셔서 감사합니다.'];
+  const voices = [
+    ['injoon', 'InJoon', 'bad', '現在用的（Azure 版）', '第 1–3 句的「요」被吃掉'],
+    ['hyunsu', 'Hyunsu', 'good', '男聲', ''],
+    ['hyunsuml', 'Hyunsu 多語', 'good', '男聲（多語版）', ''],
+    ['gookmin', 'GookMin', 'good', '男聲', ''],
+    ['bongjin', 'BongJin', 'good', '男聲', ''],
+    ['sunhi', 'SunHi', 'ref', '女聲・不變，對照用', ''],
+  ];
+  const player = new Audio();
+  let cur = null;
+  player.addEventListener('ended', () => { if (cur) cur.classList.remove('playing'); cur = null; });
+  const list = document.getElementById('list');
+  for (const [id, name, kind, sub, note] of voices) {
+    const sec = document.createElement('section');
+    sec.className = 'card';
+    sec.innerHTML = `<h2>${name} <span class="tag ${kind}">${sub}</span></h2>${note ? `<p class="note">${note}</p>` : ''}<ol>${texts.map((t, i) =>
+      `<li><button data-src="${id}-${i + 1}.mp3" aria-label="播放 ${name} 第 ${i + 1} 句">▶</button><span class="ko" lang="ko">${i + 1}. ${t}</span></li>`).join('')}</ol>`;
+    list.appendChild(sec);
+  }
+  list.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-src]');
+    if (!b) return;
+    if (cur) cur.classList.remove('playing');
+    cur = b; b.classList.add('playing');
+    player.src = b.dataset.src; player.play().catch(() => b.classList.remove('playing'));
+  });
+</script>
+</body>
+</html>
