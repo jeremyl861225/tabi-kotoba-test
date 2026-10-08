@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>節奏條四種畫法</title>
+<style>
+:root{--bg:#F8F7F2;--card:#FFFFFF;--ink:#133E50;--ink2:#3D6070;--muted:#5A6F78;--line:#D9DDD0;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#111214;--card:#1A1C1F;--ink:#ECEEF1;--ink2:#B6BBC1;--muted:#8A9097;--line:#2C2F34;color-scheme:dark}}
+*{box-sizing:border-box} html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"PingFang TC",sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 40px)}
+a.back{color:var(--muted);text-decoration:none;font-size:14px}
+h1{font-size:23px;line-height:1.3;margin:10px 0 6px}
+p{margin:0 0 12px;color:var(--ink2)}
+h2{font-size:17px;margin:0 0 4px}
+.rows{display:grid;gap:10px;margin:6px 0 24px}
+.row{margin:0;background:var(--card);border:1px solid var(--line);padding:8px 10px}
+.row figcaption{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:4px}
+img{width:100%;height:auto;display:block}
+.opt{background:var(--card);border:1px solid var(--line);padding:14px;margin:0 0 14px}
+.opt p{font-size:14.5px}
+.opt img{border:1px solid var(--line)}
+.rec{border-left:3px solid var(--ink);padding:2px 0 2px 12px;margin:0 0 18px}
+.sub{font-size:15px;font-weight:600;color:var(--muted);letter-spacing:.04em;margin:22px 0 8px}
+</style></head><body><div class="wrap">
+<a class="back" href="../../">← 所有測試</a>
+<h1>重複排程的節奏條：四種畫法</h1>
+<p>每一列下面那排是「接下來四週哪幾天有」。打字機外觀、同一份假資料（不是你手機上的資料），只有節奏條不一樣。</p>
+<p class="rec">我推薦 <b>C 不畫</b>：頻率第二行已經寫了（每週一、每月第二個週三），真正要看的是「下次什麼時候」，列表也最清爽。
+想保留一點節奏感的話選 <b>A 點</b>。回覆字母就好（目前／A／B／C）。</p>
+<div class="sub">同一列放大比較（每週一的事項）</div>
+<div class="rows"><figure class="row"><figcaption>目前</figcaption><img src="img/row-boxes.jpg" alt="目前"></figure><figure class="row"><figcaption>A　點</figcaption><img src="img/row-dots.jpg" alt="A　點"></figure><figure class="row"><figcaption>B　時間軸</figcaption><img src="img/row-ruler.jpg" alt="B　時間軸"></figure><figure class="row"><figcaption>C　不畫</figcaption><img src="img/row-none.jpg" alt="C　不畫"></figure></div>
+<div class="sub">整頁</div>
+<section class="opt" id="boxes"><h2>目前</h2><p>每一天一格：■ 有、□ 沒有。每週、每月的事項幾乎整排都是空心框，看起來很雜。</p><img src="img/boxes.jpg" loading="lazy" alt="目前"></section><section class="opt" id="dots"><h2>A　點</h2><p>沒有的那幾天退成小點 ·，只剩有的那幾天是方塊，一眼看得出「哪幾天有」。行尾的點線拿掉，「下次 …」直接靠右。</p><img src="img/dots.jpg" loading="lazy" alt="A　點"></section><section class="opt" id="ruler"><h2>B　時間軸</h2><p>一條細線代表接下來四週，有的那天放一個色塊；最左邊的墨色短線是今天，淡色小刻度是每週的分界。</p><img src="img/ruler.jpg" loading="lazy" alt="B　時間軸"></section><section class="opt" id="none"><h2>C　不畫</h2><p>列表不畫節奏條，「下次 5 天後」接在第二行的最後面。每一列變矮，同一個畫面看得到更多事項；點進詳細內容仍看得到四週的節奏（用 A 的畫法）。</p><img src="img/none.jpg" loading="lazy" alt="C　不畫"></section>
+</div></body></html>
