@@ -31,10 +31,15 @@
 <body>
 <main>
   <a class="back" href="../../">← 所有測試</a>
-  <h1>여행말：男聲要重選</h1>
+  <h1>여행말：男聲重選（已定案 Hyunsu）</h1>
   <p>發音改用 Azure 語音服務重做後，你之前選的男聲 <b>InJoon</b> 在 Azure 上的版本會把很多句尾的「<b>요</b>」吃掉（例如「어디예요?」念成「어디에?」）。字卡會變成教半語，不能用。</p>
   <p>下面每個聲音念同樣 6 句：第 1–3 句是 InJoon 會出錯的句子，第 4–6 句是一般句子。<b>聽完選一個男聲</b>；女聲 SunHi 沒有問題、維持不變（最下面附上當對照）。</p>
 
+  <section class="card" style="border-color: var(--accent)">
+    <h2>已定案：Hyunsu <span class="tag good">2026-10-09 已上線</span></h2>
+    <p>男聲 2,400 個音檔已全部換成 Hyunsu，並用語音辨識逐檔檢查句尾。下面 <b>7 句</b>語音辨識一直聽不出句尾的「요」（女聲同一句沒問題），<b>請用耳朵聽一下男聲有沒有念出「요」</b>，有問題的跟我說第幾句。</p>
+    <ol id="check"></ol>
+  </section>
   <section class="card tip">
     <p style="margin:0">用語音辨識檢查了 InJoon 出錯的 56 句（各念一次）：</p>
     <p style="margin:4px 0 0">InJoon 6／56 有「요」（試了三次都一樣）；Hyunsu 51、Hyunsu 多語 51、GookMin 51、BongJin 50（剩下幾句多半是辨識誤差）。</p>
@@ -56,6 +61,9 @@
   let cur = null;
   player.addEventListener('ended', () => { if (cur) cur.classList.remove('playing'); cur = null; });
   const list = document.getElementById('list');
+  const checks = ["새 앨범 언제 나와요?", "이 떡볶이 많이 매워요?", "담요", "김치볶음 진짜 매워요.", "삼월에도 눈이 와요?", "이 길로 바로 가면 돼요?", "하나 더요"];
+  document.getElementById('check').innerHTML = checks.map((t, i) => `<li><button data-src="check-m-${i + 1}.mp3" aria-label="男聲 第 ${i + 1} 句">男</button><button data-src="check-f-${i + 1}.mp3" aria-label="女聲 第 ${i + 1} 句" style="opacity:.7">女</button><span class="ko" lang="ko">${i + 1}. ${t}</span></li>`).join('');
+
   for (const [id, name, kind, sub, note] of voices) {
     const sec = document.createElement('section');
     sec.className = 'card';
@@ -63,13 +71,15 @@
       `<li><button data-src="${id}-${i + 1}.mp3" aria-label="播放 ${name} 第 ${i + 1} 句">▶</button><span class="ko" lang="ko">${i + 1}. ${t}</span></li>`).join('')}</ol>`;
     list.appendChild(sec);
   }
-  list.addEventListener('click', (e) => {
+  const onPlay = (e) => {
     const b = e.target.closest('button[data-src]');
     if (!b) return;
     if (cur) cur.classList.remove('playing');
     cur = b; b.classList.add('playing');
     player.src = b.dataset.src; player.play().catch(() => b.classList.remove('playing'));
-  });
+  };
+  list.addEventListener('click', onPlay);
+  document.getElementById('check').addEventListener('click', onPlay);
 </script>
 </body>
 </html>
