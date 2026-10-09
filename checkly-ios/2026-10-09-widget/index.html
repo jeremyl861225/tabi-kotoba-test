@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Typeday 小工具</title>
+<style>
+:root{--bg:#F8F7F2;--card:#FFFFFF;--ink:#133E50;--ink2:#3D6070;--muted:#5A6F78;--line:#D9DDD0;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#111214;--card:#1A1C1F;--ink:#ECEEF1;--ink2:#B6BBC1;--muted:#8A9097;--line:#2C2F34;color-scheme:dark}}
+*{box-sizing:border-box} html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"PingFang TC",sans-serif}
+.wrap{max-width:620px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 40px)}
+a.back{color:var(--muted);text-decoration:none;font-size:14px}
+h1{font-size:23px;line-height:1.3;margin:10px 0 6px} h2{font-size:18px;margin:0 0 4px}
+p{margin:0 0 12px;color:var(--ink2)}
+.opt{background:var(--card);border:1px solid var(--line);padding:14px;margin:0 0 16px}
+.opt p{font-size:14.5px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+figure{margin:0} img{width:100%;height:auto;display:block;border:1px solid var(--line)}
+figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:3px}
+.rec{border-left:3px solid var(--ink);padding:2px 0 2px 12px;margin:0 0 18px}
+</style></head><body><div class="wrap">
+<a class="back" href="../../">← 所有測試</a>
+<h1>Typeday 小工具：打字機風格兩款</h1>
+<p>每張圖由上到下是：大型、中型、小型，右下是鎖定畫面的三種（長條、圓形進度、一行字）。都用 App 的打字機字體和顏色，假資料（不是你的資料）。</p>
+<p class="rec">我推薦 <b>A 打字稿</b>：跟 App 打開後的打字機畫面最像，一眼就認得；B 收據比較有趣，但每件事的字比較小。回覆字母就好，也可以混搭（例如「A，但下面加 B 的條碼」）。</p>
+<section class="opt"><h2>A　打字稿</h2><p>等寬打字字體＋格線紙：抬頭是「10.07 WED」和雙線，今天是反白方塊、選的那天加框，下面一行一行是 [ ]／[x] 的事項（做完的劃掉），右邊小方塊是類別色。中型左邊是一塊大字日期章。</p><div class="two"><figure><img src="img/sheet-light.jpg" alt=""><figcaption>淺色</figcaption></figure><figure><img src="img/sheet-dark.jpg" alt=""><figcaption>深色</figcaption></figure></div></section><section class="opt"><h2>B　收據</h2><p>像收銀機打出來的收據：置中的 T Y P E D A Y、虛線分隔、點線引導到右邊的 [ ]，下面是「未完成／已完成／逾期」的小計，最底下用條碼的高低表示這週每天有幾件（今天是青綠色），點一根就打開那天。</p><div class="two"><figure><img src="img/receipt-light.jpg" alt=""><figcaption>淺色</figcaption></figure><figure><img src="img/receipt-dark.jpg" alt=""><figcaption>深色</figcaption></figure></div></section>
+</div></body></html>
