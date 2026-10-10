@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>App Store 文案</title>
+<style>
+:root{--bg:#f5f1f4;--ink:#2b1a35;--ink2:#6b5a72;--card:#fff;--line:#e4d8e0;--acc:#2b1a35}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1420;--ink:#f6eef6;--ink2:#c4b3c8;--card:#2a1f2e;--line:#3e3044;--acc:#e9d8f2}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,"PingFang TC",sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px 16px calc(40px + env(safe-area-inset-bottom))}
+a{color:var(--ink2)}h1{font-size:22px;margin:12px 0 4px}p.lead{color:var(--ink2);margin:0 0 14px}
+.tabs{display:flex;gap:8px;margin:8px 0 14px}.tabs button{flex:1;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600}
+.tabs button[aria-pressed=true]{background:var(--acc);color:var(--bg)}
+.f{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0}
+.f h2{display:flex;align-items:center;gap:8px;font-size:15px;margin:0 0 6px}.f h2 .n{font-weight:400;color:var(--ink2);font-size:13px;margin-right:auto}
+.f h2 button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:99px;padding:4px 14px;font:inherit;font-size:14px}
+.f pre{margin:0;white-space:pre-wrap;word-break:break-word;font:inherit;font-size:15px}
+.note{font-size:13px;color:var(--ink2)}
+</style></head><body><main>
+<a href="../../">← 所有測試</a>
+<h1>App Store 文案（複製貼上用）</h1>
+<p class="lead">App Store Connect →「App 資訊」與版本頁的欄位，照順序貼上。字數都在 Apple 的上限內。隱私權政策已放在網址那一欄的頁面。</p>
+<div class="tabs" id="tabs"></div><div id="list"></div>
+<p class="note">類別：主要「教育」、次要「旅遊」。版權：「2026 你的法定姓名」。App 隱私權問卷選「不蒐集資料」。</p>
+</main><script>
+const APPS = [{"app": "旅ことば", "fields": [{"k": "name", "label": "名稱", "text": "旅ことば：日本旅遊日文單字卡", "limit": 30}, {"k": "subtitle", "label": "副標題", "text": "字卡・發音・測驗，出國離線也能用", "limit": 30}, {"k": "promo", "label": "宣傳文字（隨時可改、不用送審）", "text": "出國前一站一站學，到了日本沒網路也能查字、聽發音。必備單字、五十音、N5 文法免費用；想學更深，一次購買就能解鎖常用線、進階線與 N4～N1 文法。", "limit": 170}, {"k": "desc", "label": "描述", "text": "旅ことば 是給中文使用者的日本旅遊日文單字卡。依「旅遊實用頻率」排序，把出國最常用到的日文排在最前面；一站一課，像搭電車一樣一路往下學。\n\n■ 免費就能用\n・必備線 70 站、940 張字卡：寒暄、機場、電車、飯店、點餐、購物、看醫生……\n・常用線前 2 站免費試學\n・五十音：平假名 9 課、片假名 6 課，附練習\n・數字與量詞：日期、時間、金額的念法與變音，加上數字聽力測驗\n・文法入門～N5 共 43 課\n・離線字典：22,639 個常用詞，中文釋義，每個詞都有發音\n\n■ 完整課程（App 內一次購買、永久使用，不是訂閱）\n・常用線與進階線共 282 站、4,102 張字卡，包含日檢 N5–N3 單字\n・文法 N4～N1 共 134 課，近義文法講清楚差別\n・換手機或重裝 App，用同一個 Apple 帳號「恢復購買」即可\n\n■ 每張字卡都有\n・假名標音、羅馬拼音、例句與中文解釋\n・女聲、男聲預錄發音（語音合成），可交替播放、可放慢速度\n\n■ 8 種測驗\n看日文選中文、看中文選日文、看漢字選讀音、聽發音選單字、聽發音選中文、聽例句選意思、拼出讀音、聽寫。答錯的字自動收進「不熟」清單，集中複習。\n\n■ 完全離線、不用註冊\n所有字卡、字典、課程與發音都內建在 App 裡，到了日本沒有網路也能用。不需帳號、沒有廣告、不蒐集任何資料。\n\n■ 其他\n・深色模式\n・學習紀錄可匯出備份\n\n資料來源：JMdict（EDRDG，CC BY-SA 4.0）、open-anki-jlpt-decks（MIT）、Jonathan Waller 的 JLPT 詞表（CC BY）；字型 Zen Old Mincho（SIL OFL 1.1）；發音為 Microsoft Azure 語音服務的神經語音。例句與中文解釋由 AI 撰寫，並經讀音比對檢查。", "limit": 4000}, {"k": "keywords", "label": "關鍵字", "text": "日文,日語,單字,五十音,平假名,片假名,旅遊,自由行,日本旅行,日檢,JLPT,N5,N4,N3,N2,N1,文法,會話,發音,字典,背單字,單字卡", "limit": 100}, {"k": "whatsnew", "label": "此版本的新功能", "text": "第一版。", "limit": 4000}, {"k": "support", "label": "支援網址", "text": "https://github.com/jeremyl861225/tabi-kotoba/blob/main/SUPPORT.md", "limit": 0}, {"k": "privacy", "label": "隱私權政策網址", "text": "https://github.com/jeremyl861225/tabi-kotoba/blob/main/PRIVACY.md", "limit": 0}], "privacy": "https://github.com/jeremyl861225/tabi-kotoba/blob/main/PRIVACY.md", "iap": true}, {"app": "여행말", "fields": [{"k": "name", "label": "名稱", "text": "여행말：韓國旅遊韓文單字卡", "limit": 30}, {"k": "subtitle", "label": "副標題", "text": "字卡・發音・測驗，出國離線也能用", "limit": 30}, {"k": "promo", "label": "宣傳文字（隨時可改、不用送審）", "text": "出國前一站一站學，到了韓國沒網路也能查字、聽發音。從機場、地鐵、飯店到烤肉、咖啡廳點餐機、美妝與追星，旅遊常用韓文一次備齊，還有四十音與 127 課文法。", "limit": 170}, {"k": "desc", "label": "描述", "text": "여행말 是給中文使用者的韓國旅遊韓文單字卡。依「旅遊實用頻率」排序，把去韓國最常用到的韓文排在最前面；一站一課，像搭地鐵一樣一路往下學。全部免費。\n\n■ 1,200 張字卡、89 站\n・26 個主題：機場與入境、地鐵與交通卡、巴士與計程車、飯店住宿、汗蒸幕與澡堂、餐廳點餐、烤肉與炸雞、咖啡廳與點餐機、購物、便利商店、美妝保養、看醫生、醫美與皮膚科、觀光景點、韓服與拍照打卡、追星與演唱會……\n・漢字詞上方標漢字（공항 上方的「空港」），中文使用者一看就懂\n・寫法和唸法不同時標出實際唸法［가치］，並附韓國官方羅馬拼音\n・每張都有例句與中文解釋\n\n■ 女聲、男聲發音\n・每個單字與例句都有預錄的女聲、男聲發音（語音合成），可交替播放、可放慢速度\n\n■ 8 種測驗\n看韓文選中文、看中文選韓文、看韓文選實際唸法、聽發音選單字、聽發音選中文、聽例句選意思、拼出韓文、聽寫。答錯的字自動收進「不熟」清單，集中複習。\n\n■ 課程\n・四十音：母音、子音到收尾音共 9 課，附練習\n・文法 127 課：從語序、助詞、動詞變化、不規則變化與旅行必備句型，一路到 TOPIK 中級、高級的推測、引用、讓步與書面語；分初級、中級、高級，每課有可點播的例句與練習\n\n■ 離線字典\n字卡以外的字也查得到：20,947 個常用詞（英文釋義）\n\n■ 完全離線、不用註冊\n所有字卡、字典、課程與發音都內建在 App 裡，到了韓國沒有網路也能用。不需帳號、沒有廣告、不蒐集任何資料。\n\n■ 其他\n・深色模式\n・學習紀錄可匯出備份\n\n資料來源：國立國語院《韓國語基礎辭典》（CC BY-SA 2.0 KR）；字型 Noto Serif KR、Zen Old Mincho（SIL OFL 1.1）；發音為 Microsoft Azure 語音服務的神經語音。例句與中文解釋由 AI 撰寫，經字典與規則檢查。", "limit": 4000}, {"k": "keywords", "label": "關鍵字", "text": "韓文,韓語,單字,四十音,韓文字母,旅遊,自由行,韓國旅行,首爾,釜山,濟州,會話,發音,字典,背單字,文法,單字卡,追星,TOPIK", "limit": 100}, {"k": "whatsnew", "label": "此版本的新功能", "text": "第一版。", "limit": 4000}, {"k": "support", "label": "支援網址", "text": "https://github.com/jeremyl861225/yeohaengmal/blob/main/SUPPORT.md", "limit": 0}, {"k": "privacy", "label": "隱私權政策網址", "text": "https://github.com/jeremyl861225/yeohaengmal/blob/main/PRIVACY.md", "limit": 0}], "privacy": "https://github.com/jeremyl861225/yeohaengmal/blob/main/PRIVACY.md", "iap": false}];
+let cur = 0;
+function render() {
+  document.getElementById('tabs').innerHTML = APPS.map((a, i) => `<button data-i="${i}" aria-pressed="${i === cur}">${a.app}</button>`).join('');
+  const a = APPS[cur];
+  document.getElementById('list').innerHTML = (a.iap ? '<p class="note">這個 App 有 App 內購買「完整課程」：描述已寫明哪些免費、哪些要購買（審查準則 2.3.2）。</p>' : '<p class="note">這個 App 全部免費，沒有 App 內購買。</p>') +
+    a.fields.map((f, j) => `<div class="f"><h2>${f.label}<span class="n">${f.limit ? `${[...f.text].length}／${f.limit} 字` : ''}</span><button data-c="${j}">複製</button></h2><pre>${f.text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</pre></div>`).join('');
+}
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('[data-i]'); if (t) { cur = +t.dataset.i; render(); return; }
+  const c = e.target.closest('[data-c]'); if (!c) return;
+  const text = APPS[cur].fields[+c.dataset.c].text;
+  try { await navigator.clipboard.writeText(text); } catch (err) { const r = document.createRange(); r.selectNodeContents(c.closest('.f').querySelector('pre')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); }
+  c.textContent = '已複製'; setTimeout(() => { c.textContent = '複製'; }, 1500);
+});
+render();
+</script></body></html>
