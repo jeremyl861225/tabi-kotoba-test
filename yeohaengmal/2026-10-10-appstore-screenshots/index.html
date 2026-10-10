@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>여행말 App Store 截圖</title>
+<style>
+  :root { --bg: #efeaf8; --ink: #251a3a; --ink2: #6b5a72; --card: #fff; --line: #e6d9e0; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1d1420; --ink: #f6eef6; --ink2: #c4b3c8; --card: #2a1f2e; --line: #3d2f42; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 -apple-system, "PingFang TC", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom)); }
+  a.back { color: var(--ink2); text-decoration: none; }
+  h1 { font-size: 22px; margin: 12px 0 4px; }
+  p { color: var(--ink2); margin: 4px 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (min-width: 640px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
+  figure img { display: block; width: 100%; border-radius: 8px; }
+  figcaption { font-size: 13px; color: var(--ink2); padding: 6px 2px 0; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="../../">← 所有測試</a>
+  <h1>여행말：App Store 截圖</h1>
+  <p>7 張，依上傳順序。1320 × 2868（6.9 吋），App Store Connect 會自動縮給其他尺寸。點圖看原尺寸。</p>
+  <div class="grid" id="g"></div>
+</main>
+<script>
+  const items = [['1-home', '首頁路線'], ['2-learn', '字卡'], ['3-quiz', '測驗'], ['4-search', '搜尋與字典'], ['5-letters', '四十音'], ['6-grammar', '文法'], ['7-dark-learn', '深色模式']];
+  document.getElementById('g').innerHTML = items.map(([f, t], i) => `<figure><a href="${f}.jpg"><img src="${f}.jpg" alt="${t}" loading="lazy"></a><figcaption>${i + 1}. ${t}</figcaption></figure>`).join('');
+</script>
+</body>
+</html>
