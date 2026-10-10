@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Street Talk App Store 文案</title>
+<style>
+:root{--bg:#efeaf8;--ink:#1d2238;--ink2:#5b5f84;--card:#fff;--line:#ddd5ee;--acc:#1d2238}
+@media (prefers-color-scheme:dark){:root{--bg:#1d1838;--ink:#f6f5ff;--ink2:#bdb8dc;--card:#2a2350;--line:#41386e;--acc:#e6e1ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,"PingFang TC",sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px 16px calc(40px + env(safe-area-inset-bottom))}
+a{color:var(--ink2)}h1{font-size:22px;margin:12px 0 4px}p.lead{color:var(--ink2);margin:0 0 14px}
+.f{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0}
+.f h2{display:flex;align-items:center;gap:8px;font-size:15px;margin:0 0 6px}.f h2 .n{font-weight:400;color:var(--ink2);font-size:13px;margin-right:auto}
+.f h2 button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:99px;padding:4px 14px;font:inherit;font-size:14px}
+.f pre{margin:0;white-space:pre-wrap;word-break:break-word;font:inherit;font-size:15px}
+.note{font-size:13px;color:var(--ink2)}
+</style></head><body><main>
+<a href="../../">← 所有測試</a>
+<h1>Street Talk：App Store 文案（複製貼上用）</h1>
+<p class="lead">App Store Connect →「App 資訊」與版本頁的欄位，照順序貼上；字數都在 Apple 的上限內。隱私權政策與支援頁已上線（公開的 jeremyl861225.github.io/apps）。</p>
+<div id="list"></div>
+<p class="note">類別：主要「教育」、次要「參考資料」。版權：「2026 你的法定姓名」。價格：免費（我預設，可改）。App 隱私權問卷選「不蒐集資料」。<br>
+<b>年齡分級要照實答，預期是 13+，不會是 4+</b>：約 20 張卡片說明粗話縮寫（都標「粗話，聽得懂就好」）、約 40 張酒吧與飲料字彙。逐題答案在 repo 的 ios/APPSTORE.md「年齡分級問卷」。<br>
+目前還缺：Apple Developer Program（付費帳號）— 加入後才能簽署並上傳。</p>
+</main><script>
+const FIELDS = [{"label": "名稱", "text": "Street Talk：美國生活英文單字卡", "limit": 30}, {"label": "副標題", "text": "課本沒教的美式說法，離線也能學", "limit": 30}, {"label": "宣傳文字", "text": "課本沒教的美式英文，在美國生活用得到的 3,292 個單字一次備齊：俚語與網路用語、點餐、租屋、看醫生、報稅、開車、職場。單字與片語附 KK 音標，女聲男聲發音，8 種測驗，完全離線。", "limit": 170}, {"label": "描述", "text": "Street Talk 是給台灣人的美國生活英文單字卡。跳過國高中課本教過的字，專收「課本沒教、到了美國一定會碰到」的美式說法：俚語與年輕人網路用語、慣用語、動詞片語，還有點餐、租屋、看醫生、報稅、開車、職場的實用字。依實用度排序，一站一課，像搭地鐵一樣一路往下學。全部免費。\n\n■ 3,292 張字卡、241 站\n・41 個主題：美式俚語、年輕人與網路用語、慣用語、動詞片語、機場與入境、大眾運輸與叫車、開車與 DMV、租屋與搬家、居家修繕、水電網路與手機、餐廳點餐、菜單與料理、速食與咖啡店、超市、購物與退貨、藥局、看醫生與醫療保險、銀行與付款、報稅與證件、職場、學校與小孩、國家公園與天氣、招牌標示、節日與運動、店員常說的話、電話客服與預約……\n・課本字只收「美國用法不同」的：check 是帳單、bill 是紙鈔、trunk 是後車廂\n・分必備、常用、進階三條線，依實用度排序\n・每張都有生活情境例句與中文解釋，幾乎每張還附一句提醒（課本陷阱、小費多少、哪些說法別在正式場合用）\n・單字與片語附 KK 音標\n\n■ 女聲、男聲發音\n・每個單字與例句都有預錄的女聲（Michelle）、男聲（Andrew）發音（語音合成），可交替播放、可放慢速度\n\n■ 8 種測驗\n看英文選中文、看中文選英文、看英文選重音正確的 KK、聽發音選單字、聽發音選中文、聽例句選意思、字母方塊拼字、聽寫。答錯的字可一鍵收進「不熟」清單，集中複習。\n\n■ 離線字典\n字卡以外的字也查得到：15,466 個常用字（中文釋義與 KK 音標），可用手機語音朗讀。\n\n■ 完全離線、不用註冊\n所有字卡、字典與發音都內建在 App 裡，沒有網路也能用。不需帳號、沒有廣告、不蒐集任何資料。\n\n■ 其他\n・深色模式\n・學習紀錄可匯出備份\n\n內容說明：Street Talk 教的是美國人實際怎麼說話，所以收了少數粗話與縮寫（例如 WTF），卡片上都會標註「粗話，聽得懂就好」；另有酒吧與飲料等和酒精有關的字彙。\n\n資料來源：KK 音標由 CMU Pronouncing Dictionary（美式發音）轉換；離線字典的中文釋義參考 ECDICT（MIT）；字型 Zen Old Mincho（SIL OFL 1.1）；發音為 Microsoft Azure 語音服務的神經語音。例句與中文解釋由 AI 撰寫，經規則檢查。", "limit": 4000}, {"label": "關鍵字", "text": "英語,美語,KK音標,俚語,留學,移民,旅遊,背單字,字典,發音,網路用語,慣用語,動詞片語,口語,會話,生活英文,出國,自由行", "limit": 100}, {"label": "支援網址", "text": "https://jeremyl861225.github.io/apps/street-talk/support.html"}, {"label": "隱私權政策網址", "text": "https://jeremyl861225.github.io/apps/street-talk/privacy.html"}, {"label": "App 審查備註（英文）", "text": "Street Talk is an American-English vocabulary flashcard app for Traditional Chinese speakers who live in, study in or travel to the United States.\nAll content (3,292 flashcards, a 15,466-word dictionary and all audio recordings) is bundled in the app. It works fully offline: no account, no sign-in, no network access, no in-app purchases, no tracking.\n\nHow to try it:\n- Home tab (路線): tap 出發 on the large card to start the next lesson; swipe a card to go to the next one; tap the speaker button to hear the pronunciation.\n- 測驗 (Quiz) tab: 8 quiz types, including choosing the correct KK (Taiwanese phonetic) stress pattern.\n- 字卡 (Cards) tab: search cards and the offline dictionary (English or Chinese).\n- 設定 (Settings): voice (female/male/alternating), speed, dark mode, export/import a progress backup; 關於 shows data sources, licenses, the privacy policy and support links.\n\nNote on content: because the app teaches how Americans actually talk, about 20 of the 3,292 cards explain slang or mild profanity (for example \"WTF\", \"kiss ass\"). Each is labeled \"粗話，聽得懂就好\" (\"vulgar; for understanding only\") and explained in a learning context. About 40 cards cover bar and drink vocabulary. There is no user-generated content, chat or web browsing. Audio is speech synthesized with Microsoft Azure Speech (neural voices Michelle and Andrew).", "limit": 4000}];
+document.getElementById('list').innerHTML = FIELDS.map((f, j) => `<div class="f"><h2>${f.label}<span class="n">${f.limit ? `${[...f.text].length}／${f.limit} 字` : ''}</span><button data-c="${j}">複製</button></h2><pre>${f.text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</pre></div>`).join('');
+document.addEventListener('click', async (e) => {
+  const c = e.target.closest('[data-c]'); if (!c) return;
+  const text = FIELDS[+c.dataset.c].text;
+  try { await navigator.clipboard.writeText(text); } catch (err) { const r = document.createRange(); r.selectNodeContents(c.closest('.f').querySelector('pre')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+  c.textContent = '已複製'; setTimeout(() => { c.textContent = '複製'; }, 1500);
+});
+</script></body></html>

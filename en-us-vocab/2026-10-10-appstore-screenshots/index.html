@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Street Talk App Store 截圖</title>
+<style>
+  :root { --bg: #efeaf8; --ink: #1d2238; --ink2: #5b5f84; --card: #fff; --line: #ddd5ee; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1d1838; --ink: #f6f5ff; --ink2: #bdb8dc; --card: #2a2350; --line: #41386e; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 -apple-system, "PingFang TC", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom)); }
+  a.back { color: var(--ink2); text-decoration: none; }
+  h1 { font-size: 22px; margin: 12px 0 4px; }
+  p { color: var(--ink2); margin: 4px 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (min-width: 640px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
+  figure img { display: block; width: 100%; border-radius: 8px; }
+  figcaption { font-size: 13px; color: var(--ink2); padding: 6px 2px 0; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="../../">← 所有測試</a>
+  <h1>Street Talk：App Store 截圖</h1>
+  <p>7 張，依上傳順序。1320 × 2868（6.9 吋），App Store Connect 會自動縮給其他尺寸。點圖看原尺寸。畫面是 App 實際畫面（iPhone 18 Pro Max 模擬器），圖示與配色是 10/4 定案的白色對話氣泡＋美國國會大廈。</p>
+  <div class="grid" id="g"></div>
+</main>
+<script>
+  const items = [['1-home', '首頁路線'], ['2-card', '字卡（check＝帳單）'], ['3-quiz', '測驗（KK 重音題）'], ['4-search', '搜尋：字卡＋離線字典'], ['5-unit', '一站的單字列表'], ['6-slang', '俚語與網路用語站'], ['7-dark', '深色模式']];
+  document.getElementById('g').innerHTML = items.map(([f, t], i) => `<figure><a href="${f}.jpg"><img src="${f}.jpg" alt="${t}" loading="lazy"></a><figcaption>${i + 1}. ${t}</figcaption></figure>`).join('');
+</script>
+</body>
+</html>
