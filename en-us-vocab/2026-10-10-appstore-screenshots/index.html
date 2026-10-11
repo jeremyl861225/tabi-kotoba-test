@@ -24,12 +24,12 @@
 <main>
   <a class="back" href="../../">← 所有測試</a>
   <h1>Street Talk：App Store 截圖</h1>
-  <p>7 張，依上傳順序。1320 × 2868（6.9 吋），App Store Connect 會自動縮給其他尺寸。點圖看原尺寸。畫面是 App 實際畫面（iPhone 18 Pro Max 模擬器），圖示與配色是 10/4 定案的白色對話氣泡＋美國國會大廈。</p>
+  <p>上傳用 7 張，依順序；另有第 8 張只給內購審查看。1320 × 2868（6.9 吋），App Store Connect 會自動縮給其他尺寸。點圖看原尺寸。畫面是 App 實際畫面（iPhone 18 Pro Max 模擬器）。<br>2026-10-11 更新：標題字型換成 Syne ExtraBold（首頁大標題）；改成部分付費後，第 4 張搜尋畫面裡「進階線」的字卡出現鎖頭（沒買時的樣子）；行銷圖不放價格（審查準則 2.3.7）。</p>
   <div class="grid" id="g"></div>
 </main>
 <script>
-  const items = [['1-home', '首頁路線'], ['2-card', '字卡（check＝帳單）'], ['3-quiz', '測驗（KK 重音題）'], ['4-search', '搜尋：字卡＋離線字典'], ['5-unit', '一站的單字列表'], ['6-slang', '俚語與網路用語站'], ['7-dark', '深色模式']];
-  document.getElementById('g').innerHTML = items.map(([f, t], i) => `<figure><a href="${f}.jpg"><img src="${f}.jpg" alt="${t}" loading="lazy"></a><figcaption>${i + 1}. ${t}</figcaption></figure>`).join('');
+  const items = [['1-home', '首頁路線'], ['2-card', '字卡（check＝帳單）'], ['3-quiz', '測驗（KK 重音題）'], ['4-search', '搜尋：字卡＋離線字典'], ['5-unit', '一站的單字列表'], ['6-slang', '俚語與網路用語站'], ['7-dark', '深色模式'], ['iap-review', '內購審查用：購買頁（只給審查人員看，可有價格，不是上傳用）']];
+  document.getElementById('g').innerHTML = items.map(([f, t], i) => `<figure><a href="${f}.jpg"><img src="${f}.jpg" alt="${t}" loading="lazy"></a><figcaption>${i < 7 ? (i + 1) + '. ' : '審查用　'}${t}</figcaption></figure>`).join('');
 </script>
 </body>
 </html>
