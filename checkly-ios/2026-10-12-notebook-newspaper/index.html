@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Typeday 手帳與報紙</title>
+<style>
+:root{--bg:#F8F7F2;--card:#FFFFFF;--ink:#133E50;--ink2:#3D6070;--muted:#5A6F78;--line:#D9DDD0;--acc:#2A7574;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#111214;--card:#1A1C1F;--ink:#ECEEF1;--ink2:#B6BBC1;--muted:#8A9097;--line:#2C2F34;--acc:#6FB7B4;color-scheme:dark}}
+*{box-sizing:border-box} html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"PingFang TC",sans-serif}
+.wrap{max-width:780px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 48px)}
+a.back{color:var(--muted);text-decoration:none;font-size:14px}
+h1{font-size:23px;line-height:1.3;margin:10px 0 6px} h2{font-size:19px;margin:28px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+p,li{color:var(--ink2)} p{margin:0 0 10px} ul{padding-left:20px;margin:6px 0 10px} li{margin:3px 0}
+.shots{overflow-x:auto;margin:6px 0 8px;border-radius:12px}
+.shots img{display:block;height:auto;max-width:none;border-radius:12px;border:1px solid var(--line)}
+.cap{font-size:13px;color:var(--muted)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+.row{display:flex;gap:12px;flex-wrap:wrap} figure{margin:0} figure img{width:180px;height:auto;border-radius:10px;border:1px solid var(--line);display:block}
+figcaption{font-size:13px;color:var(--muted);text-align:center;margin-top:4px}
+.single img{width:240px;max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);display:block}
+</style></head><body><div class="wrap">
+<a class="back" href="../../">← 所有測試</a>
+<h1>Typeday：手帳、報紙主題（已做進 App）</h1>
+<p>五種主題到齊：打字機、糖果紙、玻璃、手帳、報紙。下面是真的 App 在模擬器裡拍的（示範資料）；每組五張：重複排程、月曆、近期任務、深色、英文介面（往左滑看後面幾張）。</p>
+
+<h2>手帳</h2>
+<div class="shots"><img src="img/notebook.jpg" style="width:1556px" alt="手帳：重複排程、月曆、近期任務、深色月曆、英文"></div>
+<ul>
+<li>點點方格紙，字是手寫的翩翩體（英文、數字也是手寫）。</li>
+<li>頁名下面貼一段紙膠帶；分組標題下面一條波浪線。</li>
+<li>勾選是子彈筆記的寫法：還沒做是「•」，做完畫上「×」（一筆一筆畫上去）。</li>
+<li>重要的事用黃色螢光筆畫過；月曆上的重要事件是手寫的「＊」，今天用手畫的圈圈起來。</li>
+<li>選到的分頁、篩選、表單選項都是畫一筆珊瑚色螢光筆（不再是黑色反白塊）。</li>
+</ul>
+
+<h2>報紙</h2>
+<div class="shots"><img src="img/newspaper.jpg" style="width:1556px" alt="報紙：重複排程、月曆、近期任務、深色月曆、英文"></div>
+<ul>
+<li>報頭「Typeday 日報」（英文是 The Typeday Daily），左邊是備份狀態、右邊是選單。</li>
+<li>報頭下面一行：日期、現在這一頁的名稱、「第 287 期」（今年第幾天）；再一道雙線。</li>
+<li>中文是明體（宋體）、英文與數字是 New York；勾選是印刷的方框打勾。</li>
+<li>分組小標是紅字，重要的事前面是紅色 ◆；分頁列上方雙線、選中的紅字加紅線。深色就是「夜間版」。</li>
+</ul>
+
+<h2>主題面板與選單</h2>
+<div class="single"><img src="img/themes.jpg" alt="主題面板"></div>
+<p class="cap">選單的「主題」改成一顆按鈕（五種排不下一列），點了開這個面板：五種主題各有小預覽。打字機以外的需要完整版。</p>
+<div class="box"><b>字型怎麼來的</b>：手帳的翩翩體、報紙的宋體是 Apple 提供、可以下載的系統字型，App 不用自己帶好幾十 MB。
+第一次選這兩個主題時會跟 Apple 下載（手帳約 49 MB、報紙約 44 MB，需要網路、只要一次），面板上會顯示下載進度，下載好才換過去。</div>
+
+<h2>App Store 截圖 06（五種主題）</h2><div class='row'><figure><img src="img/06-zh-Hant.jpg" alt="App Store 截圖 06（中文）" loading="lazy"><figcaption>中文</figcaption></figure><figure><img src="img/06-en.jpg" alt="App Store 截圖 06（英文）" loading="lazy"><figcaption>英文</figcaption></figure></div><p class='cap'>同一頁（重複排程）換成五種外觀：後排打字機（深色）、玻璃、報紙，前排糖果紙、手帳。標記改成「打字機以外需購買完整版」。</p>
+</div></body></html>
