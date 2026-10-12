@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Typeday 顏色選項</title>
+<style>
+:root{--bg:#F8F7F2;--card:#FFFFFF;--ink:#133E50;--ink2:#3D6070;--muted:#5A6F78;--line:#D9DDD0;--acc:#2A7574;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#111214;--card:#1A1C1F;--ink:#ECEEF1;--ink2:#B6BBC1;--muted:#8A9097;--line:#2C2F34;--acc:#6FB7B4;color-scheme:dark}}
+*{box-sizing:border-box} html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"PingFang TC",sans-serif}
+.wrap{max-width:780px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 48px)}
+a.back{color:var(--muted);text-decoration:none;font-size:14px}
+h1{font-size:23px;line-height:1.3;margin:10px 0 6px} h2{font-size:19px;margin:28px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+h3{font-size:17px;margin:20px 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+p,li{color:var(--ink2)} p{margin:0 0 10px} .note{font-size:15px}
+.fam{font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);padding:1px 7px;border-radius:99px}
+.tag{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;border:1.5px solid var(--line);color:var(--muted)}
+.tag.rec{border-color:var(--acc);color:var(--acc)} .tag.no{opacity:.7}
+.shots{overflow-x:auto;margin:6px 0 8px;border-radius:12px}
+.shots img{display:block;height:auto;width:880px;max-width:none;border-radius:12px;border:1px solid var(--line)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+</style></head><body><div class="wrap">
+<a class="back" href="../../">← 所有測試</a>
+<h1>Typeday 顏色選項：同一個主題換顏色</h1>
+<p>每張都是真的 App 在模擬器裡換上新顏色拍的（示範資料）；每組四張：淺色清單、淺色月曆、深色清單、深色月曆（往左滑看後兩張）。</p>
+<div class="box">做法：主題不變（版面、字型、動畫都一樣），只換一組顏色。每組大約半天，字和底色的對比都檢查過，淺色、深色都達到易讀標準。
+可以變成「選單 → 主題 → 顏色」讓使用者自己挑。<a href="../2026-10-12-theme-styles/">不只換顏色的主題 →</a></div>
+<h2>打字機的顏色</h2>
+<section class="cand"><h3>原色</h3><p>現在的米白紙、深青色字。</p>
+<div class="shots"><img src="img/typewriter.jpg" alt="原色：淺色清單、淺色月曆、深色清單、深色月曆" loading="lazy"></div>
+<p class="note"></p></section>
+<section class="cand"><h3>終端機<span class="fam">打字機家族</span><span class="tag rec">★ 推薦</span></h3><p>黑底綠色磷光字的舊電腦螢幕。[OK]、[x] 這些括號本來就很像終端機，跟 Typeday 的名字最搭。</p>
+<div class="shots"><img src="img/terminal.jpg" alt="終端機：淺色清單、淺色月曆、深色清單、深色月曆" loading="lazy"></div>
+<p class="note">最有個性、截圖最搶眼的就是深色版（黑底綠字）。淺色版只是淡綠色的紙，跟現在的打字機差不多，建議這個主題只做深色（選了它就固定深色）。</p></section><section class="cand"><h3>牛皮紙<span class="fam">打字機家族</span><span class="tag rec">★ 推薦</span></h3><p>牛皮紙袋的暖棕色紙、深咖啡色字、鐵鏽紅標重點，像手打的帳本。</p>
+<div class="shots"><img src="img/kraft.jpg" alt="牛皮紙：淺色清單、淺色月曆、深色清單、深色月曆" loading="lazy"></div>
+<p class="note">淺色、深色都有特色：淺色是牛皮紙袋的暖棕，深色像深焙咖啡。溫暖有手作感，跟現在的米白打字機差異夠大。類別顏色裡的橘、棕色在牛皮紙上比較不明顯，正式做時要微調。</p></section><section class="cand"><h3>藍圖<span class="fam">打字機家族</span><span class="tag ">備選</span></h3><p>工程藍圖的藍底白線，主色是製圖用的青色，重點用黃色。</p>
+<div class="shots"><img src="img/blueprint.jpg" alt="藍圖：淺色清單、淺色月曆、深色清單、深色月曆" loading="lazy"></div>
+<p class="note">深色版就是藍圖的樣子，很俐落；淺色版是淡藍色的紙，比較低調。想要冷色系可以拿它換掉牛皮紙。</p></section>
+<h2>糖果紙的顏色</h2>
+<section class="cand"><h3>原色</h3><p>現在的米白底、白卡片、青綠主色。</p>
+<div class="shots"><img src="img/candy.jpg" alt="原色：淺色清單、淺色月曆、深色清單、深色月曆" loading="lazy"></div>
+<p class="note"></p></section>
+<section class="cand"><h3>櫻花<span class="fam">糖果紙家族</span><span class="tag rec">★ 推薦</span></h3><p>粉色系的糖果紙：白卡片、梅子色字、珊瑚色主色，柔和但不幼稚。</p>
+<div class="shots"><img src="img/sakura.jpg" alt="櫻花：淺色清單、淺色月曆、深色清單、深色月曆" loading="lazy"></div>
+<p class="note">淡粉色的底配白卡片，是三個糖果紙家族候選裡跟現有主題差最多的；深色版是帶紫的深色，粉紅主色很亮眼。配糖果紙會彈跳的勾選框很合。</p></section><section class="cand"><h3>午夜<span class="fam">糖果紙家族</span><span class="tag ">備選</span></h3><p>深藍夜空配金色，沉穩有質感；淺色版是象牙白配深藍。</p>
+<div class="shots"><img src="img/midnight.jpg" alt="午夜：淺色清單、淺色月曆、深色清單、深色月曆" loading="lazy"></div>
+<p class="note">深色版（深藍配藍色主色）很漂亮；淺色版只是把糖果紙的主色換成藍，跟現有的糖果紙差不多。</p></section><section class="cand"><h3>抹茶<span class="fam">糖果紙家族</span><span class="tag no">不建議</span></h3><p>抹茶綠與米白，安靜自然，重點用柚子黃。</p>
+<div class="shots"><img src="img/matcha.jpg" alt="抹茶：淺色清單、淺色月曆、深色清單、深色月曆" loading="lazy"></div>
+<p class="note">好看但跟現在的主色（青綠）太接近，放在一起選的時候差別不大，比較不建議。</p></section>
+<h2>建議</h2>
+<ul><li>打字機：原色、牛皮紙、藍圖、終端機（終端機只做深色）。</li>
+<li>糖果紙：原色、櫻花、午夜（抹茶跟原色太像，可以不要）。</li></ul>
+</div></body></html>

@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Typeday 主題風格</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700;900&family=DotGothic16&family=Press+Start+2P&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F8F7F2;--card:#FFFFFF;--ink:#133E50;--ink2:#3D6070;--muted:#5A6F78;--line:#D9DDD0;--acc:#2A7574;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#111214;--card:#1A1C1F;--ink:#ECEEF1;--ink2:#B6BBC1;--muted:#8A9097;--line:#2C2F34;--acc:#6FB7B4;color-scheme:dark}}
+*{box-sizing:border-box} html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"PingFang TC",sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 48px)}
+a.back{color:var(--muted);text-decoration:none;font-size:14px}
+h1{font-size:23px;line-height:1.3;margin:10px 0 6px} h2{font-size:19px;margin:30px 0 6px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+p,li,td{color:var(--ink2)} p{margin:0 0 10px}
+.tag{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;border:1.5px solid var(--line);color:var(--muted)}
+.tag.rec{border-color:var(--acc);color:var(--acc)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+.row{display:flex;gap:14px;overflow-x:auto;padding:6px 2px 12px;scroll-snap-type:x mandatory}
+.phone{flex:0 0 300px;height:600px;border-radius:38px;border:7px solid #16181B;overflow:hidden;position:relative;scroll-snap-align:start;box-shadow:0 10px 30px rgba(0,0,0,.18);isolation:isolate}
+.cap{font-size:13px;color:var(--muted);margin-top:4px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0 12px} td,th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top} th{color:var(--ink)}
+.sb{height:34px;display:flex;justify-content:space-between;align-items:center;padding:0 20px;font:600 13px/1 -apple-system,sans-serif}
+
+/* ── 玻璃：流動的漸層（ShaderGradient 那種）＋ iOS 26 的液態玻璃卡片 ── */
+.g{color:#fff;font-family:-apple-system,"PingFang TC",sans-serif}
+.g .mesh{position:absolute;inset:-40%;filter:blur(38px) saturate(1.25);animation:drift 14s ease-in-out infinite alternate}
+.g .mesh i{position:absolute;width:62%;height:48%;border-radius:50%}
+@keyframes drift{0%{transform:translate(0,0) rotate(0deg) scale(1)}50%{transform:translate(-6%,4%) rotate(14deg) scale(1.08)}100%{transform:translate(5%,-5%) rotate(-10deg) scale(1.03)}}
+.g .fg{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+.g h3{margin:6px 18px 10px;font:800 28px/1.1 -apple-system,"PingFang TC";letter-spacing:.5px;text-shadow:0 1px 8px rgba(0,0,0,.18)}
+.g .pill{margin:0 18px 10px auto;font-size:11px;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.g .card{margin:0 14px 10px;padding:11px 13px;border-radius:22px;background:rgba(255,255,255,.17);border:1px solid rgba(255,255,255,.38);backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 18px rgba(0,0,0,.08)}
+.g .t{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+.g .ck{width:20px;height:20px;border-radius:50%;border:1.6px solid rgba(255,255,255,.85);flex:none}
+.g .ck.on{background:rgba(255,255,255,.95)} .g .ck.on::after{content:"✓";color:#5a4bb0;font-size:13px;display:block;text-align:center;line-height:17px;font-weight:900}
+.g .m{font-size:11.5px;opacity:.85;margin:3px 0 6px 28px}
+.g .dots{margin-left:28px;letter-spacing:2px;font-size:9px;opacity:.95}
+.g .sec{margin:4px 22px 6px;font-size:12px;font-weight:700;opacity:.8;letter-spacing:1px}
+.g .nav{margin:auto 18px 14px;display:flex;justify-content:space-around;padding:9px 6px;border-radius:99px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);font-size:11.5px;font-weight:600}
+.g .nav b{background:rgba(255,255,255,.9);color:#3a2e7a;border-radius:99px;padding:3px 10px}
+.swatch{display:inline-block;width:16px;height:16px;border-radius:50%;vertical-align:-3px;margin-right:4px;border:1px solid rgba(0,0,0,.1)}
+
+/* ── 手帳：方格點點紙、手寫字、子彈筆記的符號、紙膠帶 ── */
+.n{background:#FBF8F0;color:#2E2A26;font-family:"LXGW WenKai TC","Kaiti TC",serif;
+  background-image:radial-gradient(#D4CCBE 1.1px,transparent 1.2px);background-size:18px 18px;background-position:9px 10px}
+.n .date{margin:4px 22px 0;font-size:13px;color:#8A7F72}
+.n h3{position:relative;display:inline-block;margin:6px 22px 12px;font-size:27px;font-weight:700}
+.n h3::before{content:"";position:absolute;left:-10px;right:-14px;top:14px;height:18px;z-index:-1;transform:rotate(-2deg);
+  background:repeating-linear-gradient(45deg,rgba(242,166,132,.55) 0 6px,rgba(242,166,132,.35) 6px 12px)}
+.n .sec{margin:10px 22px 4px;font-size:15px;font-weight:700}
+.n .sec svg{display:block;margin-top:-2px}
+.n .it{margin:5px 22px;font-size:16px;display:flex;gap:10px;align-items:baseline}
+.n .b{width:14px;text-align:center;font-weight:700;color:#3a5f78}
+.n .hl{background:linear-gradient(transparent 55%,rgba(255,214,90,.75) 55% 92%,transparent 92%)}
+.n .m{margin:-2px 22px 2px 46px;font-size:12.5px;color:#7B7166}
+.n .done{color:#9C9388;text-decoration:line-through;text-decoration-thickness:1.5px}
+.n .key{margin:14px 22px 0;font-size:12px;color:#8A7F72;border-top:1.5px dashed #CFC5B6;padding-top:6px}
+.n .nav{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:10px 0 16px;font-size:14px;background:linear-gradient(transparent,#FBF8F0 30%)}
+.n .nav b{border-bottom:3px solid #F2A684}
+
+/* ── 報紙：襯線字、報頭、欄線 ── */
+.p{background:#F3EFE4;color:#1B1A17;font-family:"Noto Serif TC","Songti TC",serif}
+.p .mast{text-align:center;margin:6px 14px 0;border-bottom:3px double #1B1A17;padding-bottom:4px}
+.p .mast .nm{font-size:30px;font-weight:900;letter-spacing:2px;line-height:1.1}
+.p .mast .dl{font-size:10.5px;display:flex;justify-content:space-between;border-top:1px solid #1B1A17;margin-top:4px;padding-top:2px}
+.p .kick{margin:8px 14px 2px;font-size:11px;font-weight:700;color:#A3261E;letter-spacing:2px}
+.p .lead{margin:0 14px 6px;font-size:20px;font-weight:900;line-height:1.25}
+.p .lead small{display:block;font-size:11.5px;font-weight:400;color:#4A463E;margin-top:2px}
+.p .cols{display:grid;grid-template-columns:1fr 1fr;margin:6px 14px;border-top:1px solid #1B1A17}
+.p .col{padding:6px 8px 4px 0} .p .col+.col{border-left:1px solid #9C9686;padding-left:8px;padding-right:0}
+.p .h{font-size:14px;font-weight:700;line-height:1.3;display:flex;gap:5px}
+.p .h i{font-style:normal;font-family:-apple-system;font-size:11px;border:1.3px solid #1B1A17;width:12px;height:12px;line-height:10px;text-align:center;margin-top:3px;flex:none}
+.p .s{font-size:10.5px;color:#5A554B;margin:1px 0 7px 17px;font-style:italic}
+.p .nav{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;border-top:3px double #1B1A17;padding:8px 0 16px;font-size:12.5px;font-weight:700;background:#F3EFE4}
+.p .nav b{color:#A3261E}
+
+/* ── 終端機（結構版）：指令列、閃爍游標、掃描線 ── */
+.tm{background:#050806;color:#7CF29C;font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1.55;text-shadow:0 0 6px rgba(124,242,156,.45)}
+.tm::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px)}
+.tm .body{padding:2px 14px}
+.tm .pr{color:#B6FFC8} .tm .pr b{color:#F2B544;font-weight:400}
+.tm .cur{display:inline-block;width:8px;height:14px;background:#7CF29C;vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.tm .hd{color:#3FD06A;margin-top:8px} .tm .dim{color:#3E8D57}
+.tm .imp{color:#F2B544}
+.tm .nav{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:8px 6px 16px;border-top:1px solid #1E5A33;font-size:11px}
+.tm .nav b{background:#7CF29C;color:#050806;text-shadow:none;padding:0 4px;font-weight:700}
+
+/* ── 像素：復古遊戲的對話框、像素字 ── */
+.px{background:#1D2347;color:#F4F1E1;font-family:"DotGothic16","Press Start 2P",monospace;image-rendering:pixelated}
+.px .hd{margin:6px 14px 8px;font-family:"Press Start 2P";font-size:13px;color:#FFD84A;letter-spacing:1px}
+.px .hd small{display:block;font-family:"DotGothic16";font-size:13px;color:#9FB2FF;margin-top:6px;letter-spacing:0}
+.px .win{margin:0 12px 10px;padding:8px 10px;background:#0E1230;border:3px solid #F4F1E1;box-shadow:0 0 0 3px #0E1230,4px 4px 0 3px #000}
+.px .q{display:flex;gap:8px;align-items:center;font-size:14px;margin:4px 0}
+.px .q i{font-style:normal;width:14px;height:14px;border:2px solid #F4F1E1;flex:none}
+.px .q i.on{background:#7CE36B;border-color:#7CE36B}
+.px .bar{display:flex;gap:2px;margin:2px 0 6px 22px} .px .bar s{width:8px;height:6px;background:#3A4377} .px .bar s.on{background:#FF8A5C}
+.px .m{font-size:11px;color:#9FB2FF;margin-left:22px}
+.px .nav{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:10px 0 16px;font-size:12px;background:#0E1230;border-top:3px solid #F4F1E1}
+.px .nav b{color:#FFD84A} .px .nav b::before{content:"▶"}
+
+/* ── 便利貼：軟木板上的便條紙 ── */
+.st{background:#B98A5E;color:#2E261C;font-family:"LXGW WenKai TC",serif;
+  background-image:radial-gradient(rgba(0,0,0,.08) 1px,transparent 1.5px),radial-gradient(rgba(255,255,255,.08) 1px,transparent 1.5px);background-size:7px 7px,11px 11px}
+.st h3{margin:6px 16px 10px;font-size:26px;color:#FFF8EA;text-shadow:0 2px 0 rgba(0,0,0,.2)}
+.st .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 14px}
+.st .nt{position:relative;padding:16px 10px 10px;min-height:96px;box-shadow:0 6px 10px rgba(0,0,0,.25);font-size:15px;line-height:1.35}
+.st .nt::before{content:"";position:absolute;top:5px;left:50%;width:11px;height:11px;margin-left:-5px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#FF7A6B,#B8231B);box-shadow:0 2px 2px rgba(0,0,0,.35)}
+.st .nt small{display:block;font-size:12px;opacity:.75;margin-top:6px}
+.st .y{background:#FFE98A;transform:rotate(-2deg)} .st .pk{background:#FFC2CF;transform:rotate(1.5deg)} .st .bl{background:#BFE3F5;transform:rotate(1deg)} .st .gn{background:#CDEBB4;transform:rotate(-1.5deg)}
+.st .done{text-decoration:line-through;opacity:.6}
+.st .nav{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:10px 0 16px;font-size:14px;background:#8C643F;color:#FFF3DF}
+.st .nav b{text-decoration:underline wavy #FFE98A}
+</style></head><body><div class="wrap">
+<a class="back" href="../../">← 所有測試</a>
+<h1>Typeday 主題風格：不只換顏色</h1>
+<p>這頁是設計草圖（網頁畫的，不是 App 截圖），都用同一份示範資料畫「重複排程」頁，看的是整體感覺。每個主題換的是字型、背景、勾選框和卡片的樣子，不只是顏色。手機上往左滑看同一列的下一支。</p>
+<div class="box"><strong>跟「換顏色」的差別：</strong>換顏色只要半天；這裡每個風格都要重畫元件（標頭、清單、月曆、面板、按鈕），一個大約 3–6 天。
+比較省力的做法是沿用現有的版面骨架（打字機或糖果紙），換字型、背景與裝飾。每個主題之後還能再配「顏色選項」。
+<a href="../2026-10-12-colors/">顏色選項那頁 →</a></div>
+
+<h2>玻璃 <span class="tag rec">推薦</span></h2>
+<p>流動的漸層背景（就是 ShaderGradient 那種，iPhone 用內建的網格漸層就畫得出來、會慢慢流動），上面是 iOS 26 的液態玻璃卡片。<strong>背景的顏色讓使用者自己挑</strong>：先給幾組現成的，也可以自己選三、四個顏色。</p>
+<div class="row">
+  <div class="phone g"><div class="mesh"><i style="background:#6E5BD8;left:0;top:0"></i><i style="background:#F08AA8;right:0;top:12%"></i><i style="background:#FFC38A;left:18%;bottom:6%"></i><i style="background:#3A2E7A;right:6%;bottom:0"></i></div>
+    <div class="fg"><div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="pill">● 已備份</div><h3>重複排程</h3>
+      <div class="sec">每日</div>
+      <div class="card"><div class="t"><span class="ck on"></span>喝水 2000 mL</div><div class="m">每日 · 生活 · 下次 今天</div><div class="dots">● ● ● ● ● ● ● ● ● ● ● ●</div></div>
+      <div class="sec">每週</div>
+      <div class="card"><div class="t"><span class="ck"></span>重訓 45 分鐘</div><div class="m">每週一 19:00 · 運動 · 下次 5 天後</div><div class="dots">· ● · · · · · · ● · · · · · · ●</div></div>
+      <div class="card"><div class="t"><span class="ck"></span>部門週會</div><div class="m">每週三 09:30 · 工作 · 下次 今天</div><div class="dots">● · · · · · · ● · · · · · · ●</div></div>
+      <div class="nav"><b>重複排程</b><span>月曆</span><span>近期任務</span><span>未完成</span></div></div></div>
+  <div class="phone g"><div class="mesh"><i style="background:#0B3D5C;left:0;top:0"></i><i style="background:#1E8C93;right:0;top:10%"></i><i style="background:#6FD3C9;left:16%;bottom:8%"></i><i style="background:#12224A;right:4%;bottom:0"></i></div>
+    <div class="fg"><div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="pill">● 已備份</div><h3>重複排程</h3>
+      <div class="sec">每日</div>
+      <div class="card"><div class="t"><span class="ck on"></span>喝水 2000 mL</div><div class="m">每日 · 生活 · 下次 今天</div><div class="dots">● ● ● ● ● ● ● ● ● ● ● ●</div></div>
+      <div class="sec">每週</div>
+      <div class="card"><div class="t"><span class="ck"></span>重訓 45 分鐘</div><div class="m">每週一 19:00 · 運動 · 下次 5 天後</div><div class="dots">· ● · · · · · · ● · · · · · · ●</div></div>
+      <div class="card"><div class="t"><span class="ck"></span>部門週會</div><div class="m">每週三 09:30 · 工作 · 下次 今天</div><div class="dots">● · · · · · · ● · · · · · · ●</div></div>
+      <div class="nav"><b style="color:#0B3D5C">重複排程</b><span>月曆</span><span>近期任務</span><span>未完成</span></div></div></div>
+  <div class="phone g"><div class="mesh"><i style="background:#FFB37A;left:0;top:0"></i><i style="background:#FF7B7B;right:0;top:14%"></i><i style="background:#FFE0A3;left:14%;bottom:10%"></i><i style="background:#B85C8C;right:4%;bottom:0"></i></div>
+    <div class="fg"><div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="pill">● 已備份</div><h3>重複排程</h3>
+      <div class="sec">每日</div>
+      <div class="card"><div class="t"><span class="ck on"></span>喝水 2000 mL</div><div class="m">每日 · 生活 · 下次 今天</div><div class="dots">● ● ● ● ● ● ● ● ● ● ● ●</div></div>
+      <div class="sec">每週</div>
+      <div class="card"><div class="t"><span class="ck"></span>重訓 45 分鐘</div><div class="m">每週一 19:00 · 運動 · 下次 5 天後</div><div class="dots">· ● · · · · · · ● · · · · · · ●</div></div>
+      <div class="card"><div class="t"><span class="ck"></span>部門週會</div><div class="m">每週三 09:30 · 工作 · 下次 今天</div><div class="dots">● · · · · · · ● · · · · · · ●</div></div>
+      <div class="nav"><b style="color:#B85C8C">重複排程</b><span>月曆</span><span>近期任務</span><span>未完成</span></div></div></div>
+</div>
+<p class="cap"><span class="swatch" style="background:linear-gradient(135deg,#6E5BD8,#F08AA8)"></span>暮光　<span class="swatch" style="background:linear-gradient(135deg,#0B3D5C,#6FD3C9)"></span>深海　<span class="swatch" style="background:linear-gradient(135deg,#FFB37A,#B85C8C)"></span>晨曦（使用者可以自己換）</p>
+<p>優點：最有 iOS 26 的感覺、截圖最吸睛，又直接回應「自己挑顏色」。要注意：漸層顏色很亮時白字會看不清楚，所以顏色選擇器要擋太淺的顏色（或自動把字改深）；一直流動的背景比較耗電，要有「靜止」選項，減少動態開著時也要停。</p>
+
+<h2>手帳 <span class="tag rec">推薦</span></h2>
+<p>點點方格紙、手寫字、子彈筆記的符號（• 要做、○ 行程、× 做完、&gt; 挪走），頁名下面貼一段紙膠帶，重要的事用螢光筆畫過。Typeday 月曆的圖例本來就是 • ○ ×，跟子彈筆記一模一樣。</p>
+<div class="row">
+  <div class="phone n"><div class="sb"><span>9:41</span><span>●●●</span></div>
+    <div class="date">10 月 14 日 星期三</div><h3>重複排程</h3>
+    <div class="sec">每日<svg width="44" height="8" viewBox="0 0 44 8"><path d="M1 5 Q6 1 11 5 T21 5 T31 5 T43 4" fill="none" stroke="#F2A684" stroke-width="2" stroke-linecap="round"/></svg></div>
+    <div class="it"><span class="b">×</span><span class="done">喝水 2000 mL</span></div><div class="m">每日・生活</div>
+    <div class="sec">每週<svg width="44" height="8" viewBox="0 0 44 8"><path d="M1 5 Q6 1 11 5 T21 5 T31 5 T43 4" fill="none" stroke="#F2A684" stroke-width="2" stroke-linecap="round"/></svg></div>
+    <div class="it"><span class="b">•</span><span class="hl">重訓 45 分鐘</span></div><div class="m">每週一 19:00・下次 5 天後</div>
+    <div class="it"><span class="b">•</span><span class="hl">重訓 45 分鐘</span></div><div class="m">每週四 19:00・下次 明天</div>
+    <div class="it"><span class="b">•</span><span>部門週會</span></div><div class="m">每週三 09:30・下次 今天</div>
+    <div class="it"><span class="b">&gt;</span><span>倒資源回收</span></div><div class="m">每週二 20:30・這次挪到週三</div>
+    <div class="key">• 要做　○ 行程　× 做完　&gt; 挪走　螢光筆＝重要</div>
+    <div class="nav"><b>重複排程</b><span>月曆</span><span>近期任務</span><span>未完成</span></div></div>
+</div>
+<p>優點：跟 Typeday「紙」的感覺最連貫，又跟打字機不一樣（打字機是機器打的、手帳是手寫的）。中文手寫字可以用 iPhone 內建、可下載的中文字型（例如手札體、翩翩體），App 不用自己帶好幾 MB 的字型檔，正式做之前要先實測。</p>
+
+<h2>報紙</h2>
+<p>襯線字（明體）、報頭「TYPEDAY 日報」、雙線與欄線，今天的事當頭條、重複排程排成兩欄。</p>
+<div class="row">
+  <div class="phone p"><div class="sb"><span>9:41</span><span>●●●</span></div>
+    <div class="mast"><div class="nm">TYPEDAY 日報</div><div class="dl"><span>2026 年 10 月 14 日 星期三</span><span>第 287 期</span></div></div>
+    <div class="kick">今日頭條</div>
+    <div class="lead">產品發表會今天下午兩點登場<small>14:00・單一行程・工作</small></div>
+    <div class="kick">重複排程</div>
+    <div class="cols"><div class="col">
+      <div class="h"><i>✓</i>喝水 2000 mL</div><div class="s">每日・生活</div>
+      <div class="h"><i></i>重訓 45 分鐘</div><div class="s">每週一 19:00</div>
+      <div class="h"><i></i>重訓 45 分鐘</div><div class="s">每週四 19:00</div></div>
+      <div class="col"><div class="h"><i></i>部門週會</div><div class="s">每週三 09:30・工作</div>
+      <div class="h"><i></i>打電話給爸媽</div><div class="s">每週日 20:00</div>
+      <div class="h"><i></i>倒資源回收</div><div class="s">每週二、五 20:30</div></div></div>
+    <div class="nav"><b>重複排程</b><span>月曆</span><span>近期任務</span><span>未完成</span></div></div>
+</div>
+<p>優點：很有質感、讀起來舒服，跟其他 App 完全不一樣。缺點：資訊密度高的頁面（月曆）要重新排版，工夫比較多；明體在小字時比黑體難讀一點。</p>
+
+<h2>終端機（指令列版）</h2>
+<p>不只是黑底綠字：標頭是一行指令和閃爍的游標，清單是指令輸出的格式，分頁列像鍵盤的功能鍵，整個畫面有掃描線和磷光。</p>
+<div class="row">
+  <div class="phone tm"><div class="sb" style="color:#7CF29C"><span>9:41</span><span>●●●</span></div><div class="body">
+    <div class="pr">typeday@iphone:~$ <b>ls --recurring</b></div>
+    <div class="hd">## daily (1) ────────────</div>
+    <div>[x] 喝水 2000 mL</div><div class="dim">    每日 · 生活 · next: today</div>
+    <div class="hd">## weekly (6) ───────────</div>
+    <div class="imp">[ ] ▌重訓 45 分鐘</div><div class="dim">    週一 19:00 · next: +5d</div>
+    <div class="imp">[ ] ▌重訓 45 分鐘</div><div class="dim">    週四 19:00 · next: +1d</div>
+    <div>[ ] 部門週會</div><div class="dim">    週三 09:30 · next: today</div>
+    <div>[ ] 倒資源回收</div><div class="dim">    週二 20:30 · next: +6d</div>
+    <div class="pr" style="margin-top:8px">typeday@iphone:~$ <span class="cur"></span></div></div>
+    <div class="nav"><b>F1 重複</b><span>F2 月曆</span><span>F3 任務</span><span>F4 未完成</span></div></div>
+</div>
+<p>優點：跟 Typeday 的名字、[OK] 這些括號最搭，跟打字機是同一個骨架，工夫最少（約 2–3 天）。缺點：只適合深色，受眾比較小。</p>
+
+<h2>像素</h2>
+<p>復古遊戲的對話框、像素字，重複排程變成「任務清單」，節奏條像血條。</p>
+<div class="row">
+  <div class="phone px"><div class="sb"><span>9:41</span><span>●●●</span></div>
+    <div class="hd">QUEST LOG<small>重複排程</small></div>
+    <div class="win"><div class="q"><i class="on"></i>喝水 2000 mL</div><div class="bar"><s class="on"></s><s class="on"></s><s class="on"></s><s class="on"></s><s class="on"></s><s class="on"></s><s class="on"></s></div><div class="m">每日・生活</div></div>
+    <div class="win"><div class="q"><i></i>重訓 45 分鐘</div><div class="bar"><s></s><s class="on"></s><s></s><s></s><s class="on"></s><s></s><s></s></div><div class="m">每週一、四 19:00</div></div>
+    <div class="win"><div class="q"><i></i>部門週會</div><div class="bar"><s></s><s></s><s class="on"></s><s></s><s></s><s></s><s></s></div><div class="m">每週三 09:30</div></div>
+    <div class="nav"><b>任務</b><span>月曆</span><span>近期</span><span>未完成</span></div></div>
+</div>
+<p>優點：好玩、很有記憶點。缺點：中文像素字小字很難讀，要另外帶支援繁中的像素字型；每個元件都要重畫成像素框，工夫多（約 5–6 天）。</p>
+
+<h2>便利貼</h2>
+<p>軟木板上的便條紙，每件事一張、依類別換顏色、微微歪斜、用圖釘釘著；做完的劃掉。</p>
+<div class="row">
+  <div class="phone st"><div class="sb" style="color:#FFF8EA"><span>9:41</span><span>●●●</span></div>
+    <h3>重複排程</h3>
+    <div class="grid">
+      <div class="nt y"><span class="done">喝水 2000 mL</span><small>每日</small></div>
+      <div class="nt gn">重訓 45 分鐘<small>每週一 19:00</small></div>
+      <div class="nt bl">部門週會<small>每週三 09:30</small></div>
+      <div class="nt pk">打電話給爸媽<small>每週日 20:00</small></div>
+      <div class="nt gn">重訓 45 分鐘<small>每週四 19:00</small></div>
+      <div class="nt y">倒資源回收<small>每週二 20:30</small></div></div>
+    <div class="nav"><b>重複排程</b><span>月曆</span><span>近期任務</span><span>未完成</span></div></div>
+</div>
+<p>優點：一看就懂、很可愛。缺點：一張一張的便條很佔空間，事情多時要一直捲；版面跟現在的清單完全不同，是這裡面工夫最多的（約一週）。</p>
+
+<h2>比較與建議</h2>
+<table><tr><th>主題</th><th>換了什麼</th><th>工夫</th><th>建議</th></tr>
+<tr><td>玻璃</td><td>流動漸層背景（顏色自選）＋液態玻璃卡片</td><td>約 4–5 天</td><td>推薦</td></tr>
+<tr><td>手帳</td><td>點點紙＋手寫字＋子彈筆記符號＋紙膠帶</td><td>約 4 天</td><td>推薦</td></tr>
+<tr><td>報紙</td><td>明體＋報頭＋欄線，月曆要重新排</td><td>約 5 天</td><td>備選</td></tr>
+<tr><td>終端機（指令列）</td><td>指令列標頭＋掃描線＋功能鍵分頁</td><td>約 2–3 天</td><td>備選</td></tr>
+<tr><td>像素</td><td>像素字＋像素框</td><td>約 5–6 天</td><td>不建議（中文小字難讀）</td></tr>
+<tr><td>便利貼</td><td>整個版面換成便條紙</td><td>約一週</td><td>不建議（太佔空間）</td></tr></table>
+<p><strong>五種的組合建議：</strong>打字機、糖果紙、玻璃、手帳，再加報紙或終端機其中一個。每個主題再配幾組顏色（顏色選項那頁），玻璃則是背景顏色自己挑。</p>
+<p>告訴我要哪幾個，我先做一個成真的放進 App 給你試。</p>
+</div></body></html>
