@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Typeday 顏色選項</title>
+<style>
+:root{--bg:#F8F7F2;--card:#FFFFFF;--ink:#133E50;--ink2:#3D6070;--muted:#5A6F78;--line:#D9DDD0;--acc:#2A7574;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#111214;--card:#1A1C1F;--ink:#ECEEF1;--ink2:#B6BBC1;--muted:#8A9097;--line:#2C2F34;--acc:#6FB7B4;color-scheme:dark}}
+*{box-sizing:border-box} html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"PingFang TC",sans-serif}
+.wrap{max-width:780px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 48px)}
+a.back{color:var(--muted);text-decoration:none;font-size:14px}
+h1{font-size:23px;line-height:1.3;margin:10px 0 6px} h2{font-size:19px;margin:28px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+h3{font-size:17px;margin:22px 0 4px;display:flex;align-items:center;gap:8px}
+.fam{font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);padding:1px 7px;border-radius:99px}
+p,li{color:var(--ink2)} p{margin:0 0 8px} ul{padding-left:20px;margin:6px 0 10px} li{margin:3px 0}
+.shots{overflow-x:auto;margin:6px 0 8px;border-radius:12px}
+.shots img{display:block;height:auto;max-width:none;border-radius:12px;border:1px solid var(--line)}
+.row{display:flex;gap:12px;overflow-x:auto} figure{margin:0;flex:none} figure img{width:220px;height:auto;border-radius:10px;border:1px solid var(--line);display:block}
+figcaption{font-size:13px;color:var(--muted);text-align:center;margin-top:4px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+</style></head><body><div class="wrap">
+<a class="back" href="../../">← 所有測試</a>
+<h1>Typeday：顏色選項（已做進 App）</h1>
+<p>主題不變（版面、字、動畫都一樣），只換一組顏色。真的 App 在模擬器裡拍的（示範資料）；每組三張：重複排程、月曆、深色（終端機的第三張是選單）。</p>
+<div class="box"><b>在哪裡換</b>：選單 → 主題 → 面板下方的「顏色」。每個主題各記各的顏色；玻璃是挑背景、手帳和報紙沒有顏色選項。<br>
+<b>收費</b>：打字機的顏色跟打字機一樣免費；糖果紙的顏色跟著糖果紙（完整版）。</div>
+<h2>主題面板</h2>
+<div class="row"><figure><img src="img/sheet-tw-kraft.jpg" alt="主題面板：打字機（牛皮紙）" loading="lazy"><figcaption>打字機（牛皮紙）</figcaption></figure><figure><img src="img/sheet-candy-sakura.jpg" alt="主題面板：糖果紙（櫻花）" loading="lazy"><figcaption>糖果紙（櫻花）</figcaption></figure><figure><img src="img/sheet-terminal.jpg" alt="主題面板：終端機（固定深色的提示）" loading="lazy"><figcaption>終端機（固定深色的提示）</figcaption></figure></div>
+<h2>五種顏色</h2>
+<h3>牛皮紙<span class="fam">打字機</span></h3><p>牛皮紙袋的暖棕色紙、深咖啡色字、鐵鏽紅標重點；深色像深焙咖啡。</p>
+<div class="shots"><img src="img/tw-kraft.jpg" style="width:864px" alt="牛皮紙：重複排程、月曆、深色" loading="lazy"></div><h3>藍圖<span class="fam">打字機</span></h3><p>淡藍色的製圖紙、深藍字；深色就是藍底白線的藍圖。</p>
+<div class="shots"><img src="img/tw-blueprint.jpg" style="width:864px" alt="藍圖：重複排程、月曆、深色" loading="lazy"></div><h3>終端機<span class="fam">打字機</span></h3><p>黑底綠字的舊電腦螢幕。只有深色：選了就固定深色，選單的「明暗」會藏起來。</p>
+<div class="shots"><img src="img/tw-terminal.jpg" style="width:864px" alt="終端機：重複排程、月曆、深色" loading="lazy"></div><h3>櫻花<span class="fam">糖果紙</span></h3><p>淡粉色的底、白卡片、梅子色字、珊瑚色主色；深色是帶紫的深色。</p>
+<div class="shots"><img src="img/candy-sakura.jpg" style="width:864px" alt="櫻花：重複排程、月曆、深色" loading="lazy"></div><h3>午夜<span class="fam">糖果紙</span></h3><p>淺色是象牙白配深藍；深色是深藍夜空配金色。</p>
+<div class="shots"><img src="img/candy-midnight.jpg" style="width:864px" alt="午夜：重複排程、月曆、深色" loading="lazy"></div>
+<h2>細節</h2>
+<ul>
+<li>字和底色的對比，淺色、深色都達到易讀標準（WCAG 4.5:1 以上）。</li>
+<li>類別的小方塊在牛皮紙、藍圖上原本太淡（最淡 2.5:1），自動加深到至少 3:1；原色的類別色一點都沒動。</li>
+<li>終端機只有深色：選了就固定深色（跟玻璃一樣），選單的「明暗」會藏起來。</li>
+<li>桌面小工具與鎖定畫面桌布維持打字機原色。</li>
+</ul>
+</div></body></html>
