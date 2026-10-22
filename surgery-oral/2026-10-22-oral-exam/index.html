@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>外科口試陪練</title>
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14181b" media="(prefers-color-scheme: dark)">
+<style>
+  :root {
+    --bg: #f6f4ef; --card: #ffffff; --ink: #1d2124; --dim: #6b7177; --line: #e2ded5;
+    --accent: #1f6f6b; --accent-ink: #ffffff; --me: #e3efed; --warn: #a1452f; --ok: #2f7a4b;
+    --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14181b; --card: #1d2327; --ink: #e8eaeb; --dim: #9aa2a8; --line: #2e363b;
+      --accent: #5fb3ac; --accent-ink: #0d1517; --me: #213432; --warn: #e2836b; --ok: #7cc797;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  button, select, input, textarea { font: inherit; color: inherit; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+  /* ── 上方列 ── */
+  header.top {
+    position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  header.top .wrap { display: flex; align-items: center; gap: 10px; height: 52px; }
+  header.top a.back { color: var(--dim); text-decoration: none; font-size: 14px; white-space: nowrap; }
+  header.top h1 { flex: 1; margin: 0; font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .icon-btn { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 6px 10px; font-size: 14px; cursor: pointer; }
+
+  /* ── 首頁 ── */
+  .screen { display: none; }
+  .screen.on { display: block; }
+  .hero { padding: 28px 0 8px; }
+  .hero h2 { margin: 0 0 6px; font-size: 24px; letter-spacing: .02em; }
+  .hero p { margin: 0; color: var(--dim); font-size: 15px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin: 14px 0; box-shadow: var(--shadow); }
+  .card h3 { margin: 0 0 10px; font-size: 15px; color: var(--dim); font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 7px 13px; font-size: 15px; cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .primary {
+    display: block; width: 100%; border: 0; border-radius: 14px; padding: 14px; font-size: 17px; font-weight: 600;
+    background: var(--accent); color: var(--accent-ink); cursor: pointer;
+  }
+  .primary:disabled { opacity: .45; cursor: default; }
+  .muted { color: var(--dim); font-size: 13px; }
+  .stat { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .stat b { font-size: 22px; font-variant-numeric: tabular-nums; }
+  .hist { list-style: none; margin: 0; padding: 0; }
+  .hist li { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .hist li:first-child { border-top: 0; }
+  .hist .t { flex: 1; min-width: 0; }
+  .hist .t div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hist .sc { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; }
+  .banner { border-radius: 12px; padding: 10px 12px; font-size: 14px; background: color-mix(in srgb, var(--warn) 12%, transparent); color: var(--warn); margin: 12px 0; }
+
+  /* ── 對話 ── */
+  #chat { padding: 14px 0 150px; }
+  .msg { margin: 12px 0; display: flex; }
+  .msg .b {
+    max-width: 88%; padding: 10px 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--line);
+    overflow-wrap: anywhere; box-shadow: var(--shadow);
+  }
+  .msg.me { justify-content: flex-end; }
+  .msg.me .b { background: var(--me); border-color: transparent; white-space: pre-wrap; }
+  .msg .who { font-size: 12px; color: var(--dim); margin-bottom: 2px; }
+  .msg.grade .b { max-width: 100%; width: 100%; }
+  .b p { margin: 0 0 .6em; } .b p:last-child { margin-bottom: 0; }
+  .b ul, .b ol { margin: .2em 0 .6em; padding-left: 1.3em; }
+  .b h4 { margin: .9em 0 .3em; font-size: 16px; color: var(--accent); }
+  .b h4:first-child { margin-top: 0; }
+  .b table { border-collapse: collapse; width: 100%; font-size: 14px; margin: .4em 0 .8em; }
+  .b th, .b td { border-bottom: 1px solid var(--line); padding: 5px 4px; text-align: left; vertical-align: top; }
+  .typing::after { content: "▍"; animation: blink 1s steps(2) infinite; color: var(--accent); }
+  @keyframes blink { 50% { opacity: 0; } }
+  .note { text-align: center; color: var(--dim); font-size: 13px; margin: 10px 0; }
+  .err { color: var(--warn); }
+
+  footer.composer {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--line);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+  footer.composer .wrap { padding-top: 8px; }
+  .row { display: flex; gap: 8px; align-items: flex-end; }
+  textarea#inp {
+    flex: 1; resize: none; border: 1px solid var(--line); background: var(--card); border-radius: 14px;
+    padding: 10px 12px; min-height: 44px; max-height: 160px; line-height: 1.5; outline: none;
+  }
+  textarea#inp:focus { border-color: var(--accent); }
+  .send { border: 0; background: var(--accent); color: var(--accent-ink); border-radius: 12px; height: 44px; padding: 0 16px; font-weight: 600; cursor: pointer; }
+  .send:disabled { opacity: .4; }
+  .tools { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; gap: 8px; }
+  .link { border: 0; background: none; color: var(--accent); padding: 4px 0; font-size: 14px; cursor: pointer; font-weight: 600; }
+  .cost { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+  /* ── 設定 ── */
+  dialog { border: 1px solid var(--line); border-radius: 18px; background: var(--card); color: var(--ink); padding: 18px; width: min(520px, calc(100% - 32px)); }
+  dialog::backdrop { background: rgba(0,0,0,.35); }
+  dialog h3 { margin: 0 0 12px; }
+  label.f { display: block; font-size: 14px; color: var(--dim); margin: 12px 0 4px; }
+  dialog input, dialog select { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px; }
+  .dlg-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .dlg-actions button { border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+  .dlg-actions button.go { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="back" id="backLink" href="../../">← 所有測試</a>
+    <h1 id="ttl">外科口試陪練</h1>
+    <button class="icon-btn" id="setBtn" type="button">設定</button>
+  </div>
+</header>
+
+<!-- 首頁 -->
+<section class="screen on" id="home">
+  <div class="wrap">
+    <div class="hero">
+      <h2>外科專科口試陪練</h2>
+      <p>主考官出一個病例，一次問一題、追問理由、丟出變化。答完按「結束並評分」，依指引逐項回饋。</p>
+    </div>
+    <div class="banner" id="noKey" hidden>尚未設定 API 金鑰。按右上「設定」貼上，或在網址加 <code>?demo=1</code> 先看介面。</div>
+
+    <div class="card">
+      <h3>範圍</h3>
+      <div class="chips" id="domains"></div>
+    </div>
+    <div class="card">
+      <h3>難度</h3>
+      <div class="chips" id="levels"></div>
+    </div>
+    <button class="primary" id="startBtn" type="button">開始一題</button>
+
+    <div class="card" style="margin-top:22px">
+      <div class="stat"><span>本月 API 花費（這台裝置）</span><b id="monthCost">$0.00</b></div>
+      <div class="muted" id="monthCount">本月 0 題</div>
+    </div>
+    <div class="card">
+      <h3>紀錄</h3>
+      <ul class="hist" id="hist"></ul>
+      <div class="muted" id="histEmpty">還沒有紀錄。</div>
+    </div>
+    <p class="muted" style="margin:18px 0 40px">病例由 AI 虛構，評分依公開指引生成，可能有錯；臨床決策請以正式指引為準。金鑰只存在這台裝置的瀏覽器裡，直接連到 Anthropic，不經過任何其他伺服器。</p>
+  </div>
+</section>
+
+<!-- 對話 -->
+<section class="screen" id="exam">
+  <div class="wrap"><div id="chat"></div></div>
+  <footer class="composer">
+    <div class="wrap">
+      <div class="row">
+        <textarea id="inp" rows="1" placeholder="回答主考官…（iPhone 可用鍵盤麥克風口述）"></textarea>
+        <button class="send" id="sendBtn" type="button">送出</button>
+      </div>
+      <div class="tools">
+        <button class="link" id="gradeBtn" type="button">結束並評分</button>
+        <span class="cost" id="sessCost">本題 $0.000</span>
+        <button class="link" id="quitBtn" type="button">離開</button>
+      </div>
+    </div>
+  </footer>
+</section>
+
+<dialog id="dlg">
+  <form method="dialog">
+    <h3>設定</h3>
+    <label class="f" for="keyInp">Anthropic API 金鑰</label>
+    <input id="keyInp" type="password" autocomplete="off" placeholder="sk-ant-…">
+    <div class="muted" style="margin-top:4px">建議在 Console 另開一把專用金鑰並設每月上限。只存在這台裝置。</div>
+    <label class="f" for="modelSel">模型</label>
+    <select id="modelSel">
+      <option value="claude-opus-5-5">Opus 5.5（最準，約每題 $0.3–0.8）</option>
+      <option value="claude-sonnet-5-5">Sonnet 5.5（較快，約每題 $0.15–0.4）</option>
+    </select>
+    <label class="f" for="effortSel">思考深度</label>
+    <select id="effortSel">
+      <option value="low">低（回得快）</option>
+      <option value="medium">中（預設）</option>
+      <option value="high">高（評分更仔細，較慢較貴）</option>
+    </select>
+    <div class="dlg-actions">
+      <button value="cancel" type="submit">取消</button>
+      <button value="ok" class="go" type="submit" id="saveBtn">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module">
+import Anthropic from "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.132.1/+esm";
+
+const KEY = "oral-exam-test:";   // 展示站共用網域，鍵名要有前綴
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(KEY + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch {} },
+};
+const DEMO = new URLSearchParams(location.search).has("demo");
+
+// 每百萬 token 的價格（2026-10 牌價）：輸入、輸出、快取讀、快取寫
+const PRICE = {
+  "claude-opus-5-5":   { in: 4, out: 20, cr: 0.20, cw: 5 },
+  "claude-sonnet-5-5": { in: 2, out: 10, cr: 0.20, cw: 2.5 },
+  "claude-opus-5":     { in: 5, out: 25, cr: 0.50, cw: 6.25 },
+  "claude-opus-4-8":   { in: 5, out: 25, cr: 0.50, cw: 6.25 },
+  "claude-sonnet-5":   { in: 2, out: 10, cr: 0.20, cw: 2.5 },
+};
+
+// 範圍與子題：每次隨機挑一個子題，避免一直出同一種病例
+const DOMAINS = {
+  "急腹症": ["急性闌尾炎（含複雜性、孕婦）", "急性膽囊炎", "小腸阻塞（沾黏、疝氣嵌頓）", "消化性潰瘍穿孔", "急性腸繫膜缺血", "乙狀結腸扭轉", "急性憩室炎", "急性胰臟炎（含感染性壞死）"],
+  "肝膽胰": ["總膽管結石合併膽管炎", "胰臟頭部腫瘤合併黃疸", "肝細胞癌（可切除性評估）", "肝膿瘍", "IPMN／胰臟囊性病灶", "膽囊息肉與意外發現膽囊癌", "術後膽漏"],
+  "上消化道": ["上消化道出血（潰瘍）", "胃癌（分期與術式）", "GIST", "食道穿孔／Boerhaave", "減重手術術後併發症", "胃出口阻塞"],
+  "大腸直腸肛門": ["大腸癌合併阻塞", "直腸癌（新輔助治療與術式）", "下消化道出血", "吻合處滲漏", "肛門廔管與肛門周圍膿瘍", "痔瘡（分級與處置）", "潰瘍性結腸炎急性發作"],
+  "乳房": ["乳房腫塊診斷流程", "早期乳癌的手術選擇", "DCIS", "腋下淋巴結處置（SLNB／ALND）", "新輔助治療後的手術", "乳房膿瘍"],
+  "內分泌": ["甲狀腺結節（Bethesda 分類）", "甲狀腺癌術式範圍", "甲狀腺術後低血鈣／喉返神經損傷", "原發性副甲狀腺亢進", "腎上腺偶發瘤", "嗜鉻細胞瘤術前準備"],
+  "疝氣與腹壁": ["腹股溝疝氣（術式選擇）", "嵌頓性疝氣", "腹壁切口疝氣", "股疝氣", "臍疝氣合併肝硬化腹水"],
+  "外傷": ["鈍性腹部外傷合併休克", "脾臟損傷（非手術治療）", "肝臟損傷", "穿刺傷", "損傷控制手術", "腹腔室候群", "胸部外傷（血胸、張力性氣胸）"],
+  "重症與圍術期": ["敗血性休克（腹內感染源）", "術後發燒", "術後呼吸衰竭", "抗凝血藥物的圍術期處置", "術後急性腎損傷", "大量輸血", "營養支持（腸道與靜脈）"],
+  "血管": ["腹主動脈瘤破裂", "急性肢體缺血", "糖尿病足感染", "深部靜脈栓塞與肺栓塞", "頸動脈狹窄"],
+  "小兒外科": ["肥厚性幽門狹窄", "腸套疊", "小兒闌尾炎", "小兒腹股溝疝氣", "新生兒膽汁性嘔吐（腸旋轉不良）"],
+  "軟組織與皮膚": ["軟組織肉瘤的切片與切除", "惡性黑色素瘤（切緣與前哨淋巴結）", "壞死性筋膜炎", "皮下腫塊鑑別"],
+};
+const LEVELS = {
+  "R1–R2": "基本：考核病史、理學檢查、基本檢查與初步處置，提示可以多一點。",
+  "專科考試": "標準：比照外科專科醫師甄審口試，要求說出鑑別診斷、決策理由與指引依據，並追問併發症。",
+  "主治醫師": "進階：加入不典型表現、共病、資源限制與倫理難題，追問證據強度與爭議。",
+};
+
+const SYSTEM = `你是台灣外科專科醫師甄審口試的主考官，正在對一位一般外科住院醫師進行一對一的病例口試。
+
+語言：繁體中文（台灣用語），醫學名詞可以照台灣外科醫師的習慣用英文（例如 Murphy's sign、CT、ERCP、damage control）。
+
+進行方式：
+1. 第一則訊息只給病例開頭：年齡性別、主訴、簡短病史與生命徵象（3–5 行），最後問一題，例如「你會怎麼處理？」或「你想進一步問什麼？」。不要先給檢查結果。
+2. 之後每則只問一題，篇幅短（150 字以內）。考生問病史、做理學檢查或開檢查時，才給對應而合理的結果；沒問的不主動給。
+3. 像真正的主考官一樣追問：「為什麼？」「還有呢？」「依據是什麼？」「如果病人拒絕／不穩定／檢查不能做呢？」。適時丟出變化：病情惡化、術中發現、術後併發症。
+4. 考試中不糾正、不給答案、不稱讚，維持中性。考生答出危險處置時，讓後果發生並追問他接下來怎麼辦。
+5. 大約 8–12 回合涵蓋：診斷、鑑別診斷、檢查、處置決策（含手術適應症與時機）、術式、術後與併發症。考生說要結束時就停。
+6. 內容必須符合現行指引與標準教科書（例如 Tokyo Guidelines 2018、WSES、ATLS 第 11 版、NCCN、ATA、EHS/HerniaSurg、Surviving Sepsis Campaign、ASA）。不確定的細節寧可不給，也不要編造。有台灣健保或台灣實務差異時可以考。
+
+評分（只有在考生要求評分時才做）：
+用以下格式，標題用「#### 」開頭：
+#### 總分
+一行：「XX / 100　（通過 / 待加強）」，70 分以上算通過。
+#### 分項
+五項各 1–5 分並各附一句理由，用表格：資料蒐集、鑑別診斷、處置決策、併發症處理、表達與條理。
+#### 做得好的地方
+#### 漏掉或答錯的地方
+逐點說明正確答案是什麼、為什麼。危險錯誤放最前面並標「⚠︎」。
+#### 標準答題路徑
+用條列寫出這個病例理想的作答順序與關鍵決策點。
+#### 依據
+列出用到的指引或教科書（名稱＋年份），不要編造 PMID 或網址。`;
+
+// ── 狀態 ──
+let cfg = { key: store.get("key", ""), model: store.get("model", "claude-opus-5-5"), effort: store.get("effort", "medium") };
+let pick = { domain: store.get("domain", "急腹症"), level: store.get("level", "專科考試") };
+let sess = null;   // { id, date, domain, sub, level, messages, cost, score, transcript, model }
+let busy = false;
+
+const $ = (id) => document.getElementById(id);
+const client = () => new Anthropic({ apiKey: cfg.key, dangerouslyAllowBrowser: true });
+
+// ── 首頁 ──
+function chipRow(el, items, cur, onPick) {
+  el.innerHTML = "";
+  for (const name of items) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = name;
+    b.setAttribute("aria-pressed", String(name === cur));
+    b.onclick = () => { onPick(name); [...el.children].forEach(c => c.setAttribute("aria-pressed", String(c === b))); };
+    el.appendChild(b);
+  }
+}
+function renderHome() {
+  chipRow($("domains"), ["隨機", ...Object.keys(DOMAINS)], pick.domain, (n) => { pick.domain = n; store.set("domain", n); });
+  chipRow($("levels"), Object.keys(LEVELS), pick.level, (n) => { pick.level = n; store.set("level", n); });
+  $("noKey").hidden = !!cfg.key || DEMO;
+  $("startBtn").disabled = !cfg.key && !DEMO;
+  const hist = store.get("hist", []);
+  const ym = new Date().toISOString().slice(0, 7);
+  const month = hist.filter(h => h.date.startsWith(ym));
+  $("monthCost").textContent = "$" + month.reduce((s, h) => s + (h.cost || 0), 0).toFixed(2);
+  $("monthCount").textContent = `本月 ${month.length} 題`;
+  const ul = $("hist"); ul.innerHTML = "";
+  $("histEmpty").hidden = hist.length > 0;
+  for (const h of hist.slice(0, 30)) {
+    const li = document.createElement("li");
+    li.innerHTML = `<div class="t"><div>${esc(h.sub)}</div><div class="muted">${h.date.slice(5, 16).replace("T", " ")}　${esc(h.domain)}・${esc(h.level)}・$${(h.cost || 0).toFixed(2)}</div></div><div class="sc">${h.score ?? "—"}</div>`;
+    li.onclick = () => review(h);
+    ul.appendChild(li);
+  }
+}
+
+// ── 對話畫面 ──
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id));
+  $("ttl").textContent = id === "exam" && sess ? sess.sub : "外科口試陪練";
+  scrollTo(0, 0);
+}
+function bubble(role, text = "", cls = "") {
+  const d = document.createElement("div");
+  d.className = "msg " + (role === "user" ? "me" : "ai") + (cls ? " " + cls : "");
+  const b = document.createElement("div"); b.className = "b";
+  if (role === "user") b.textContent = text; else b.innerHTML = (role === "ai" ? '<div class="who">主考官</div>' : "") + md(text);
+  d.appendChild(b); $("chat").appendChild(d);
+  return b;
+}
+function note(text, err) {
+  const d = document.createElement("div"); d.className = "note" + (err ? " err" : ""); d.textContent = text; $("chat").appendChild(d);
+}
+function toBottom() { requestAnimationFrame(() => scrollTo(0, document.body.scrollHeight)); }
+function setBusy(v) {
+  busy = v; $("sendBtn").disabled = v; $("gradeBtn").disabled = v || !sess || sess.graded;
+}
+
+function start() {
+  const domain = pick.domain === "隨機" ? pickOne(Object.keys(DOMAINS)) : pick.domain;
+  const recent = store.get("hist", []).slice(0, 15).map(h => h.sub);
+  const pool = DOMAINS[domain].filter(s => !recent.includes(s));
+  const sub = pickOne(pool.length ? pool : DOMAINS[domain]);
+  sess = { id: Date.now(), date: new Date().toISOString(), domain, sub, level: pick.level, messages: [], cost: 0, score: null, transcript: [], model: cfg.model, graded: false };
+  $("chat").innerHTML = ""; $("sessCost").textContent = "本題 $0.000";
+  $("inp").disabled = false; $("inp").value = "";
+  show("exam");
+  note(`${domain}・${sub}・${pick.level}`);
+  ask(`請開始口試。\n範圍：${domain}\n病例主題：${sub}（請自行設計具體病人，不要直接說出診斷）\n難度：${pick.level}——${LEVELS[pick.level]}`, { hidden: true });
+}
+
+async function ask(text, { hidden = false, grading = false } = {}) {
+  if (busy) return;
+  setBusy(true);
+  sess.messages.push({ role: "user", content: text });
+  if (!hidden) { bubble("user", text); sess.transcript.push({ role: "user", text }); }
+  const b = bubble("ai", "", grading ? "grade" : "");
+  const who = b.innerHTML; let acc = "";
+  b.classList.add("typing"); toBottom();
+  try {
+    const msg = DEMO ? await demoReply(grading, (t) => { acc += t; b.innerHTML = who + md(acc); toBottom(); })
+                     : await callClaude((t) => { acc += t; b.innerHTML = who + md(acc); toBottom(); });
+    b.classList.remove("typing");
+    if (msg.stop_reason === "refusal") {
+      sess.messages.pop();   // 不留被拒的那一輪，前面的歷史不動
+      b.innerHTML = who + md("（這題被模型安全機制擋下，請換個說法或換一題。）");
+    } else {
+      sess.messages.push({ role: "assistant", content: msg.content });   // 原樣保留，含 thinking 區塊
+      const textOut = msg.content.filter(c => c.type === "text").map(c => c.text).join("");
+      b.innerHTML = who + md(textOut);
+      sess.transcript.push({ role: "ai", text: textOut });
+      if (msg.stop_reason === "max_tokens") note("（回覆太長被截斷）");
+      sess.cost += cost(msg);
+      $("sessCost").textContent = `本題 $${sess.cost.toFixed(3)}`;
+      if (grading) {
+        const m = textOut.match(/(\d{1,3})\s*\/\s*100/);
+        sess.score = m ? Number(m[1]) : null; sess.graded = true;
+        $("inp").disabled = true;
+        note("評分完成。按「離開」回首頁，紀錄已存在這台裝置。");
+      }
+      save();
+    }
+  } catch (e) {
+    b.classList.remove("typing");
+    sess.messages.pop();
+    b.innerHTML = who + `<p class="err">${esc(errText(e))}</p>`;
+    if (!hidden) { $("inp").value = text; sess.transcript.pop(); b.closest(".msg").previousElementSibling?.remove(); }
+  }
+  setBusy(false); toBottom();
+}
+
+async function callClaude(onText) {
+  const stream = client().beta.messages.stream({
+    model: cfg.model,
+    max_tokens: 16000,
+    system: SYSTEM,
+    messages: sess.messages,
+    output_config: { effort: cfg.effort },
+    cache_control: { type: "ephemeral" },
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+  });
+  stream.on("text", onText);
+  return await stream.finalMessage();
+}
+
+function cost(msg) {
+  const p = PRICE[msg.model] || PRICE[cfg.model] || PRICE["claude-opus-5-5"];
+  const u = msg.usage || {};
+  return ((u.input_tokens || 0) * p.in + (u.output_tokens || 0) * p.out +
+          (u.cache_read_input_tokens || 0) * p.cr + (u.cache_creation_input_tokens || 0) * p.cw) / 1e6;
+}
+
+function errText(e) {
+  if (e instanceof Anthropic.AuthenticationError) return "金鑰無效，請到「設定」重新貼上。";
+  if (e instanceof Anthropic.PermissionDeniedError) return "這把金鑰沒有權限使用這個模型。";
+  if (e instanceof Anthropic.RateLimitError) return "請求太頻繁或額度用完（429），稍等再試。";
+  if (e instanceof Anthropic.BadRequestError) return "請求格式被拒（400）：" + (e.message || "");
+  if (e instanceof Anthropic.APIConnectionError) return "連不上 Anthropic，請檢查網路。";
+  if (e instanceof Anthropic.APIError) return `API 錯誤 ${e.status ?? ""}：${e.message || ""}`;
+  return "發生錯誤：" + (e?.message || e);
+}
+
+function save() {
+  if (DEMO) return;   // 示範對話不進紀錄
+  const hist = store.get("hist", []).filter(h => h.id !== sess.id);
+  const { id, date, domain, sub, level, cost, score, transcript, model } = sess;
+  hist.unshift({ id, date, domain, sub, level, cost, score, transcript, model });
+  store.set("hist", hist.slice(0, 200));
+}
+
+function review(h) {
+  sess = null;
+  $("chat").innerHTML = "";
+  show("exam");
+  $("ttl").textContent = h.sub;
+  note(`${h.domain}・${h.sub}・${h.level}・$${(h.cost || 0).toFixed(3)}`);
+  h.transcript.forEach((t, i) => bubble(t.role === "user" ? "user" : "ai", t.text, t.role === "ai" && i === h.transcript.length - 1 && h.score != null ? "grade" : ""));
+  $("inp").disabled = true; $("sendBtn").disabled = true; $("gradeBtn").disabled = true;
+  $("sessCost").textContent = h.score != null ? `${h.score} 分` : "未評分";
+}
+
+// ── 小工具 ──
+function pickOne(a) { return a[Math.floor(Math.random() * a.length)]; }
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function inline(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>"); }
+function md(src) {
+  const lines = String(src).replace(/\r/g, "").split("\n");
+  let out = "", list = null, para = [], table = [];
+  const flushP = () => { if (para.length) { out += "<p>" + para.map(inline).join("<br>") + "</p>"; para = []; } };
+  const flushL = () => { if (list) { out += `</${list}>`; list = null; } };
+  const flushT = () => {
+    if (!table.length) return;
+    const rows = table.filter(r => !/^\s*\|?\s*:?-{2,}/.test(r)).map(r => r.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim()));
+    out += "<table>" + rows.map((r, i) => "<tr>" + r.map(c => i === 0 ? `<th>${inline(c)}</th>` : `<td>${inline(c)}</td>`).join("") + "</tr>").join("") + "</table>";
+    table = [];
+  };
+  for (const ln of lines) {
+    if (/^\s*\|.*\|\s*$/.test(ln)) { flushP(); flushL(); table.push(ln); continue; } else flushT();
+    let m;
+    if ((m = ln.match(/^#{1,6}\s+(.*)/))) { flushP(); flushL(); out += `<h4>${inline(m[1])}</h4>`; }
+    else if ((m = ln.match(/^\s*[-*•]\s+(.*)/))) { flushP(); if (list !== "ul") { flushL(); out += "<ul>"; list = "ul"; } out += `<li>${inline(m[1])}</li>`; }
+    else if ((m = ln.match(/^\s*\d+[.)、]\s+(.*)/))) { flushP(); if (list !== "ol") { flushL(); out += "<ol>"; list = "ol"; } out += `<li>${inline(m[1])}</li>`; }
+    else if (!ln.trim()) { flushP(); flushL(); }
+    else { flushL(); para.push(ln); }
+  }
+  flushT(); flushP(); flushL();
+  return out;
+}
+
+// 示範模式：不連 API，只看介面
+async function demoReply(grading, onText) {
+  const turn = sess.messages.filter(m => m.role === "assistant").length;
+  const txt = grading
+    ? "#### 總分\n72 / 100　（通過）\n#### 分項\n| 項目 | 分數 | 理由 |\n|---|---|---|\n| 資料蒐集 | 4 | 有問到發燒與疼痛位置 |\n| 鑑別診斷 | 3 | 漏了右側輸尿管結石 |\n| 處置決策 | 4 | 手術時機正確 |\n| 併發症處理 | 3 | 腹內膿瘍的處置不夠具體 |\n| 表達與條理 | 4 | 條理清楚 |\n#### 做得好的地方\n- 先評估生命徵象與敗血症\n#### 漏掉或答錯的地方\n- ⚠︎ 未提術前抗生素\n#### 標準答題路徑\n1. 病史與理學檢查\n2. 血液檢查與影像\n3. 手術與抗生素\n#### 依據\n- WSES Jerusalem guidelines 2020（示範文字）"
+    : ["（示範）28 歲男性，右下腹痛 1 天，起初在肚臍周圍。體溫 38.2°C，心跳 104，血壓 122/78。\n\n**你會怎麼處理？**", "（示範）右下腹有壓痛與反彈痛。你想開什麼檢查？", "（示範）CT 顯示闌尾直徑 12 mm 合併周圍積液。你的決策是？為什麼？"][Math.min(turn, 2)];
+  for (const ch of txt.match(/[\s\S]{1,6}/g)) { onText(ch); await new Promise(r => setTimeout(r, 25)); }
+  return { stop_reason: "end_turn", model: cfg.model, content: [{ type: "text", text: txt }], usage: { input_tokens: 1500, output_tokens: 300 } };
+}
+
+// ── 事件 ──
+$("startBtn").onclick = start;
+$("sendBtn").onclick = () => { const t = $("inp").value.trim(); if (!t || !sess || sess.graded) return; $("inp").value = ""; grow(); ask(t); };
+$("inp").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) $("sendBtn").click(); });
+const grow = () => { const t = $("inp"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 160) + "px"; };
+$("inp").addEventListener("input", grow);
+$("gradeBtn").onclick = () => { if (sess && !sess.graded) ask("我答完了，請依評分格式評分。", { grading: true }); };
+$("quitBtn").onclick = () => {
+  if (busy) return;
+  if (sess && !sess.graded && sess.transcript.length > 1 && !confirm("這題還沒評分，確定離開？（對話會保留在紀錄）")) return;
+  sess = null; show("home"); renderHome();
+};
+$("setBtn").onclick = () => { $("keyInp").value = cfg.key; $("modelSel").value = cfg.model; $("effortSel").value = cfg.effort; $("dlg").showModal(); };
+$("dlg").addEventListener("close", () => {
+  if ($("dlg").returnValue !== "ok") return;
+  cfg = { key: $("keyInp").value.trim(), model: $("modelSel").value, effort: $("effortSel").value };
+  store.set("key", cfg.key); store.set("model", cfg.model); store.set("effort", cfg.effort);
+  renderHome();
+});
+
+renderHome();
+</script>
+</body>
+</html>
