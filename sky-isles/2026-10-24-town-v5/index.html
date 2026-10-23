@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#4a5aa8">
+<title>小鎮 玩法試作 v5</title>
+<style>
+  :root {
+    --glass: rgba(255, 255, 255, 0.16);
+    --glass-edge: rgba(255, 255, 255, 0.32);
+    --panel: rgba(28, 30, 48, 0.58);
+    --ink: #fff;
+    --ink-soft: rgba(255, 255, 255, 0.78);
+    --gold: #ffd36b;
+    --ok: #7fe0a8;
+    --no: #ff9b8f;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden; background: #4a5aa8;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif;
+    color: var(--ink); touch-action: none; overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none;
+  }
+  #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .glass {
+    background: var(--glass); border: 1px solid var(--glass-edge);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5); backdrop-filter: blur(14px) saturate(1.5);
+    box-shadow: 0 6px 24px rgba(10, 16, 40, 0.18);
+  }
+  .dark { background: var(--panel); }
+  .back {
+    position: fixed; left: max(16px, env(safe-area-inset-left)); top: max(14px, env(safe-area-inset-top));
+    padding: 8px 14px; border-radius: 999px; color: var(--ink); text-decoration: none; font-size: 14px;
+    text-shadow: 0 1px 6px rgba(0,0,0,.25);
+  }
+  .hud {
+    position: fixed; right: max(16px, env(safe-area-inset-right)); top: max(14px, env(safe-area-inset-top));
+    padding: 7px 12px; border-radius: 16px; text-align: right; line-height: 1.3; pointer-events: none;
+  }
+  .hud .coins { font-size: 20px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 6px; justify-content: flex-end; font-variant-numeric: tabular-nums; }
+  .hud .coins svg { width: 18px; height: 18px; }
+  .hud .sub { font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .hint {
+    position: fixed; left: 50%; top: calc(max(14px, env(safe-area-inset-top)) + 62px);
+    transform: translateX(-50%); padding: 9px 14px; border-radius: 16px; font-size: 13px; line-height: 1.6;
+    text-align: center; width: max-content; max-width: calc(100% - 32px); transition: opacity 0.8s ease; pointer-events: none;
+  }
+  .hint.hide { opacity: 0; }
+  .toast {
+    position: fixed; left: 50%; top: calc(max(14px, env(safe-area-inset-top)) + 62px);
+    transform: translate(-50%, -8px); padding: 10px 16px; border-radius: 16px; font-size: 14px;
+    width: max-content; max-width: calc(100% - 32px); text-align: center;
+    opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: none; background: rgba(30, 28, 48, 0.62);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(12px, env(safe-area-inset-bottom)); width: min(560px, calc(100% - 24px)); display: grid; gap: 8px; }
+  .dock > * { min-width: 0; }
+  .sheet { display: none; border-radius: 20px; padding: 10px; overflow: hidden; }
+  .sheet.show { display: block; animation: rise 0.25s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .cards { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; touch-action: pan-x; padding-bottom: 2px; }
+  .cards::-webkit-scrollbar { display: none; }
+  .card {
+    flex: none; width: 92px; padding: 8px 6px 7px; border-radius: 14px; border: 1px solid transparent;
+    background: rgba(255,255,255,0.1); color: var(--ink); font: inherit; text-align: center; cursor: pointer;
+  }
+  .card.on { background: rgba(255,255,255,0.32); border-color: var(--glass-edge); }
+  .card.poor .cost { color: var(--no); }
+  .card b { display: block; font-size: 14px; }
+  .card .cost { display: block; font-size: 12px; color: var(--gold); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .card .does { display: block; font-size: 11px; color: var(--ink-soft); margin-top: 3px; line-height: 1.3; }
+  .card .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; }
+  .chips { display: flex; gap: 6px; }
+  .chip { flex: 1; height: 36px; border-radius: 12px; border: 1px solid transparent; background: rgba(255,255,255,0.1); color: var(--ink); font: inherit; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+  .chip.on { background: rgba(255,255,255,0.32); border-color: var(--glass-edge); }
+  .chip i { width: 10px; height: 10px; border-radius: 50%; }
+  .needsum { font-size: 12px; color: var(--ink-soft); margin: 8px 2px 0; line-height: 1.5; }
+  .info { display: none; border-radius: 20px; padding: 12px 14px; }
+  .info.show { display: block; animation: rise 0.25s ease; }
+  .ph { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .ph b { font-size: 18px; letter-spacing: 0.06em; margin-right: 8px; }
+  .ph span { font-size: 12px; color: var(--ink-soft); }
+  .x { width: 30px; height: 30px; border-radius: 10px; border: 0; background: rgba(255,255,255,0.14); color: var(--ink); font-size: 18px; line-height: 1; cursor: pointer; }
+  .needs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+  .need { border-radius: 10px; padding: 6px 4px; font-size: 13px; text-align: center; background: rgba(255,255,255,0.08); display: grid; justify-items: center; gap: 2px; }
+  .need i { width: 10px; height: 10px; border-radius: 50%; }
+  .need em { font-style: normal; font-size: 11px; }
+  .need.ok em { color: var(--ok); }
+  .need.no { opacity: 0.85; } .need.no em { color: var(--no); }
+  .next { font-size: 13px; color: var(--ink-soft); margin-top: 10px; line-height: 1.5; }
+  .act { width: 100%; margin-top: 10px; height: 42px; border-radius: 14px; border: 0; background: linear-gradient(180deg, #ffd977, #f0b33f); color: #4a3510; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .tools { display: flex; gap: 6px; padding: 6px; border-radius: 20px; justify-content: center; }
+  .tools button {
+    flex: 1; height: 52px; border-radius: 14px; border: 1px solid transparent; background: transparent;
+    color: var(--ink); font: inherit; font-size: 11px; letter-spacing: 0.06em; display: grid; place-items: center; gap: 2px; padding: 4px 0; cursor: pointer;
+  }
+  .tools button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .tools button.on { background: rgba(255,255,255,0.32); border-color: var(--glass-edge); }
+  .bar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 18px; }
+  .bar button { flex: none; height: 34px; min-width: 34px; border-radius: 12px; border: 1px solid var(--glass-edge); background: rgba(255,255,255,0.12); color: var(--ink); font: inherit; font-size: 12px; display: grid; place-items: center; padding: 0 10px; cursor: pointer; }
+  .bar button.on { background: rgba(255,255,255,0.3); }
+  .bar button svg { width: 14px; height: 14px; fill: currentColor; }
+  .time { flex: 1; min-width: 0; }
+  .lbl { font-size: 11px; color: var(--ink-soft); letter-spacing: 0.06em; margin: 0 0 3px 2px; display: flex; justify-content: space-between; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 99px; margin: 0;
+    background: linear-gradient(90deg, #1b2452 0%, #b97d9a 22%, #ffc29a 28%, #8cc4f2 40%, #8cc4f2 62%, #ff9e6a 74%, #6a4c8c 82%, #1b2452 100%); outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+  input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 0; }
+  #floats { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  .float { position: absolute; left: 0; top: 0; font-size: 13px; font-weight: 700; white-space: nowrap; text-shadow: 0 1px 4px rgba(0,0,0,.45); will-change: transform, opacity; }
+  .float.coin { color: var(--gold); }
+  .float.up { color: #fff; background: rgba(46, 160, 100, 0.85); padding: 2px 8px; border-radius: 99px; font-size: 12px; }
+  .float.down { color: #fff; background: rgba(200, 80, 70, 0.85); padding: 2px 8px; border-radius: 99px; font-size: 12px; }
+  .fps { position: fixed; left: 8px; top: 64px; font-size: 10px; color: rgba(255,255,255,.55); pointer-events: none; display: none; }
+  .loading { position: fixed; inset: 0; display: grid; place-items: center; font-size: 15px; letter-spacing: 0.12em; background: linear-gradient(180deg, #4a5aa8, #ff9e6a); transition: opacity 0.8s ease; z-index: 5; }
+  .loading.hide { opacity: 0; pointer-events: none; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="floats"></div>
+<a class="back glass" href="../../">← 所有測試</a>
+<div class="hud glass dark">
+  <div class="coins"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="#ffd36b"/><circle cx="10" cy="10" r="5.4" fill="none" stroke="#c9902a" stroke-width="1.6"/></svg><span id="coins">0</span></div>
+  <div class="sub">人口 <span id="pop">0</span>・稅收 <span id="income">0</span>／分</div>
+</div>
+<div class="hint glass dark" id="hint">房子每多一種需求（水、食物、醫療、信仰）就自己升一級<br>用「建造」蓋路和服務設施・點房子看它缺什麼</div>
+<div class="toast" id="toast"></div>
+<div class="dock">
+  <div class="info glass dark" id="info"></div>
+  <div class="sheet glass dark" id="buildSheet">
+    <div class="cards">
+      <button class="card" data-item="road"><b>道路</b><span class="cost">每格 5</span><span class="does">可拖曳鋪；過河 15</span></button>
+      <button class="card on" data-item="house"><b>小屋</b><span class="cost">30</span><span class="does">要蓋在路邊</span></button>
+      <button class="card" data-item="well"><b>水井</b><span class="cost">80</span><span class="does"><i class="dot" style="background:#4aa8e8"></i>水</span></button>
+      <button class="card" data-item="bakery"><b>麵包坊</b><span class="cost">150</span><span class="does"><i class="dot" style="background:#f0a63a"></i>食物</span></button>
+      <button class="card" data-item="apothecary"><b>藥坊</b><span class="cost">200</span><span class="does"><i class="dot" style="background:#4fbf86"></i>醫療</span></button>
+      <button class="card" data-item="tavern"><b>酒館</b><span class="cost">180</span><span class="does"><i class="dot" style="background:#b58ae0"></i>信仰（小範圍）</span></button>
+      <button class="card" data-item="church"><b>教堂</b><span class="cost">500</span><span class="does"><i class="dot" style="background:#b58ae0"></i>信仰（大範圍）</span></button>
+      <button class="card" data-item="garden"><b>花園</b><span class="cost">60</span><span class="does">純裝飾</span></button>
+    </div>
+  </div>
+  <div class="sheet glass dark" id="needSheet">
+    <div class="chips">
+      <button class="chip on" data-need="water"><i style="background:#4aa8e8"></i>水</button>
+      <button class="chip" data-need="food"><i style="background:#f0a63a"></i>食物</button>
+      <button class="chip" data-need="health"><i style="background:#4fbf86"></i>醫療</button>
+      <button class="chip" data-need="faith"><i style="background:#b58ae0"></i>信仰</button>
+    </div>
+    <div class="needsum" id="needSum"></div>
+  </div>
+  <div class="tools glass">
+    <button data-mode="look" class="on"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>查看</button>
+    <button data-mode="build"><svg viewBox="0 0 24 24"><path d="M4 11l8-6 8 6M6 9.5V19h12V9.5M10 19v-5h4v5"/></svg>建造</button>
+    <button data-mode="needs"><svg viewBox="0 0 24 24"><path d="M12 3c3 4 5 6.5 5 9.5a5 5 0 0 1-10 0C7 9.5 9 7 12 3z"/></svg>需求</button>
+    <button data-mode="erase"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>拆除</button>
+  </div>
+  <div class="bar glass">
+    <button id="play" class="on" aria-label="暫停時間">
+      <svg viewBox="0 0 16 16" id="ic-pause"><rect x="3" y="2" width="3.5" height="12" rx="1"/><rect x="9.5" y="2" width="3.5" height="12" rx="1"/></svg>
+      <svg viewBox="0 0 16 16" id="ic-play" style="display:none"><path d="M4 2.2v11.6c0 .6.7 1 1.2.7l9-5.8a.8.8 0 0 0 0-1.4l-9-5.8C4.7 1.2 4 1.6 4 2.2z"/></svg>
+    </button>
+    <div class="time">
+      <div class="lbl"><span id="lbl">黃昏</span><span id="seed"></span></div>
+      <input type="range" id="tod" min="0" max="1000" value="690" aria-label="一天中的時間">
+    </div>
+    <button id="newmap">新地圖</button>
+  </div>
+</div>
+<div class="fps" id="fps"></div>
+<div class="loading" id="loading">正在生成小鎮…</div>
+<script type="module" src="./main.js"></script>
+</body>
+</html>
