@@ -8,6 +8,19 @@ import { mulberry32 } from './map.js';
 
 const IDLE = { mx: 0, mz: 0, yaw: 0, pitch: 0, aim: false, cancel: false };
 
+// 移動（房主模擬與客人的本機預測共用，兩邊才會算出一樣的位置）
+export function movePlayer(map, p, inp, dt) {
+  let mx = inp.mx || 0, mz = inp.mz || 0;
+  const m = Math.hypot(mx, mz);
+  if (m > 1) { mx /= m; mz /= m; }
+  const sp = CFG.SPEED * (p.aiming ? CFG.AIM_SPEED_MUL : 1) * (p.speedMul || 1);
+  const k = Math.min(1, dt * 14);
+  p.vx += (mx * sp - p.vx) * k;
+  p.vz += (mz * sp - p.vz) * k;
+  p.x += p.vx * dt; p.z += p.vz * dt;
+  map.collide(p);
+}
+
 export class Sim {
   constructor(map, { seed = 1, matchTime = CFG.MATCH_T, koLimit = CFG.KO_LIMIT } = {}) {
     this.map = map;
@@ -44,6 +57,24 @@ export class Sim {
 
   byId(id) { return this.players.find((p) => p.id === id); }
 
+  removePlayer(id) {
+    this.players = this.players.filter((p) => p.id !== id);
+    this.events.push({ type: 'leave', id });
+  }
+
+  // 給連線客人的快照（數字壓短、陣列化）
+  snapshot(acks = {}) {
+    const r2 = (v) => Math.round(v * 100) / 100, r3 = (v) => Math.round(v * 1000) / 1000;
+    return {
+      ht: r3(this.time), st: this.state === 'play' ? 0 : 1, mt: this.matchTime,   // ht：房主時間（t 留給訊息種類）
+      pl: this.players.map((p) => [p.id, r2(p.x), r2(p.z), r3(p.yaw), r3(p.pitch), Math.round(p.hp * 10) / 10, p.stones, p.alive ? 1 : 0, p.aiming ? 1 : 0, r2(p.charge),
+        p.kills, p.deaths, p.heads, r2(p.respawnAt), r2(p.shieldUntil), p.killedBy || 0, r2(p.throwAt), r2(p.speed), acks[p.id] || 0, r2(p.spawnAt || 0)]),
+      sn: this.stones.map((s) => [s.id, s.owner, r3(s.x), r3(s.y), r3(s.z), r2(s.vx), r2(s.vy), r2(s.vz), s.rest ? 1 : 0, s.active ? 1 : 0]),
+      lo: this.loose.map((l) => [l.id, r2(l.x), r2(l.z), l.count]),
+      pi: this.piles.map((pl) => r2(pl.readyAt)),
+    };
+  }
+
   respawn(p) {
     const others = this.players.filter((q) => q !== p && q.alive);
     const cand = this.map.spawns.map((s) => {
@@ -68,7 +99,7 @@ export class Sim {
     p.shieldUntil = this.time + CFG.SPAWN_SHIELD;
     p.spawnAt = this.time;
     p.lastDmgAt = -99;
-    this.events.push({ type: 'spawn', id: p.id });
+    this.events.push({ type: 'spawn', id: p.id, x: p.x, z: p.z, yaw: p.yaw });
   }
 
   step(inputs) {
@@ -88,16 +119,7 @@ export class Sim {
       p.yaw = inp.yaw;
       p.pitch = Math.max(-1.25, Math.min(1.25, inp.pitch));
 
-      // 移動
-      let mx = inp.mx || 0, mz = inp.mz || 0;
-      const m = Math.hypot(mx, mz);
-      if (m > 1) { mx /= m; mz /= m; }
-      const sp = CFG.SPEED * (p.aiming ? CFG.AIM_SPEED_MUL : 1) * (p.speedMul || 1);
-      const k = Math.min(1, dt * 14);
-      p.vx += (mx * sp - p.vx) * k;
-      p.vz += (mz * sp - p.vz) * k;
-      p.x += p.vx * dt; p.z += p.vz * dt;
-      map.collide(p);
+      movePlayer(map, p, inp, dt);
 
       // 投擲：按下開始蓄力、放開出手
       if (inp.cancel && p.aiming) { p.aiming = false; p.charge = 0; p.aimLock = true; this.events.push({ type: 'cancel', id: p.id }); }
@@ -108,7 +130,11 @@ export class Sim {
       }
       if (p.aiming) {
         p.charge = Math.min(1, p.charge + dt / CFG.CHARGE_T);
-        if (!inp.aim && !inp.cancel) this.throwStone(p);
+        if (!inp.aim && !inp.cancel) {
+          // 連線玩家回報自己畫面上的蓄力（延遲會讓房主這邊少算一點），最多多給 0.3
+          if (typeof inp.ch === 'number') p.charge = Math.max(0, Math.min(1, inp.ch, p.charge + 0.3));
+          this.throwStone(p);
+        }
       }
 
       // 回血

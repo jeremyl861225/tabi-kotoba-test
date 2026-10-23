@@ -32,6 +32,9 @@
   <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.6"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></symbol>
   <symbol id="i-burst" viewBox="0 0 24 24"><path d="M12 3.5 13.9 9l5.6-1.6-3.6 4.6 3.6 4.6-5.6-1.6L12 20.5 10.1 15l-5.6 1.6 3.6-4.6-3.6-4.6L10.1 9z"/></symbol>
   <symbol id="i-pebble" viewBox="0 0 24 24"><path d="M5.2 14.6c-.9-3.4 1.6-7.3 6-8.1 4.4-.8 8.3 1.4 8.6 5 .3 3.8-2.6 6.4-7 6.7-3.8.3-6.8-.8-7.6-3.6z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="16.5" cy="9.5" r="2.6"/><path d="M16.5 14.2c2.4.2 4.1 1.7 4.6 4.3"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M6 12.5v6.5h12v-6.5"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5.5 8.5 12l6.5 6.5"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></symbol>
   <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4.5 16.5a8 8 0 1 1 15 0"/><path d="M12 13.5l4-4.5"/><circle cx="12" cy="13.5" r="1.2"/></symbol>
   <symbol id="i-sound" viewBox="0 0 24 24"><path d="M5 9.5h3l4.5-4v13L8 14.5H5z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.7 7.7 0 0 1 0 11"/></symbol>
@@ -52,6 +55,7 @@
       <p class="tagline">真實巷弄裡的投石大亂鬥</p>
       <div class="cta">
         <button id="go" class="btn-go"><span class="lbl">開始</span><span class="ico"><svg class="i"><use href="#i-arrow"/></svg></span></button>
+        <button id="netBtn" class="glass btn-ghost"><svg class="i"><use href="#i-users"/></svg>連線對戰</button>
         <button id="howBtn" class="glass btn-ghost"><svg class="i"><use href="#i-info"/></svg>操作說明</button>
       </div>
     </div>
@@ -74,7 +78,7 @@
       <p class="rule">先拿 <b>10 KO</b>，或 <b>5 分鐘</b>後 KO 最多的人獲勝</p>
     </div>
   </div>
-  <footer><a href="../../" style="color:inherit;pointer-events:auto">← 所有測試</a>・地圖資料 © OpenStreetMap contributors（ODbL）・原型 v0.3</footer>
+  <footer><a href="../../" style="color:inherit;pointer-events:auto">← 所有測試</a>・地圖資料 © OpenStreetMap contributors（ODbL）・原型 v0.4</footer>
 </section>
 
 <section id="pausePane" class="screen dim" hidden>
@@ -99,6 +103,7 @@
       <h2 id="resTitle" class="serif"></h2>
       <div class="statrow" id="resStats"></div>
       <div class="btns col">
+        <p id="resWait" class="wait" hidden>等房主開下一場…</p>
         <button id="again" class="btn-ink"><svg class="i"><use href="#i-redo"/></svg>再一場</button>
         <button class="glass btn-ghost toMenu"><svg class="i"><use href="#i-home"/></svg>主選單</button>
       </div>
@@ -120,6 +125,27 @@
     </div>
     <p class="pc-note">電腦：WASD 移動・滑鼠轉視角・按住左鍵蓄力放開丟・右鍵取消</p>
     <div class="btns"><button class="btn-ink closeHow">知道了</button></div>
+  </div>
+</section>
+
+<section id="lobbyPane" class="screen dim" hidden>
+  <div class="glass panel lobby">
+    <div class="lb-head"><button id="lbBack" class="glass btn-round" aria-label="回主選單"><svg class="i"><use href="#i-back"/></svg></button><h2 class="serif">連線對戰</h2></div>
+    <div class="lb-choose">
+      <label class="field"><span>你的名字</span><input id="lbName" maxlength="8" autocomplete="off" placeholder="最多 8 個字"></label>
+      <div class="lb-two">
+        <button id="lbCreate" class="btn-ink"><svg class="i"><use href="#i-users"/></svg>建立房間</button>
+        <div class="lb-join"><input id="lbCode" maxlength="4" placeholder="房號" autocomplete="off" autocapitalize="characters" spellcheck="false"><button id="lbJoin" class="glass btn-ghost">加入</button></div>
+      </div>
+      <p class="lb-note">房主的手機負責整場的判定，其他人點對點連過去；人不夠可以用電腦補。最多 8 人。地圖、電腦人數、難度用主選單的設定。</p>
+    </div>
+    <div class="lb-room" hidden>
+      <div class="lb-code"><span>房號</span><b id="lbCodeBig">----</b><button id="lbShare" class="glass btn-ghost"><svg class="i"><use href="#i-share"/></svg>分享</button></div>
+      <ul id="lbPlayers"></ul>
+      <p id="lbRule" class="lb-rule"></p>
+      <div class="btns"><button id="lbStart" class="btn-ink"><svg class="i fill"><use href="#i-play"/></svg>開始</button><button id="lbLeave" class="glass btn-ghost">離開房間</button></div>
+    </div>
+    <p id="lbStatus" class="lb-status"></p>
   </div>
 </section>
 

@@ -288,6 +288,16 @@ export class Hud {
     this.el.vig.style.opacity = me.alive ? Math.min(1, Math.max(0, 0.5 - hp) * 1.6 + this.flashVig) : 0;
   }
 
+  // 上方中央的一行通知（某人離開等）
+  toast(text) {
+    const el = document.createElement('div');
+    el.className = 'chip glass';
+    el.textContent = text;
+    this.el.feed.prepend(el);
+    animate(el, { opacity: [0, 1], y: [-12, 0] }, spring(380, 26));
+    setTimeout(() => { const a = animate(el, { opacity: 0 }, { duration: 0.35 }); Promise.resolve(a && a.finished).then(() => el.remove()); }, 3500);
+  }
+
   hitMarker(head) {
     const h = this.el.hit;
     h.classList.toggle('head', head);
