@@ -1,0 +1,12 @@
+{
+  "name": "白巷 WHITE ALLEY",
+  "short_name": "白巷",
+  "description": "真實巷弄裡的投石大亂鬥",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#eef0f2",
+  "theme_color": "#eef0f2",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

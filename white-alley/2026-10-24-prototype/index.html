@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="白巷">
+<meta name="theme-color" content="#eef0f2">
+<meta name="format-detection" content="telephone=no">
+<title>白巷 WHITE ALLEY</title>
+<meta name="description" content="第一人稱投石對戰：真實城市巷弄刷成一片白，雙搖桿操作、拋物線石頭、右上小地圖。">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css">
+<script src="vendor/motion.js"></script>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8.5 5.5v13M15.5 5.5v13"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.8v12.4a.8.8 0 0 0 1.2.7l9.6-6.2a.8.8 0 0 0 0-1.4L9.2 5.1a.8.8 0 0 0-1.2.7z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h13M13 6.5 18.5 12 13 17.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.05-4.95M19 4.5v4h-4"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4.5 11 12 4.5l7.5 6.5M6.5 9.5v9h11v-9M10 18.5v-5h4v5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.1"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M9 11V5.8a1.5 1.5 0 0 1 3 0V11m0-1.5V4.8a1.5 1.5 0 0 1 3 0v5.7m0-1a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.7a6 6 0 0 1-4.9-2.6L4.6 15a1.5 1.5 0 0 1 2.4-1.8L9 15.5"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.6"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></symbol>
+  <symbol id="i-burst" viewBox="0 0 24 24"><path d="M12 3.5 13.9 9l5.6-1.6-3.6 4.6 3.6 4.6-5.6-1.6L12 20.5 10.1 15l-5.6 1.6 3.6-4.6-3.6-4.6L10.1 9z"/></symbol>
+  <symbol id="i-pebble" viewBox="0 0 24 24"><path d="M5.2 14.6c-.9-3.4 1.6-7.3 6-8.1 4.4-.8 8.3 1.4 8.6 5 .3 3.8-2.6 6.4-7 6.7-3.8.3-6.8-.8-7.6-3.6z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4.5 16.5a8 8 0 1 1 15 0"/><path d="M12 13.5l4-4.5"/><circle cx="12" cy="13.5" r="1.2"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M5 9.5h3l4.5-4v13L8 14.5H5z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.7 7.7 0 0 1 0 11"/></symbol>
+  <symbol id="i-arc" viewBox="0 0 24 24"><path d="M4 18c2.5-8 9.5-11 16-4" stroke-dasharray="2.4 2.6"/><circle cx="20" cy="14" r="1.6"/></symbol>
+  <symbol id="i-move" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/><path d="M12 1.8v2M12 20.2v2M1.8 12h2M20.2 12h2"/></symbol>
+  <symbol id="i-swipe" viewBox="0 0 24 24"><path d="M4.5 12h15M8 8.5 4.5 12 8 15.5M16 8.5l3.5 3.5-3.5 3.5"/></symbol>
+</svg>
+
+<div id="stage"></div>
+<div id="touch" hidden></div>
+<div id="hud" hidden></div>
+
+<section id="menu" class="screen" hidden>
+  <div class="menu-grid">
+    <div class="brand">
+      <h1 class="title" aria-label="白巷"><span>白</span><span>巷</span></h1>
+      <p class="en">WHITE ALLEY</p>
+      <p class="tagline">真實巷弄裡的投石大亂鬥</p>
+      <div class="cta">
+        <button id="go" class="btn-go"><span class="lbl">開始</span><span class="ico"><svg class="i"><use href="#i-arrow"/></svg></span></button>
+        <button id="howBtn" class="glass btn-ghost"><svg class="i"><use href="#i-info"/></svg>操作說明</button>
+      </div>
+    </div>
+    <div class="glass panel opts">
+      <div class="lbl-row"><span>地圖</span></div>
+      <div class="maps" data-k="map">
+        <button class="mapcard" data-v="mykonos"><canvas></canvas><span class="mc-t"><b>米克諾斯・迷城</b><small>希臘白屋迷宮・矮房窄巷</small></span></button>
+        <button class="mapcard" data-v="yongkang"><canvas></canvas><span class="mc-t"><b>台北・永康街</b><small>四到七層公寓夾出的巷弄</small></span></button>
+      </div>
+      <div class="two">
+        <div>
+          <div class="lbl-row"><svg class="i"><use href="#i-user"/></svg><span>對手</span></div>
+          <div class="seg" data-k="bots"><i class="pill"></i><button data-v="3">3</button><button data-v="5">5</button><button data-v="7">7</button></div>
+        </div>
+        <div>
+          <div class="lbl-row"><svg class="i"><use href="#i-gauge"/></svg><span>難度</span></div>
+          <div class="seg" data-k="diff"><i class="pill"></i><button data-v="easy">簡單</button><button data-v="normal">普通</button><button data-v="hard">困難</button></div>
+        </div>
+      </div>
+      <p class="rule">先拿 <b>10 KO</b>，或 <b>5 分鐘</b>後 KO 最多的人獲勝</p>
+    </div>
+  </div>
+  <footer><a href="../../" style="color:inherit;pointer-events:auto">← 所有測試</a>・地圖資料 © OpenStreetMap contributors（ODbL）・原型 v0.3</footer>
+</section>
+
+<section id="pausePane" class="screen dim" hidden>
+  <div class="glass panel sheet">
+    <h2 class="serif">暫停</h2>
+    <label class="row"><span><svg class="i"><use href="#i-swipe"/></svg>視角靈敏度</span><input id="sens" type="range" min="0.4" max="2" step="0.05"></label>
+    <label class="row"><span><svg class="i"><use href="#i-arc"/></svg>拋物線預覽</span><input id="optArc" type="checkbox" class="switch"></label>
+    <label class="row"><span><svg class="i"><use href="#i-target"/></svg>瞄準輔助</span><input id="optAssist" type="checkbox" class="switch"></label>
+    <label class="row"><span><svg class="i"><use href="#i-sound"/></svg>音效</span><input id="optSound" type="checkbox" class="switch"></label>
+    <div class="btns">
+      <button id="resume" class="btn-ink"><svg class="i fill"><use href="#i-play"/></svg>繼續</button>
+      <button id="restart" class="glass btn-ghost"><svg class="i"><use href="#i-redo"/></svg>重新開始</button>
+      <button class="glass btn-ghost toMenu"><svg class="i"><use href="#i-home"/></svg>主選單</button>
+    </div>
+  </div>
+</section>
+
+<section id="results" class="screen dim" hidden>
+  <div class="glass panel res">
+    <div class="resL">
+      <p class="kicker" id="resRank"></p>
+      <h2 id="resTitle" class="serif"></h2>
+      <div class="statrow" id="resStats"></div>
+      <div class="btns col">
+        <button id="again" class="btn-ink"><svg class="i"><use href="#i-redo"/></svg>再一場</button>
+        <button class="glass btn-ghost toMenu"><svg class="i"><use href="#i-home"/></svg>主選單</button>
+      </div>
+    </div>
+    <div class="resR"><table id="resTable"></table></div>
+  </div>
+</section>
+
+<section id="howPane" class="screen dim" hidden>
+  <div class="glass panel how">
+    <h2 class="serif">操作說明</h2>
+    <div class="how-grid">
+      <div class="how-c"><div class="how-ic"><svg class="i"><use href="#i-move"/></svg></div><b>左下拖曳</b><span>移動。手指放哪，搖桿就出現在哪</span></div>
+      <div class="how-c"><div class="how-ic ink"><svg class="i"><use href="#i-pebble"/></svg></div><b>右側搖桿：按住</b><span>開始蓄力，出現拋物線；推動轉視角，推越遠轉越快</span></div>
+      <div class="how-c"><div class="how-ic ink"><svg class="i"><use href="#i-arrow"/></svg></div><b>放開手指</b><span>丟出石頭。蓄越久飛越遠，打頭兩倍傷害</span></div>
+      <div class="how-c"><div class="how-ic red"><svg class="i"><use href="#i-x"/></svg></div><b>拖到 ✕ 再放開</b><span>取消，不浪費石頭</span></div>
+      <div class="how-c"><div class="how-ic"><svg class="i"><use href="#i-swipe"/></svg></div><b>右半邊空白處拖曳</b><span>只轉視角，不會丟</span></div>
+      <div class="how-c"><div class="how-ic"><svg class="i"><use href="#i-pebble"/></svg></div><b>走過石堆</b><span>補滿 6 顆；地上別人丟過的石頭也能撿</span></div>
+    </div>
+    <p class="pc-note">電腦：WASD 移動・滑鼠轉視角・按住左鍵蓄力放開丟・右鍵取消</p>
+    <div class="btns"><button class="btn-ink closeHow">知道了</button></div>
+  </div>
+</section>
+
+<section id="loading" class="screen" hidden><p class="shimmer">鋪 石 板 中</p></section>
+<div id="flash"></div>
+<div id="rotate"><div class="glass panel"><svg class="i big"><use href="#i-redo"/></svg><b>把手機橫過來</b><span>白巷是橫向遊戲</span></div></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
