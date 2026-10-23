@@ -34,18 +34,22 @@ export class MirrorSim {
     if (this.lastSnap && s.ht <= this.lastSnap.t) return null;   // 亂序的舊快照
     const pos = new Map();
     let mine = null;
+    // 快照就是名單的權威：快照裡沒有的人（中途離開、離開事件掉了）直接拿掉
+    const ids = new Set(s.pl.map((a) => a[0]));
+    this.players = this.players.filter((p) => ids.has(p.id));
     for (const a of s.pl) {
       const [id, x, z, yaw, pitch, hp, stones, alive, aiming, charge, kills, deaths, heads, respawnAt, shieldUntil, killedBy, throwAt, speed, ack, spawnAt] = a;
       const p = this.byId(id);
       if (!p) continue;
-      pos.set(id, { x, z, yaw, pitch, speed });
+      // 位置與「看得到的動作」（生死、舉手、出手）放進時間軸，跟著延遲 100 ms 的畫面一起播
+      pos.set(id, { x, z, yaw, pitch, speed, alive: !!alive, aiming: !!aiming, charge, throwAt, spawnAt });
       Object.assign(p, { hp, stones, kills, deaths, heads, respawnAt, shieldUntil, killedBy, spawnAt });
-      if (id === meId) { mine = { x, z, yaw, alive: !!alive, ack, hp }; p.alive = !!alive; continue; }
-      Object.assign(p, { alive: !!alive, aiming: !!aiming, charge, throwAt });
+      if (id === meId) { mine = { x, z, yaw, alive: !!alive, ack, hp }; p.alive = !!alive; }
     }
     this.snaps.push({ t: s.ht, pos });
     if (this.snaps.length > 6) this.snaps.shift();
-    this.stoneBase = s.sn.map(([id, owner, x, y, z, vx, vy, vz, rest, active]) => ({ id, owner, x, y, z, vx, vy, vz, rest: !!rest, active: !!active }));
+    this.stoneBase = s.sn.map(([id, owner, x, y, z, vx, vy, vz, rest, active, age]) => ({ id, owner, x, y, z, vx, vy, vz, rest: !!rest, active: !!active, age: age || 0 }));
+    this.stoneT = s.ht;
     this.loose = s.lo.map(([id, x, z, count]) => ({ id, x, z, count }));
     s.pi.forEach((r, i) => { if (this.piles[i]) this.piles[i].readyAt = r; });
     this.matchTime = s.mt;
@@ -71,19 +75,24 @@ export class MirrorSim {
       if (p.id === meId) continue;
       const pa = a.pos.get(p.id), pb = b ? b.pos.get(p.id) : null;
       if (!pa) continue;
-      const q = pb || pa;
+      // 兩張快照之間剛好復活：不要從屍體位置滑到出生點，直接用舊的那張，時間到了再跳過去
+      const q = pb && pb.spawnAt === pa.spawnAt ? pb : pa;
       p.x = p.px = pa.x + (q.x - pa.x) * k;
       p.z = p.pz = pa.z + (q.z - pa.z) * k;
       p.yaw = lerpA(pa.yaw, q.yaw);
       p.pitch = pa.pitch + (q.pitch - pa.pitch) * k;
       p.speed = q.speed;
+      p.alive = pa.alive; p.aiming = pa.aiming; p.charge = pa.charge; p.throwAt = pa.throwAt;
     }
-    // 石頭：從快照往前推（最多 0.3 秒），撞到東西就停在那裡等下一張快照
-    const dt = Math.min(0.3, (nowMs - this.lastSnap.recvAt) / 1000);
-    const h = CFG.TICK / SUB, n = Math.floor(dt / h);
-    this.stones = this.stoneBase.map((s0) => {
+    // 石頭：推到跟其他人同一個時間（房主現在 − 100 ms），石頭才不會比被打的人早到。
+    // 比快照新就往前模擬（撞到東西停住等下一張），比快照舊就照拋物線往回算；那時還沒丟出去的先不畫
+    const dt = Math.max(-0.3, Math.min(0.3, rt - this.stoneT));
+    const h = CFG.TICK / SUB, n = Math.floor(Math.max(0, dt) / h);
+    this.stones = this.stoneBase.filter((s0) => s0.age + dt >= 0).map((s0) => {
       const s = { ...s0 };
-      if (!s.rest) {
+      if (!s.rest && dt < 0) {
+        s.x += s.vx * dt; s.y += s.vy * dt - 0.5 * CFG.G * dt * dt; s.z += s.vz * dt;
+      } else if (!s.rest) {
         for (let i = 0; i < n; i++) {
           const c = advance(this.map, s, h);
           if (c) { if (c.type !== 'out') { s.x = c.px; s.y = c.py; s.z = c.pz; } s.vx = s.vy = s.vz = 0; s.rest = true; break; }

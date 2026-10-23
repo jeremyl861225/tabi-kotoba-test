@@ -59,6 +59,7 @@ export class Input {
   }
 
   reset() {
+    this.aimLatch = false; this.cancelLatch = false;
     this.move.x = this.move.y = 0;
     this.lookRate.x = this.lookRate.y = 0;
     this.aimHeld = false;

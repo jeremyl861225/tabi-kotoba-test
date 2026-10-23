@@ -8,6 +8,19 @@ export const genRoomCode = () => Array.from({ length: 4 }, () => ALPHABET[Math.f
 export const normCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
 export const newId = () => Math.random().toString(36).slice(2, 10);
 
+// 整個 App 共用一個 Supabase client（每次 createClient 都會多掛一個監聽、還會警告重複）
+let client = null;
+async function getClient() {
+  await loadScript('vendor/supabase.js');
+  if (!client) {
+    client = window.supabase.createClient(SUPABASE.url, SUPABASE.key, {
+      realtime: { params: { eventsPerSecond: 20 } },
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
+  }
+  return client;
+}
+
 function loadScript(src) {
   return new Promise((res, rej) => {
     if (window.supabase) return res();
@@ -18,40 +31,47 @@ function loadScript(src) {
 }
 
 export class P2P {
-  // role: 'host' | 'guest'；onPeers(list)、onData(peerId, msg)、onClose(peerId)
-  constructor({ room, id, name, role, onPeers, onData, onClose, onStatus }) {
-    Object.assign(this, { room, id, name, role, onPeers, onData, onClose, onStatus });
+  // role: 'host' | 'guest'；onPeers(list)、onData(peerId, msg)、onClose(peerId, why：'left' 離開房間／'link' 連線斷了)、onBusy()（房間正在比賽）
+  constructor({ room, id, name, role, onPeers, onData, onClose, onStatus, onBusy }) {
+    Object.assign(this, { room, id, name, role, onPeers, onData, onClose, onStatus, onBusy });
     this.peers = new Map();   // peerId → { pc, rel, fast, name, open }
     this.closed = false;
     this.accepting = true;    // 房主開局後不再收新人
   }
 
   async start(timeoutMs = 10000) {
-    await loadScript('vendor/supabase.js');
-    this.client = window.supabase.createClient(SUPABASE.url, SUPABASE.key, {
-      realtime: { params: { eventsPerSecond: 20 } },
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    });
+    this.client = await getClient();
+    if (this.closed) throw new Error('已離開');   // 等待期間被關掉：不要再訂閱
     const ch = (this.ch = this.client.channel(`wa-${this.room}`, { config: { broadcast: { self: false, ack: false }, presence: { key: this.id } } }));
     ch.on('broadcast', { event: 's' }, ({ payload }) => this._signal(payload).catch((e) => console.warn('signal', e)));
     ch.on('presence', { event: 'sync' }, () => {
       const st = ch.presenceState();
       this.presence = Object.entries(st).map(([id, arr]) => ({ id, ...(arr[arr.length - 1] || {}) }));
-      // 客人：房主不在了就結束
-      if (this.role === 'guest' && this.hostId && !this.presence.some((p) => p.id === this.hostId) && this._sawHost) this.onClose && this.onClose(this.hostId);
+      // 客人：房主從房間消失、而且點對點連線也不在了，才算房主離開
+      // （房主的訊號連線偶爾會重連，那時 presence 會短暫看不到他，但遊戲連線還好好的）
+      if (this.role === 'guest' && this.hostId && this._sawHost && !this.presence.some((p) => p.id === this.hostId)) {
+        const hp = this.peers.get(this.hostId);
+        if (!hp || !hp.open) { this.closed || this.onClose && this.onClose(this.hostId, 'left'); }
+      }
       if (this.role === 'guest' && this.presence.some((p) => p.role === 'host')) this._sawHost = true;
     });
     await new Promise((resolve, reject) => {
-      const to = setTimeout(() => reject(new Error('連線逾時，請確認網路後再試一次')), timeoutMs);
+      this._rejectStart = reject;
+      this._to = setTimeout(() => reject(new Error('連線逾時，請確認網路後再試一次')), timeoutMs);
       ch.subscribe(async (status) => {
         this.onStatus && this.onStatus(status);
         if (status === 'SUBSCRIBED') {
-          clearTimeout(to);
+          clearTimeout(this._to);
+          if (this.closed) return reject(new Error('已離開'));
           try { await ch.track({ name: this.name, role: this.role }); } catch { /* 重連時再試 */ }
           resolve();
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') { clearTimeout(to); reject(new Error(`連線失敗（${status}）`)); }
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          clearTimeout(this._to); reject(new Error(status === 'CLOSED' ? '已離開' : `連線失敗（${status}）`));
+        }
       });
     });
+    this._rejectStart = null;
+    if (this.closed) throw new Error('已離開');
     if (this.role === 'guest') {
       // 每秒喊一次，直到房主回應 offer
       const hello = () => { if (!this.hostId && !this.closed) this._send({ t: 'hello', from: this.id, name: this.name }); };
@@ -68,18 +88,20 @@ export class P2P {
     const pc = new RTCPeerConnection({ iceServers: ICE });
     p = { pc, name, rel: null, fast: null, open: false };
     this.peers.set(pid, p);
+    // 握手 15 秒還沒通就回收（客人中途離開、answer 掉了），不然會一直佔著名額
+    p.timer = setTimeout(() => { if (!p.open && this.peers.get(pid) === p) this._drop(pid, 'link'); }, 15000);
     pc.onicecandidate = (e) => { if (e.candidate) this._send({ t: 'ice', from: this.id, to: pid, c: e.candidate.toJSON() }); };
     pc.onconnectionstatechange = () => {
       if (['failed', 'closed', 'disconnected'].includes(pc.connectionState)) {
         // disconnected 有時會自己恢復，等 4 秒再判定
         const st = pc.connectionState;
-        setTimeout(() => { if (pc.connectionState === st && this.peers.get(pid) === p) this._drop(pid); }, st === 'disconnected' ? 4000 : 0);
+        setTimeout(() => { if (pc.connectionState === st && this.peers.get(pid) === p) this._drop(pid, 'link'); }, st === 'disconnected' ? 4000 : 0);
       }
     };
     const wire = (dc) => {
       dc.onmessage = (e) => { try { this.onData(pid, JSON.parse(e.data)); } catch (err) { console.warn(err); } };
       dc.onopen = () => { p.open = !!(p.rel && p.rel.readyState === 'open' && p.fast && p.fast.readyState === 'open'); if (p.open) this._peersChanged(); };
-      dc.onclose = () => this._drop(pid);
+      dc.onclose = () => { if (this.peers.get(pid) === p) this._drop(pid, 'link'); };
     };
     if (this.role === 'host') {
       p.rel = pc.createDataChannel('rel', { ordered: true });
@@ -95,14 +117,22 @@ export class P2P {
   async _signal(m) {
     if (this.closed || (m.to && m.to !== this.id)) return;
     if (m.t === 'hello' && this.role === 'host') {
-      if (!this.accepting || this.peers.has(m.from) || this.peers.size >= 7) return;
+      if (!this.accepting) { this._send({ t: 'busy', from: this.id, to: m.from }); return; }
+      const old = this.peers.get(m.from);
+      if (old && old.open) return;
+      if (old) this._drop(m.from, 'link', true);   // 上次握手沒成功（offer 掉了）：重來一次
+      if (this.peers.size >= 7) return;
       const p = this._peer(m.from, m.name);
       const offer = await p.pc.createOffer();
       await p.pc.setLocalDescription(offer);
       this._send({ t: 'offer', from: this.id, to: m.from, sdp: p.pc.localDescription.toJSON(), name: this.name });
+    } else if (m.t === 'busy' && this.role === 'guest') {
+      this.busy = true;
+      this.onBusy && this.onBusy();
     } else if (m.t === 'offer' && this.role === 'guest') {
       if (this.hostId && this.hostId !== m.from) return;
       this.hostId = m.from;
+      this.busy = false;
       clearInterval(this._helloTimer);
       const p = this._peer(m.from, m.name);
       await p.pc.setRemoteDescription(m.sdp);
@@ -125,12 +155,13 @@ export class P2P {
     }
   }
 
-  _drop(pid) {
+  _drop(pid, why = 'link', quiet = false) {
     const p = this.peers.get(pid);
     if (!p) return;
     this.peers.delete(pid);
+    clearTimeout(p.timer);
     try { p.pc.close(); } catch { /* 已關 */ }
-    this.onClose && this.onClose(pid);
+    if (!quiet && !this.closed) this.onClose && this.onClose(pid, why);
     this._peersChanged();
   }
 
@@ -154,9 +185,15 @@ export class P2P {
   close() {
     this.closed = true;
     clearInterval(this._helloTimer);
-    for (const pid of [...this.peers.keys()]) { const p = this.peers.get(pid); try { p.pc.close(); } catch { /* 已關 */ } }
+    clearTimeout(this._to);
+    if (this._rejectStart) { this._rejectStart(new Error('已離開')); this._rejectStart = null; }
+    // 房主正常離開：先跟每個人說再見（客人才分得出是「房主走了」還是「網路斷了」），稍等再關連線讓這包送得出去
+    const peers = [...this.peers.values()];
+    if (this.role === 'host') for (const p of peers) { try { if (p.rel && p.rel.readyState === 'open') p.rel.send('{"t":"bye"}'); } catch { /* 已關 */ } }
+    for (const p of peers) clearTimeout(p.timer);
+    setTimeout(() => { for (const p of peers) { try { p.pc.close(); } catch { /* 已關 */ } } }, this.role === 'host' ? 300 : 0);
     this.peers.clear();
-    try { this.ch && this.ch.unsubscribe(); } catch { /* 已關 */ }
-    try { this.client && this.client.removeAllChannels(); } catch { /* 已關 */ }
+    try { if (this.ch && this.client) this.client.removeChannel(this.ch); } catch { /* 已關 */ }
+    this.ch = null;
   }
 }

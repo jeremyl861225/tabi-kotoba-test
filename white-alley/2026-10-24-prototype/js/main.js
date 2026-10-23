@@ -4,6 +4,7 @@ import { GameMap, mulberry32 } from './map.js';
 import { Sim, movePlayer } from './sim.js';
 import { MirrorSim } from './mirror.js';
 import { P2P, genRoomCode, newId, normCode } from './net.js';
+import { RemoteInput } from './remote.js';
 import { Bot } from './bot.js';
 import { Renderer } from './render.js';
 import { Hud } from './hud.js';
@@ -21,7 +22,8 @@ const settings = (() => {
 })();
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch { /* 私密模式 */ } };
 const INTRO = 1.6;
-const COARSE = matchMedia('(pointer: coarse)').matches;   // 觸控裝置才開瞄準輔助   // 開場鏡頭從空中俯衝進巷子的秒數
+const COARSE = matchMedia('(pointer: coarse)').matches;   // 觸控裝置才開瞄準輔助
+const haptic = (k) => { try { window.WA_NATIVE && window.WA_NATIVE.haptic(k); } catch { /* 網頁版沒有 */ } };   // 開場鏡頭從空中俯衝進巷子的秒數
 
 const stage = $('#stage');
 const sfx = new Sfx();
@@ -48,7 +50,7 @@ async function getMap(id) {
 async function useMap(id) {
   const map = await getMap(id);
   if (!renderer || renderer.map !== map) {
-    if (renderer) { renderer.gl.dispose(); renderer.canvas.remove(); }
+    if (renderer) renderer.dispose();
     renderer = new Renderer(stage, map);
     renderer.setQuality(perf.q);
   }
@@ -212,13 +214,15 @@ async function createRoom() {
   });
   L.net = net;
   renderLobby('建立房間中…');
-  try { await net.start(); renderLobby(); } catch (e) { leaveRoom(); renderLobby(e.message); }
+  // 等待期間使用者可能已經離開或改建別的房，結果只套用在「還是目前這個房」的時候
+  try { await net.start(); if (L && L.net === net) renderLobby(); } catch (e) { if (L && L.net === net) { leaveRoom(); renderLobby(e.message); } }
 }
 
 async function joinRoom() {
   sfx.unlock();
   const code = normCode($('#lbCode').value);
   if (code.length < 4) { animate($('#lbCode'), { x: [0, -8, 8, -5, 5, 0] }, { duration: 0.4 }); return; }
+  if (L && L.role === 'guest' && L.code === code) return;   // Enter＋點按鈕連發
   const name = myName();
   leaveRoom();
   L = { role: 'guest', code, name, peers: [], connected: false };
@@ -226,20 +230,23 @@ async function joinRoom() {
     room: code, id: newId(), name, role: 'guest',
     onPeers: (ps) => { if (!L) return; L.connected = ps.length > 0; renderLobby(); },
     onData: (pid, m) => guestData(m),
-    onClose: () => hostGone(),
+    onClose: (pid, why) => hostGone(why),
+    onBusy: () => { if (L && L.net === net && !L.connected) renderLobby('房間正在比賽，這場結束後會自動加入…'); },
   });
   L.net = net;
   renderLobby('連線中…');
   try {
     await net.start();
+    if (!L || L.net !== net) return;
     renderLobby();
     setTimeout(() => {
       if (!L || L.net !== net || L.connected) return;
+      if (net.busy) return;
       renderLobby(net.hostId
         ? '找到房主但連不上（行動網路有時擋點對點連線），兩邊改連同一個 Wi-Fi 再試'
         : '找不到這個房號的房主（確認房號，或請房主重新建立）');
     }, 12000);
-  } catch (e) { leaveRoom(); renderLobby(e.message); }
+  } catch (e) { if (L && L.net === net) { leaveRoom(); renderLobby(e.message); } }
 }
 
 function leaveRoom() {
@@ -249,10 +256,11 @@ function leaveRoom() {
 
 async function shareRoom() {
   if (!L) return;
-  const url = `${location.origin}${location.pathname}#room=${L.code}`;
+  // App 裡的網址是 whitealley://，分享出去沒用，只分享房號；網頁版附上直接進房的連結
+  const url = window.WA_NATIVE ? null : `${location.origin}${location.pathname}#room=${L.code}`;
   try {
-    if (navigator.share) await navigator.share({ title: '白巷：一起來丟石頭', text: `房號 ${L.code}`, url });
-    else { await navigator.clipboard.writeText(url); renderLobby('連結已複製'); }
+    if (navigator.share) await navigator.share(url ? { title: '白巷：一起來丟石頭', text: `房號 ${L.code}`, url } : { text: `來白巷丟石頭！房號 ${L.code}` });
+    else { await navigator.clipboard.writeText(url || L.code); renderLobby(url ? '連結已複製' : '房號已複製'); }
   } catch { /* 使用者取消 */ }
 }
 
@@ -275,7 +283,7 @@ async function hostStart() {
   const remote = new Map();
   L.peers.forEach((p, i) => {
     const pl = sim.addPlayer({ name: p.name, accent: ACCENTS[(i + 1) % ACCENTS.length] });
-    remote.set(p.id, { pid: pl.id, q: [], last: null, ack: 0 });
+    remote.set(p.id, { pid: pl.id, input: new RemoteInput() });
   });
   const rng = mulberry32(seed * 7);
   const names = [...BOT_NAMES].sort(() => rng() - 0.5);
@@ -296,9 +304,7 @@ async function hostStart() {
 function hostData(pid, m) {
   if (m.t !== 'in' || !G || G.mode !== 'host') return;
   const r = G.remote.get(pid);
-  if (!r) return;
-  r.q.push(m);
-  if (r.q.length > 8) r.q.splice(0, r.q.length - 3);   // 堆太多就丟舊的，別讓延遲越積越大
+  if (r) r.input.push(m);
 }
 
 function hostPeerGone(pid) {
@@ -317,16 +323,19 @@ function hostPeerGone(pid) {
 
 async function guestStart(m) {
   sfx.on = settings.sound;
+  const net = L && L.net;
   show('#loading');
   const map = await useMap(m.map);
+  if (!L || L.net !== net) return;   // 載入期間房主走了
   renderer.reset();
   const sim = new MirrorSim(map, m.roster, m.mt);
   const me = sim.byId(m.you);
-  setupGame(map, sim, me, [], 'guest', { seq: 0, hist: [], cdUntil: 0, aimLock: false, needPos: true });
+  setupGame(map, sim, me, [], 'guest', { seq: 0, hist: [], cdT: 0, pr: 0, cx: 0, ch: undefined, wasAim: false, needPos: true, ackFloor: 0, evq: [] });
 }
 
 function guestData(m) {
   if (!L) return;
+  if (m.t === 'bye') { hostGone('left'); return; }
   if (m.t === 'lobby') { L.lobby = m; renderLobby(); return; }
   if (m.t === 'start') { guestStart(m); return; }
   if (!G || G.mode !== 'guest') return;
@@ -334,10 +343,9 @@ function guestData(m) {
     const mine = G.sim.apply(m, G.me.id, performance.now());
     if (mine) reconcile(mine);
   } else if (m.t === 'ev') {
-    for (const e of m.e) {
-      if (e.type === 'leave') G.sim.removePlayer(e.id);
-      G.sim.events.push(e);
-    }
+    // 事件延後 100 ms 再處理，跟畫面（其他人落後 100 ms 內插）對齊
+    const at = performance.now() + 100;
+    for (const e of m.e) G.evq.push({ at, e });
   }
 }
 
@@ -351,39 +359,42 @@ function reconcile(m) {
     G.needPos = false; G.hist.length = 0;
     return;
   }
+  if (m.ack <= G.ackFloor) return;   // 復活前送出的輸入，對照的是舊位置
   const i = G.hist.findIndex((h) => h.s === m.ack);
   if (i < 0) return;
   const h = G.hist[i];
   const ex = m.x - h.x, ez = m.z - h.z, e = Math.hypot(ex, ez);
   G.hist.splice(0, i);
   if (e < 0.03) return;
-  if (e > 3) { me.x = m.x; me.z = m.z; G.hist.length = 0; return; }
+  // 平移誤差（不是直接跳到房主的位置），還沒被確認的移動才不會被吃掉
   me.x += ex; me.z += ez;
   for (const q of G.hist) { q.x += ex; q.z += ez; }
   G.map.collide(me);
 }
 
-function hostGone() {
+function hostGone(why) {
   if (!L) return;
   leaveRoom();
-  const inGame = !!G;
-  if (inGame) toMenu();
+  if (G) toMenu();
   openLobby();
-  renderLobby('房主離開了，房間已關閉');
+  renderLobby(why === 'left' ? '房主離開了，房間已關閉' : '跟房主的連線斷了（網路不穩），可以再加入一次');
 }
 
 // 客人每個 tick：本機預測自己的移動與蓄力，輸入送給房主
 function guestTick(inp) {
   const { sim, me } = G;
-  if (inp.cancel && me.aiming) { me.aiming = false; me.charge = 0; G.aimLock = true; }
-  if (!inp.aim) G.aimLock = false;
-  if (me.alive && inp.aim && !me.aiming && !G.aimLock && me.stones > 0 && sim.time >= G.cdUntil) { me.aiming = true; me.charge = 0; }
-  let ch;
+  // 每次按下給一個編號；取消與放手時的蓄力之後每包都帶，掉包也不會被房主誤判（js/remote.js）
+  if (inp.aim && !G.wasAim) { G.pr++; G.ch = undefined; }
+  G.wasAim = inp.aim;
+  if (inp.cancel) G.cx = G.pr;
+  if (inp.cancel && me.aiming) { me.aiming = false; me.charge = 0; }
+  G.cdT--;   // 冷卻用自己的 tick 數算（房主也是每個 tick 消化一包輸入）
+  if (me.alive && inp.aim && !me.aiming && G.cx !== G.pr && me.stones > 0 && G.cdT <= 0) { me.aiming = true; me.charge = 0; }
   if (me.aiming) {
     me.charge = Math.min(1, me.charge + CFG.TICK / CFG.CHARGE_T);
     if (!inp.aim && !inp.cancel) {
-      ch = Math.round(me.charge * 1000) / 1000;
-      me.aiming = false; me.charge = 0; me.throwAt = sim.time; G.cdUntil = sim.time + CFG.THROW_CD;
+      G.ch = Math.round(me.charge * 1000) / 1000;
+      me.aiming = false; me.charge = 0; me.throwAt = sim.time; G.cdT = Math.round(CFG.THROW_CD / CFG.TICK);
       renderer.kick = 1;
     }
   }
@@ -394,7 +405,7 @@ function guestTick(inp) {
   G.hist.push({ s, x: me.x, z: me.z });
   if (G.hist.length > 240) G.hist.shift();
   const r3 = (v) => Math.round(v * 1000) / 1000;
-  L.net.send(L.net.hostId, { t: 'in', s, mx: r3(inp.mx), mz: r3(inp.mz), yaw: r3(inp.yaw), pitch: r3(inp.pitch), aim: inp.aim, cancel: inp.cancel, ch }, false);
+  if (L) L.net.send(L.net.hostId, { t: 'in', s, mx: r3(inp.mx), mz: r3(inp.mz), yaw: r3(inp.yaw), pitch: r3(inp.pitch), aim: inp.aim, pr: G.pr, cx: G.cx, ch: G.ch }, false);
 }
 
 function endIntro() {
@@ -466,13 +477,18 @@ function results() {
 }
 
 // ---------- 事件 → 音效、HUD、特效 ----------
+// 先把事件陣列換掉再處理：處理途中就算有一筆出錯，同一批也不會每格重跑
+const NOBODY = { id: -1, name: '？', accent: '#9aa0a8' };
 function onEvents() {
   const { sim, me, view } = G;
-  for (const e of sim.events) {
+  const evs = sim.events;
+  sim.events = [];
+  for (const e of evs) {
     switch (e.type) {
       case 'throw':
         sfx.play('throw', e.x, e.z, e.v / CFG.V_MAX);
         if (e.id === me.id && G.mode !== 'guest') renderer.kick = 1;
+        if (e.id === me.id) haptic('throw');
         if (e.id !== me.id && Math.hypot(e.x - me.x, e.z - me.z) < 45) hud.ping(e.x, e.z, sim.time);
         break;
       case 'impact':
@@ -481,39 +497,49 @@ function onEvents() {
         if (e.sp > 6) renderer.chipBurst(e.x, e.y, e.z, e.nx || 0, e.surf === 'wall' ? 0.3 : 1, e.nz || 0, e.sp > 14 ? 7 : 4);
         break;
       case 'hit': {
-        const t = sim.byId(e.target);
-        if (e.by === me.id) { hud.hitMarker(e.head); sfx.play('hitmark'); }
-        sfx.play(e.head ? 'head' : 'hit', t.x, t.z);
+        if (e.by === me.id) { hud.hitMarker(e.head); sfx.play('hitmark'); haptic(e.head ? 'head' : 'hit'); }
+        sfx.play(e.head ? 'head' : 'hit', e.x, e.z);
         renderer.puff(e.x, e.y, e.z, 0.2, 0xe5b2ad);
         renderer.chipBurst(e.x, e.y, e.z, 0, 0.6, 0, 5);
-        if (e.target === me.id) { sfx.play('hurt'); hud.hurtFrom(e.fromX, e.fromZ); renderer.shake = e.head ? 1.4 : 0.9; } else renderer.flashChar(e.target);
+        if (e.target === me.id) { sfx.play('hurt'); haptic('hurt'); hud.hurtFrom(e.fromX, e.fromZ); renderer.shake = e.head ? 1.4 : 0.9; } else renderer.flashChar(e.target);
         break;
       }
       case 'block':
         sfx.play('roof', e.x, e.z, 0.6);
         break;
       case 'ko': {
-        const v = sim.byId(e.victim), k = sim.byId(e.by);
+        const v = sim.byId(e.victim) || NOBODY, k = sim.byId(e.by) || NOBODY;   // 丟石頭的人可能已經離開
         hud.feed(k, v, e.head, me.id);
-        if (e.by === me.id) { sfx.play('ko'); hud.koBanner(v.name, e.head); }
+        if (e.by === me.id) { sfx.play('ko'); hud.koBanner(v.name, e.head); haptic('ko'); }
+        if (e.victim === me.id) haptic('die');
         break;
       }
       case 'pickup':
-        if (e.id === me.id) sfx.play('pickup');
+        if (e.id === me.id) { sfx.play('pickup'); haptic('pickup'); }
         break;
       case 'spawn':
         if (e.id === me.id) {
-          if (G.mode === 'guest') G.needPos = true;
-          else { view.yaw = me.yaw; view.pitch = 0; }
+          if (G.mode === 'guest') {
+            // 用事件帶來的出生點，不等下一張快照；之前送出的輸入對照的是死前位置，修正時略過
+            me.x = me.px = e.x; me.z = me.pz = e.z; me.vx = me.vz = 0; me.yaw = e.yaw;
+            G.hist.length = 0; G.ackFloor = G.seq;
+          }
+          view.yaw = e.yaw ?? me.yaw; view.pitch = 0;
         }
         break;
-      case 'over':
-        setTimeout(results, 900);
+      case 'leave':
+        if (G.mode === 'guest') sim.removePlayer(e.id);
         break;
+      case 'over': {
+        input.setEnabled(false);   // 結算前這 0.9 秒的點按不要留到下一場
+        input.reset();
+        const g = G;
+        setTimeout(() => { if (G === g) results(); }, 900);
+        break;
+      }
       default:
     }
   }
-  sim.events.length = 0;
 }
 
 // 小地圖要畫的人：看得到（視線＋大致在前方）或很近
@@ -552,15 +578,19 @@ function tickOnce(fr) {
   const { sim, me, view } = G;
   const sy = Math.sin(view.yaw), cy = Math.cos(view.yaw);
   const a = input.tickAim();
-  const mine = { mx: cy * fr.mx - sy * fr.my, mz: -sy * fr.mx - cy * fr.my, yaw: view.yaw, pitch: view.pitch, aim: a.aim, cancel: a.cancel };
+  let mine = { mx: cy * fr.mx - sy * fr.my, mz: -sy * fr.mx - cy * fr.my, yaw: view.yaw, pitch: view.pitch, aim: a.aim, cancel: a.cancel };
+  if (window.__wa.autoplay && G.mode === 'solo') {   // 測試：我方也交給電腦，用來整場浸泡測試
+    if (!G.autoBot) G.autoBot = new Bot(sim, me, 'normal', mulberry32(99));
+    mine = G.autoBot.input(CFG.TICK);
+    view.yaw = mine.yaw; view.pitch = mine.pitch;
+  }
   if (G.mode === 'guest') { guestTick(mine); return; }
   const inputs = { [me.id]: mine };
   for (const b of G.bots) inputs[b.p.id] = b.input(CFG.TICK);
   if (G.mode === 'host') {
     for (const r of G.remote.values()) {
-      const x = r.q.shift();
-      if (x) { r.last = x; r.ack = x.s; inputs[r.pid] = x; }
-      else if (r.last) inputs[r.pid] = { ...r.last, cancel: false, ch: undefined };
+      const x = r.input.next();
+      if (x) inputs[r.pid] = x;
     }
   }
   sim.step(inputs);
@@ -568,7 +598,7 @@ function tickOnce(fr) {
     if (sim.events.length) L.net.broadcast({ t: 'ev', e: sim.events }, true);
     if (++G.snapT % 3 === 0 || sim.state !== 'play') {
       const acks = {};
-      for (const r of G.remote.values()) acks[r.pid] = r.ack;
+      for (const r of G.remote.values()) acks[r.pid] = r.input.ack;
       L.net.broadcast({ t: 'snap', ...sim.snapshot(acks) }, sim.state !== 'play');
     }
   }
@@ -596,7 +626,9 @@ function loop(t) {
   }
   const fr = input.frame(dt);
   if (G.mode === 'guest') {
-    sim.update(performance.now(), me.id);
+    const now = performance.now();
+    sim.update(now, me.id);
+    while (G.evq.length && G.evq[0].at <= now) sim.events.push(G.evq.shift().e);
     if (sim.events.length) onEvents();
   }
   const frozen = G.mode === 'solo' && (G.paused || G.coach);

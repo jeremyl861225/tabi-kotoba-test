@@ -735,6 +735,19 @@ export class Renderer {
     }
   }
 
+  // 換地圖：把 GPU 資源全部釋放並主動丟掉 WebGL context（iOS 同時開的 context 有上限）
+  dispose() {
+    this.scene.traverse((o) => {
+      if (o.geometry) o.geometry.dispose();
+      const ms = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+      for (const m of ms) { for (const k in m) if (m[k] && m[k].isTexture) m[k].dispose(); m.dispose(); }
+    });
+    this.handScene.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    this.gl.dispose();
+    this.gl.forceContextLoss();
+    this.canvas.remove();
+  }
+
   flashChar(id) { const c = this.chars.get(id); if (c) c.flash = 1; }
 
   reset() {

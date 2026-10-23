@@ -111,8 +111,17 @@ export function initGlass() {
     es.forEach((e) => pending.add(e.target));
     if (!raf) raf = requestAnimationFrame(flush);
   });
+  const tracked = new Set();
   const add = (root = document) => {
-    root.querySelectorAll('.lens').forEach((el) => { ro.observe(el); pending.add(el); });
+    // 先收掉已經不在畫面上的（每場重建 HUD 會留下舊節點）：停止觀察、刪掉它的 filter
+    for (const el of tracked) {
+      if (el.isConnected) continue;
+      ro.unobserve(el);
+      const st = state.get(el);
+      if (st) defs.querySelector('#' + st.id)?.remove();
+      tracked.delete(el);
+    }
+    root.querySelectorAll('.lens').forEach((el) => { if (!tracked.has(el)) { tracked.add(el); ro.observe(el); } pending.add(el); });
     if (!raf) raf = requestAnimationFrame(flush);
   };
   add();

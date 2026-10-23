@@ -25,7 +25,7 @@ export function advance(map, s, h) {
   s.vy -= CFG.G * h;
   s.x += s.vx * h; s.y += s.vy * h; s.z += s.vz * h;
   if (!map.inGrid(s.x, s.z) || s.y < -2) return { type: 'out', px, py, pz };
-  if (s.y <= CFG.STONE_R) return { type: 'ground', px, py, pz };
+  // 先看建物再看地面：貼地滾進牆腳的石頭要算撞牆（反彈回巷子），不能算落地落在建物裡
   const hh = map.heightAt(s.x, s.z);
   if (s.y < hh) {
     if (py >= hh - 0.02) return { type: 'roof', px, py, pz, h: hh };
@@ -36,6 +36,7 @@ export function advance(map, s, h) {
     if (!hx && !hz) { nx = -Math.sign(s.vx); nz = -Math.sign(s.vz); }
     return { type: 'wall', px, py, pz, nx, nz };
   }
+  if (s.y <= CFG.STONE_R) return { type: 'ground', px, py, pz };
   return null;
 }
 

@@ -1,1 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#f4f4f2"/><path d="M10 54V20l12-6v40zM42 54V12l12 6v36z" fill="#d6d8dc"/><path d="M22 54V14l4 2v38zM38 54V16l4-4v42z" fill="#b9bdc3"/><path d="M14 40q18-26 36-6" fill="none" stroke="#1d1d1f" stroke-width="2.4" stroke-dasharray="3.5 3" stroke-linecap="round"/><circle cx="50" cy="34" r="3.6" fill="#1d1d1f"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dfe6ee"/><stop offset="0.62" stop-color="#f3f4f4"/></linearGradient>
+    <linearGradient id="wl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9eaec"/></linearGradient>
+    <linearGradient id="wr" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#d9dce1"/><stop offset="1" stop-color="#c9cdd3"/></linearGradient>
+    <linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6e6e3"/><stop offset="1" stop-color="#cfcfcb"/></linearGradient>
+    <radialGradient id="st" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#5a5e66"/><stop offset="0.6" stop-color="#2a2c31"/><stop offset="1" stop-color="#16171a"/></radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#sky)"/>
+  <path d="M0 1024 L0 0 L360 210 L360 690 Z" fill="url(#wl)"/>
+  <path d="M1024 1024 L1024 60 L640 250 L640 690 Z" fill="url(#wr)"/>
+  <path d="M0 1024 L360 690 L640 690 L1024 1024 Z" fill="url(#gr)"/>
+  <path d="M360 690 L640 690" stroke="#b9bdc3" stroke-width="6"/>
+  <g stroke="#bfc3c9" stroke-width="5" fill="none" opacity="0.9">
+    <path d="M70 330 L70 520 L190 560 L190 380 Z"/><path d="M230 405 L230 545 L300 568 L300 435 Z"/>
+    <path d="M948 360 L948 560 L840 590 L840 410 Z"/><path d="M800 430 L800 575 L730 595 L730 455 Z"/>
+  </g>
+  <path d="M250 820 Q 520 170 760 560" stroke="#2f5fd0" stroke-width="26" stroke-linecap="round" stroke-dasharray="2 54" fill="none"/>
+  <ellipse cx="770" cy="600" rx="66" ry="56" fill="url(#st)" transform="rotate(-18 770 600)"/>
+  <ellipse cx="748" cy="578" rx="18" ry="11" fill="#fff" opacity="0.35" transform="rotate(-25 748 578)"/>
+</svg>
