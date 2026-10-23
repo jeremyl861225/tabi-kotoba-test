@@ -1,0 +1,101 @@
+// 有機網格：六角形範圍內的三角網 → 隨機兩兩合成四邊形、部分三角併進鄰居成五邊形 → 鬆弛成接近正多邊形
+// （Townscaper 那種彎曲街道的作法；不再細分，保留三角形與五邊形）
+import { makeRng } from './util.js';
+
+const ek = (a, b) => (a < b ? a * 100000 + b : b * 100000 + a);
+
+export function makeGrid(seed, { H = 12, s = 1.18, pQuad = 0.86, pPent = 0.45, iters = 80 } = {}) {
+  const r = makeRng(seed ^ 0x2545f491);
+  const X = [], Z = [], fixed = [];
+  const id = new Map(), key = (q, w) => q * 1000 + w;
+  for (let q = -H; q <= H; q++) for (let w = -H; w <= H; w++) {
+    if (Math.abs(q + w) > H) continue;
+    id.set(key(q, w), X.length);
+    X.push(s * (q + w / 2)); Z.push(s * (w * Math.sqrt(3) / 2));
+    fixed.push(Math.max(Math.abs(q), Math.abs(w), Math.abs(q + w)) === H);
+  }
+  const area = (p) => { let a = 0; for (let k = 0; k < p.length; k++) { const i = p[k], j = p[(k + 1) % p.length]; a += X[i] * Z[j] - X[j] * Z[i]; } return a / 2; };
+  let polys = [];
+  for (let q = -H; q <= H; q++) for (let w = -H; w <= H; w++) {
+    const a = id.get(key(q, w)), b = id.get(key(q + 1, w)), c = id.get(key(q, w + 1)), d = id.get(key(q + 1, w + 1));
+    for (const t of [[a, b, c], [b, d, c]]) {
+      if (t.some((v) => v === undefined)) continue;
+      polys.push(area(t) > 0 ? t : t.reverse());
+    }
+  }
+  // 邊 → 擁有它的多邊形
+  const owner = new Map();
+  const addEdges = (pi) => { const p = polys[pi]; for (let k = 0; k < p.length; k++) { const e = ek(p[k], p[(k + 1) % p.length]); if (!owner.has(e)) owner.set(e, new Set()); owner.get(e).add(pi); } };
+  const delEdges = (pi) => { const p = polys[pi]; for (let k = 0; k < p.length; k++) owner.get(ek(p[k], p[(k + 1) % p.length]))?.delete(pi); };
+  polys.forEach((_, i) => addEdges(i));
+  const alive = polys.map(() => true);
+  const neighbors = (pi) => { const out = []; const p = polys[pi]; for (let k = 0; k < p.length; k++) { const a = p[k], b = p[(k + 1) % p.length]; for (const o of owner.get(ek(a, b))) if (o !== pi) out.push([o, a, b]); } return out; };
+  function merge(pi, oi, a, b) { // pi 的邊 a→b 與 oi 共用
+    const p = polys[pi], o = polys[oi];
+    const ib = p.indexOf(b); const p1 = []; for (let k = 0; k < p.length; k++) p1.push(p[(ib + k) % p.length]); // b … a
+    const ia = o.indexOf(a); const p2 = []; for (let k = 0; k < o.length; k++) p2.push(o[(ia + k) % o.length]); // a … b
+    delEdges(pi); delEdges(oi);
+    polys[pi] = p1.concat(p2.slice(1, -1)); alive[oi] = false;
+    addEdges(pi);
+  }
+  const shuffle = (arr) => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+  for (const t of shuffle(polys.map((_, i) => i))) {
+    if (!alive[t] || polys[t].length !== 3 || r() > pQuad) continue;
+    const ns = neighbors(t).filter(([o]) => alive[o] && polys[o].length === 3);
+    if (!ns.length) continue;
+    const [o, a, b] = ns[Math.floor(r() * ns.length)];
+    merge(t, o, a, b);
+  }
+  for (const t of shuffle(polys.map((_, i) => i))) {
+    if (!alive[t] || polys[t].length !== 3 || r() > pPent) continue;
+    const ns = neighbors(t).filter(([o]) => alive[o] && polys[o].length === 4);
+    if (!ns.length) continue;
+    const [o, a, b] = ns[Math.floor(r() * ns.length)];
+    merge(t, o, a, b);
+  }
+  polys = polys.filter((_, i) => alive[i]);
+
+  // 鬆弛：每個 n 邊形往「同中心、同大小的正 n 邊形」拉
+  const fx = new Float64Array(X.length), fz = new Float64Array(X.length), cnt = new Float64Array(X.length);
+  for (let it = 0; it < iters; it++) {
+    fx.fill(0); fz.fill(0); cnt.fill(0);
+    for (const p of polys) {
+      const n = p.length; let cx = 0, cz = 0;
+      for (const v of p) { cx += X[v]; cz += Z[v]; }
+      cx /= n; cz /= n;
+      let dx = 0, dz = 0;
+      for (let k = 0; k < n; k++) {
+        const a = -k * 2 * Math.PI / n, vx = X[p[k]] - cx, vz = Z[p[k]] - cz;
+        dx += vx * Math.cos(a) - vz * Math.sin(a); dz += vx * Math.sin(a) + vz * Math.cos(a);
+      }
+      dx /= n; dz /= n;
+      for (let k = 0; k < n; k++) {
+        const a = k * 2 * Math.PI / n;
+        const tx = cx + dx * Math.cos(a) - dz * Math.sin(a), tz = cz + dx * Math.sin(a) + dz * Math.cos(a);
+        fx[p[k]] += tx - X[p[k]]; fz[p[k]] += tz - Z[p[k]]; cnt[p[k]]++;
+      }
+    }
+    for (let i = 0; i < X.length; i++) if (!fixed[i] && cnt[i]) { X[i] += fx[i] / cnt[i] * 0.6; Z[i] += fz[i] / cnt[i] * 0.6; }
+  }
+
+  // 整理成格子
+  const edgeCells = new Map();
+  polys.forEach((p, ci) => { for (let k = 0; k < p.length; k++) { const e = ek(p[k], p[(k + 1) % p.length]); if (!edgeCells.has(e)) edgeCells.set(e, []); edgeCells.get(e).push(ci); } });
+  const cells = polys.map((p, ci) => {
+    let cx = 0, cz = 0; for (const v of p) { cx += X[v]; cz += Z[v]; }
+    cx /= p.length; cz /= p.length;
+    const edges = p.map((a, k) => { const b = p[(k + 1) % p.length]; const o = edgeCells.get(ek(a, b)).find((c) => c !== ci); return { a, b, nb: o === undefined ? -1 : o }; });
+    return { id: ci, v: p, n: p.length, x: cx, z: cz, edges, nb: edges.filter((e) => e.nb >= 0).map((e) => e.nb), border: edges.some((e) => e.nb < 0) };
+  });
+  // 每個頂點周圍的格子（找 2×2 用）
+  const around = Array.from({ length: X.length }, () => []);
+  cells.forEach((c) => c.v.forEach((v) => around[v].push(c.id)));
+  return { X, Z, cells, around, s, H };
+}
+
+// 把單位正方形（局部座標 x、z ∈ [-0.5, 0.5]，前方 +z）對應到四邊形格子：給定前左、前右、後右、後左四個頂點
+export function quadFrame(G, c, frontEdgeIndex) {
+  // 格子頂點逆時針；frontEdge 是 v[k] → v[k+1]。站在格子裡面朝外看前牆，逆時針順序下 v[k] 在右手、v[k+1] 在左手
+  const v = c.v, k = frontEdgeIndex, n = v.length;
+  return { fl: v[(k + 1) % n], fr: v[k], br: v[(k + n - 1) % n], bl: v[(k + 2) % n] };
+}
