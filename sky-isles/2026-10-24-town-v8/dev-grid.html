@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><title>grid</title>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+<body style="margin:0;background:#1f6b70"><canvas id="c"></canvas>
+<script type="module">
+import { makeGrid } from './grid.js';
+const q = new URLSearchParams(location.search);
+const o = {}; for (const k of ['H','s','levels','pQuad']) if (q.has(k)) o[k] = +q.get(k);
+const G = makeGrid(+(q.get('seed')||43310), o);
+const cv = document.getElementById('c'), W = innerWidth, Hh = innerHeight, dpr = 2;
+cv.width = W*dpr; cv.height = Hh*dpr; cv.style.width = W+'px'; cv.style.height = Hh+'px';
+const g = cv.getContext('2d'); g.scale(dpr,dpr);
+const R = G.s*G.H, sc = Math.min(W,Hh)/(2*R)*0.98, X = (x)=>W/2+x*sc, Y=(z)=>Hh/2+z*sc;
+g.strokeStyle='rgba(10,40,45,.75)'; g.lineWidth=1;
+const val = new Map();
+for (const c of G.cells) { g.beginPath(); c.v.forEach((v,i)=>{ (i?g.lineTo:g.moveTo).call(g,X(G.X[v]),Y(G.Z[v])); val.set(v,(val.get(v)||0)+1); }); g.closePath(); g.stroke();
+  g.beginPath(); const h=2.5; g.moveTo(X(c.x)-h,Y(c.z)); g.lineTo(X(c.x)+h,Y(c.z)); g.moveTo(X(c.x),Y(c.z)-h); g.lineTo(X(c.x),Y(c.z)+h); g.stroke(); }
+let irr=0; for (const [v,n] of val) if (n===3||n>=5) { const b=G.cells.length; irr++; g.fillStyle=n===3?'#ffcf5a':'#ff7a6a'; g.beginPath(); g.arc(X(G.X[v]),Y(G.Z[v]),3,0,7); g.fill(); }
+const ns = {}; for (const c of G.cells) ns[c.n]=(ns[c.n]||0)+1;
+document.title = JSON.stringify({cells:G.cells.length, ns, irr, cell:+G.s.toFixed(3), R:+R.toFixed(1)});
+</script>
