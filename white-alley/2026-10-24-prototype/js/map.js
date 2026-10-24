@@ -6,6 +6,7 @@ import { obstacleBoxes, planObstacles } from './arch.js';
 export const CS = 0.25;   // 高度格
 export const NS = 0.5;    // 導航格
 const PAD = 8;            // 高度格在可玩範圍外多留的邊（石頭飛出去還能撞牆）
+export const WATER = 0.02; // 水面（河、噴水池）在高度格裡的值：走不過去、擋不住石頭與視線
 
 export function mulberry32(seed) {
   let a = seed >>> 0;
@@ -36,6 +37,12 @@ export class GameMap {
     this.gh = Math.ceil((p.maxZ - p.minZ + 2 * PAD) / CS);
     this.hgt = new Float32Array(this.gw * this.gh);
     for (const b of this.buildings) this._raster(b);
+    // 河、池、噴水池：只寫進還是空地的格子（不蓋掉建物）
+    for (const flat of data.sea || []) {
+      const pts = [];
+      for (let i = 0; i < flat.length; i += 2) pts.push([flat[i], flat[i + 1]]);
+      this._raster({ pts, h: WATER });
+    }
     // 外樓梯、矮凳、機車：先有建物才知道哪面牆外面是巷子
     this.obstacles = planObstacles(data, (x, z) => this.heightAt(x, z));
     for (const o of this.obstacles) for (const box of obstacleBoxes(o)) this._raster(box);
@@ -69,6 +76,8 @@ export class GameMap {
       }
     }
   }
+
+  isWater(x, z) { const h = this.heightAt(x, z); return h > 0 && h <= WATER + 1e-6; }
 
   heightAt(x, z) {
     const ix = Math.floor((x - this.gx0) / CS), iz = Math.floor((z - this.gz0) / CS);

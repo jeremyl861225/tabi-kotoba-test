@@ -1,5 +1,5 @@
 // 主迴圈與選單。
-import { ACCENTS, BOT_NAMES, CFG, DIFFICULTY, PLAYER_ACCENT, TEAMS } from './config.js';
+import { ACCENTS, BOT_NAMES, CFG, DIFFICULTY, MAP_LIST, PLAYER_ACCENT, TEAMS, mapName } from './config.js';
 import { GameMap, mulberry32 } from './map.js';
 import { Sim, movePlayer } from './sim.js';
 import { MirrorSim } from './mirror.js';
@@ -60,9 +60,12 @@ async function useMap(id) {
 }
 
 // ---------- 選單 ----------
-const ruleText = () => (settings.mode === 'team'
-  ? `兩隊各守一顆水晶，<b>打破對方水晶</b>就贏；<b>6 分鐘</b>到比水晶剩多少・${(settings.bots + 1) / 2} 對 ${(settings.bots + 1) / 2}`
-  : '先拿 <b>10 KO</b>，或 <b>5 分鐘</b>後 KO 最多的人獲勝');
+const MODES = { team: '水晶戰', elim: '殲滅戰', ffa: '大亂鬥' };
+const ruleText = () => ({
+  team: `兩隊各守一顆水晶，<b>打破對方水晶</b>就贏；<b>6 分鐘</b>到比水晶剩多少・<span class="nw">${(settings.bots + 1) / 2} 對 ${(settings.bots + 1) / 2}</span>`,
+  elim: `兩隊對打，<b>倒下就出局不復活</b>，<b>先全滅的一隊輸</b>；<b>4 分鐘</b>到比剩幾人・<span class="nw">${(settings.bots + 1) / 2} 對 ${(settings.bots + 1) / 2}</span>`,
+  ffa: '先拿 <b>10 KO</b>，或 <b>5 分鐘</b>後 KO 最多的人獲勝',
+}[settings.mode] || '');
 function syncMenu(instant = false) {
   document.querySelectorAll('.seg').forEach((seg) => segSet(seg, settings[seg.dataset.k], instant));
   $('#menu .rule').innerHTML = ruleText();
@@ -88,9 +91,14 @@ document.querySelectorAll('.seg').forEach((seg) => {
     if (L && L.role === 'host') lobbyBroadcast();
   });
 });
+// 地圖卡片：照 MAP_LIST 產生，橫向滑動
+if (!MAP_LIST.some((m) => m.id === settings.map)) settings.map = MAP_LIST[0].id;
+$('#menu .maps').innerHTML = MAP_LIST.map((m) => `<button class="mapcard" data-v="${m.id}"><canvas></canvas><span class="mc-t"><b>${esc(m.name)}</b><small>${esc(m.sub)}</small></span></button>`).join('');
 document.querySelectorAll('.mapcard').forEach((card) => {
   card.addEventListener('click', async () => {
     settings.map = card.dataset.v; save(); syncMenu();
+    card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    if (L && L.role === 'host') lobbyBroadcast();
     if (!G) await useMap(settings.map);
   });
 });
@@ -149,7 +157,10 @@ function show(id) {
   if (inGame) requestAnimationFrame(() => { input.layout(); hud && hud.resize(); });
 }
 
-async function start() {
+// 載入地圖要一點時間：這段時間再按一次「出發」／「開始」不要開出第二局
+const once = (fn) => { let busy = false; return async (...a) => { if (busy) return; busy = true; try { return await fn(...a); } finally { busy = false; } }; };
+const start = once(startNow);
+async function startNow() {
   if (L && L.role === 'host') return hostStart();
   if (L && L.role === 'guest') return;
   sfx.unlock();
@@ -159,9 +170,10 @@ async function start() {
   renderer.reset();
   const seed = (Date.now() & 0xfffff) + 1;
   const rng = mulberry32(seed * 7);
-  const team = settings.mode === 'team';
-  // 水晶戰：你在藍隊，電腦一半一半；每場隨機決定哪一隊在哪個基地（地形不對稱也不會一直吃虧）
-  const sim = new Sim(map, { seed, mode: team ? 'team' : 'ffa', swap: rng() < 0.5 });
+  if (!MODES[settings.mode]) settings.mode = 'team';
+  const team = settings.mode !== 'ffa';
+  // 分隊（水晶戰、殲滅戰）：你在藍隊，電腦一半一半；每場隨機決定哪一隊在哪個基地（地形不對稱也不會一直吃虧）
+  const sim = new Sim(map, { seed, mode: settings.mode, swap: rng() < 0.5 });
   const me = sim.addPlayer({ name: '你', accent: team ? TEAMS[0].color : PLAYER_ACCENT, weapon: settings.weapon, team: 0 });
   const names = [...BOT_NAMES].sort(() => rng() - 0.5);
   const bag = botWeapons(rng, settings.bots);
@@ -222,7 +234,7 @@ function weaponConfirm() {
 
 function setupGame(map, sim, me, bots, mode, extra = {}) {
   if (hud) hud.root.innerHTML = '';
-  hud = new Hud($('#hud'), map, me.weapon, sim.mode === 'team' ? me.team : -1);
+  hud = new Hud($('#hud'), map, me.weapon, sim.teams ? me.team : -1, sim.mode);
   hud.power = settings.power;
   input.setWeapon(WEAPONS[me.weapon]);
   renderer.setMyBlade(me.accent);
@@ -264,12 +276,11 @@ function renderLobby(status) {
   const wOf = (p) => (p.me ? settings.weapon : p.w || (L.role === 'host' ? (L.picks || {})[p.id] : null) || 'stone');
   // 水晶戰：開局時真人照加入順序輪流分隊（房主藍隊），大廳先用隊伍色標出來
   const lbMode = L.role === 'host' ? settings.mode : (L.lobby || {}).mode;
-  $('#lbPlayers').innerHTML = list.map((p, i) => `<li class="${p.me ? 'me' : ''}"${lbMode === 'team' ? ` style="box-shadow: inset 3px 0 0 ${TEAMS[i % 2].color}, inset 0 0 0 1px oklch(1 0 0 / 0.7)"` : ''}>${wIcon(wOf(p), 'wsm')}<span>${esc(p.name)}</span>${p.host ? '<em>房主</em>' : ''}${p.me ? '<em class="you">你</em>' : ''}</li>`).join('');
+  $('#lbPlayers').innerHTML = list.map((p, i) => `<li class="${p.me ? 'me' : ''}"${lbMode && lbMode !== 'ffa' ? ` style="box-shadow: inset 3px 0 0 ${TEAMS[i % 2].color}, inset 0 0 0 1px oklch(1 0 0 / 0.7)"` : ''}>${wIcon(wOf(p), 'wsm')}<span>${esc(p.name)}</span>${p.host ? '<em>房主</em>' : ''}${p.me ? '<em class="you">你</em>' : ''}</li>`).join('');
   $('#lbWeapon').innerHTML = `${wIcon(settings.weapon)}<span>武器：${WEAPONS[settings.weapon].name}</span><small>更換</small>`;
   const lb = L.role === 'host' ? settings : (L.lobby || {});
-  const MAPN = { mykonos: '米克諾斯・迷城', yongkang: '台北・永康街' };
-  const total = Math.min(8, list.length + (lb.bots || 0)), teamMode = lb.mode === 'team';
-  $('#lbRule').textContent = lb.map ? `${teamMode ? '水晶戰' : '大亂鬥'}・${MAPN[lb.map] || lb.map}・${teamMode ? `${Math.ceil(total / 2)} 對 ${Math.ceil(total / 2)}` : `電腦補到 ${total} 人`}・${(DIFFICULTY[lb.diff] || {}).label || ''}` : '';
+  const total = Math.min(8, list.length + (lb.bots || 0)), teamMode = lb.mode !== 'ffa';
+  $('#lbRule').textContent = lb.map ? `${MODES[lb.mode] || ''}・${mapName(lb.map)}・${teamMode ? `${Math.ceil(total / 2)} 對 ${Math.ceil(total / 2)}` : `電腦補到 ${total} 人`}・${(DIFFICULTY[lb.diff] || {}).label || ''}` : '';
   $('#lbStart').hidden = L.role !== 'host';
   if (status == null) {
     $('#lbStatus').textContent = L.role === 'host'
@@ -348,7 +359,8 @@ function lobbyBroadcast() {
 }
 
 // 房主開局：自己＋連上的人＋電腦補人數
-async function hostStart() {
+const hostStart = once(hostStartNow);
+async function hostStartNow() {
   if (!L || L.role !== 'host') return;
   sfx.unlock(); sfx.on = settings.sound;
   show('#loading');
@@ -356,8 +368,9 @@ async function hostStart() {
   renderer.reset();
   const seed = (Date.now() & 0xfffff) + 1;
   const rng = mulberry32(seed * 7);
-  const team = settings.mode === 'team', swap = rng() < 0.5;
-  const sim = new Sim(map, { seed, mode: team ? 'team' : 'ffa', swap });
+  if (!MODES[settings.mode]) settings.mode = 'team';
+  const team = settings.mode !== 'ffa', swap = rng() < 0.5;
+  const sim = new Sim(map, { seed, mode: settings.mode, swap });
   L.net.accepting = false;
   // 水晶戰：真人輪流分到兩隊（房主藍隊），電腦補到兩隊一樣多
   const tOf = (i) => (team ? i % 2 : undefined);
@@ -534,7 +547,9 @@ function coach() {
   el.innerHTML = `
     <i class="ghostring" style="left:120px;top:${H - 110}px"></i>
     <div class="tip glass" style="left:186px;top:${H - 150}px"><b>左下：拖曳移動</b><span>手指放哪，搖桿就出現在哪</span></div>
-    ${G.sim.mode === 'team' ? `<div class="tip glass" style="left:0;right:0;margin:0 auto;width:max-content;top:64px"><b>打破<em style="font-style:normal;color:${TEAMS[1 - G.me.team].color}">${TEAMS[1 - G.me.team].name}</em>的水晶就贏</b><span>上方是兩隊水晶的血量；跟著天空的光柱走就找得到</span></div>` : ''}
+    ${G.sim.teams ? `<div class="tip glass" style="left:0;right:0;margin:0 auto;width:max-content;top:64px">${G.sim.mode === 'team'
+    ? `<b>打破<em style="font-style:normal;color:${TEAMS[1 - G.me.team].color}">${TEAMS[1 - G.me.team].name}</em>的水晶就贏</b><span>上方是兩隊水晶的血量；跟著天空的光柱走就找得到</span>`
+    : `<b>把<em style="font-style:normal;color:${TEAMS[1 - G.me.team].color}">${TEAMS[1 - G.me.team].name}</em>全部擊倒就贏</b><span>倒下就出局、不會復活；上方是兩隊還站著的人數</span>`}</div>` : ''}
     <div class="tip glass" style="right:${window.innerWidth - r.left + 18}px;top:${r.top - 6}px"><b>右邊：按住拖曳・放開出手</b><span>${{ rifle: '站穩按住越久越準；拖到 ✕ 再放開就不開槍', saber: '按住舉劍擋東西，放開揮砍；按久一點會衝刺' }[G.me.weapon] || '準心就是落點；拖到 ✕ 再放開就不丟'}</span></div>
     <p class="go">點一下開始</p>`;
   hud.root.appendChild(el);
@@ -556,6 +571,7 @@ function pause(on) {
 }
 
 function toMenu() {
+  document.body.classList.remove('spectating');
   if (G && G.mode !== 'solo') leaveRoom();
   G = null;
   if (hud) { hud.root.innerHTML = ''; hud = null; }
@@ -564,7 +580,7 @@ function toMenu() {
 }
 
 function results() {
-  if (G.sim.mode === 'team') { teamResults(); return; }
+  if (G.sim.teams) { teamResults(); return; }
   const { sim, me } = G;
   const rank = sim.ranking();
   const tie = rank.length > 1 && rank[0].kills === rank[1].kills && rank[0].deaths === rank[1].deaths && rank[0].heads === rank[1].heads;
@@ -586,6 +602,7 @@ function results() {
 
 // 水晶戰的結算：哪隊贏、怎麼贏的、兩隊名單（KO／倒下／打水晶）
 function teamResults() {
+  if (G.sim.mode === 'elim') { elimResults(); return; }
   const { sim, me } = G;
   const wt = sim.winnerTeam, mine = me.team;
   const broke = sim.crystals.some((c) => c.hp <= 0);
@@ -605,6 +622,43 @@ function teamResults() {
   $('#resWait').hidden = G.mode !== 'guest';
   show('#results');
   glass.add($('#results'));
+}
+
+// 殲滅戰的結算：哪隊贏、全滅還是時間到、兩隊名單（KO／傷害／是否還站著）
+function elimResults() {
+  const { sim, me } = G;
+  const wt = sim.winnerTeam, mine = me.team, win = wt === mine;
+  const left = (t) => sim.players.filter((p) => p.team === t && p.alive).length;
+  const wiped = left(0) === 0 || left(1) === 0;
+  $('#resRank').textContent = wiped ? (win ? '敵隊全滅' : wt < 0 ? '同歸於盡' : '我方全滅') : `時間到・剩 ${left(mine)} 對 ${left(1 - mine)} 人`;
+  $('#resTitle').textContent = wt < 0 ? '平手' : win ? '勝利！' : '落敗';
+  $('#resStats').innerHTML = [['KO', me.kills], ['傷害', Math.round(me.dmgDealt || 0)], [me.alive ? '活到最後' : '出局', me.alive ? '✓' : '✕']].map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join('');
+  const row = (p) => `<tr class="${p === me ? 'me' : ''} ${p.alive ? '' : 'out'}"><td><i class="dot" style="background:${TEAMS[p.team].color}"></i></td><td><span class="nm">${esc(p.name)}${p.weapon ? wIcon(p.weapon) : ''}</span></td><td>${p.kills}</td><td>${Math.round(p.dmgDealt || 0)}</td><td>${p.alive ? '存活' : '出局'}</td></tr>`;
+  const byTeam = (t) => sim.players.filter((p) => p.team === t).sort((a, b) => b.alive - a.alive || b.kills - a.kills || (b.dmgDealt || 0) - (a.dmgDealt || 0));
+  $('#resTable').innerHTML = `<tr><th></th><th>玩家</th><th>KO</th><th>傷害</th><th></th></tr>`
+    + [mine, 1 - mine].map((t) => `<tr class="tsep"><td colspan="5" style="color:${TEAMS[t].color}">${TEAMS[t].name}${t === mine ? '（你）' : ''}・剩 ${left(t)} 人・KO ${sim.teamKills[t]}</td></tr>` + byTeam(t).map(row).join('')).join('');
+  sfx.play(win ? 'win' : 'ko');
+  document.exitPointerLock?.();
+  $('#again').hidden = G.mode === 'guest';
+  if (L && L.role === 'host') L.net.accepting = true;
+  $('#resWait').hidden = G.mode !== 'guest';
+  show('#results');
+  glass.add($('#results'));
+}
+
+// 殲滅戰陣亡後觀戰：跟著還站著的隊友（離剛剛看的那位最近的優先，換人時不要跳太遠）
+function pickSpec() {
+  const { sim, me } = G;
+  if (sim.mode !== 'elim' || me.alive) { G.spec = null; return; }
+  if (G.spec && G.spec.alive && sim.byId(G.spec.id) === G.spec) return;
+  const from = G.spec || me;
+  let best = null, bd = Infinity;
+  for (const p of sim.players) {
+    if (p === me || !p.alive || p.team !== me.team) continue;
+    const d = Math.hypot(p.x - from.x, p.z - from.z);
+    if (d < bd) { bd = d; best = p; }
+  }
+  G.spec = best;
 }
 
 // ---------- 事件 → 音效、HUD、特效 ----------
@@ -675,6 +729,10 @@ function onEvents() {
       case 'bite':
         sfx.play('bite', e.x, e.z);
         break;
+      case 'splash':
+        renderer.puff(e.x, 0.15, e.z, 0.35, 0xcfe0ee, 0.5, 0.8);
+        sfx.play('ground', e.x, e.z, 0.6);
+        break;
       case 'crystal': {
         renderer.crystalHit(e.team, e.x, e.y, e.z);
         sfx.play('crystal', e.x, e.z);
@@ -726,6 +784,12 @@ function onEvents() {
         hud.feed(k, v, e.head, me.id, e.w);
         if (e.by === me.id) { sfx.play('ko'); hud.koBanner(v.name, e.head); haptic('ko'); }
         if (e.victim === me.id) haptic('die');
+        // 殲滅戰：剩最後一人時提醒
+        if (sim.mode === 'elim' && v.team !== undefined && sim.state === 'play') {
+          const left = sim.players.filter((p) => p.team === v.team && p.alive);
+          if (left.length === 1 && left[0] === me) hud.alert('只剩你了！', 'warn');
+          else if (left.length === 1 && v.team !== me.team) hud.alert('敵隊剩最後 1 人', 'info');
+        }
         break;
       }
       case 'spawn':
@@ -744,9 +808,9 @@ function onEvents() {
       case 'over': {
         input.setEnabled(false);   // 結算前這段時間的點按不要留到下一場
         input.reset();
-        if (sim.mode === 'team' && e.team !== undefined) sim.winnerTeam = e.team;   // 客人的鏡像世界從事件得知
+        if (sim.teams && e.team !== undefined) sim.winnerTeam = e.team;   // 客人的鏡像世界從事件得知
         const g = G, broke = sim.mode === 'team' && sim.crystals.some((c) => c.hp <= 0);
-        if (sim.mode === 'team') hud.alert(sim.winnerTeam === me.team ? '勝利！' : sim.winnerTeam < 0 ? '平手' : '落敗', sim.winnerTeam === me.team ? 'win' : 'lose');
+        if (sim.teams) hud.alert(sim.winnerTeam === me.team ? '勝利！' : sim.winnerTeam < 0 ? '平手' : '落敗', sim.winnerTeam === me.team ? 'win' : 'lose');
         setTimeout(() => { if (G === g) results(); }, broke ? 2400 : 1200);   // 水晶碎掉要讓人看一下
         break;
       }
@@ -761,12 +825,14 @@ function onEvents() {
 function updateVisible() {
   const { sim, me, view, visible, seen } = G;
   visible.clear(); seen.clear();
-  const team = sim.mode === 'team';
+  const team = !!sim.teams;
+  pickSpec();
+  const eye = G.spec || me, eyeYaw = G.spec ? G.spec.yaw : view.yaw;   // 觀戰時用隊友的眼睛
   const sees = (a, p, cone) => {
     const dx = p.x - a.x, dz = p.z - a.z, d = Math.hypot(dx, dz);
     if (d > (cone ? 60 : 40)) return false;
     if (cone) {
-      const fwd = (-dx * Math.sin(view.yaw) - dz * Math.cos(view.yaw)) / (d || 1);
+      const fwd = (-dx * Math.sin(eyeYaw) - dz * Math.cos(eyeYaw)) / (d || 1);
       if (d > 8 && fwd < Math.cos(62 * Math.PI / 180)) return false;
     }
     return sim.map.los(a.x, CFG.EYE, a.z, p.x, CFG.HEAD_Y, p.z) || sim.map.los(a.x, CFG.EYE, a.z, p.x, 1.0, p.z);
@@ -774,8 +840,8 @@ function updateVisible() {
   const mates = team ? sim.players.filter((q) => q !== me && q.alive && q.team === me.team) : [];
   for (const p of sim.players) {
     if (p === me || !p.alive) continue;
-    if (team && p.team === me.team) { visible.add(p.id); if (Math.hypot(p.x - me.x, p.z - me.z) < 45) seen.add(p.id); continue; }
-    if (me.alive && sees(me, p, true)) { visible.add(p.id); seen.add(p.id); continue; }
+    if (team && p.team === me.team) { visible.add(p.id); if (Math.hypot(p.x - eye.x, p.z - eye.z) < 45) seen.add(p.id); continue; }
+    if (eye.alive && sees(eye, p, true)) { visible.add(p.id); seen.add(p.id); continue; }
     if (mates.some((m) => sees(m, p, false))) visible.add(p.id);
   }
 }
@@ -786,7 +852,7 @@ function computeAim() {
   if (!me.alive) { G.aimSol = null; return; }
   const W = WEAPONS[me.weapon];
   // 水晶戰：準心穿過隊友（不會鎖定、瞄準輔助也不會在隊友身上變慢）
-  const foes = sim.mode === 'team' ? sim.players.filter((q) => q === me || q.team !== me.team) : sim.players;
+  const foes = sim.teams ? sim.players.filter((q) => q === me || q.team !== me.team) : sim.players;
   const dir = forward(view.yaw, view.pitch);
   let hit = raycast(sim.map, me.x, CFG.EYE, me.z, dir, foes, me.id, 70);
   // 準心指著水晶：落點就是水晶表面（敵方的才算鎖定）
@@ -854,6 +920,7 @@ function tickOnce(fr) {
 
 function loop(t) {
   requestAnimationFrame(loop);
+  if (window.__orbit) return;   // 測試腳本自己擺相機畫地標時，主迴圈不要蓋掉畫面
   // 省電：遊戲中每秒最多 30 格；選單背景每秒 20 格就夠（這一格不處理，時間留到下一格一起算）
   const cap = !G || G.paused ? 48 : settings.power ? 30 : 0;
   if (cap && last && t - last < cap - 3) return;
@@ -910,7 +977,9 @@ function loop(t) {
   input.setCharge(me.charge, me.aiming && me.alive);
   input.setStones(me.stones, (me.reloadUntil || 0) > sim.time);
   const still = frozen;
-  renderer.frame(sim, me, view, still ? 1 : G.acc / CFG.TICK, still ? 0 : dt, { showArc: settings.arc, aim: G.aimSol });
+  document.body.classList.toggle('spectating', !me.alive && sim.mode === 'elim' && sim.state === 'play');
+  renderer.frame(sim, me, view, still ? 1 : G.acc / CFG.TICK, still ? 0 : dt, { showArc: settings.arc, aim: G.aimSol, spec: G.spec });
+  hud.spec = G.spec;
   hud.update(sim, me, view, G.visible, renderer, still ? 0 : dt, G.aimSol, G.seen);
 }
 
@@ -932,11 +1001,13 @@ window.__wa = {
       updateVisible();
       computeAim();
       input.setCharge(G.me.charge, G.me.aiming && G.me.alive);
-      renderer.frame(G.sim, G.me, G.view, 1, 1 / 60, { showArc: settings.arc, aim: G.aimSol });
+      renderer.frame(G.sim, G.me, G.view, 1, 1 / 60, { showArc: settings.arc, aim: G.aimSol, spec: G.spec });
+      hud.spec = G.spec;
       hud.update(G.sim, G.me, G.view, G.visible, renderer, 1 / 60, G.aimSol, G.seen);
     }
   },
   skipIntro() { if (G && G.intro < INTRO) { G.intro = INTRO; endIntro(); } },
+  flush() { if (G && G.sim.events.length) onEvents(); },   // 在 tick 外造成的事件（測試直接呼叫 sim.damage）
   autoPause: true, get G() { return G; }, get L() { return L; }, createRoom, joinRoom, hostStart, get renderer() { return renderer; }, input, settings, start, pause, toMenu, show, DIFFICULTY,
 };
 

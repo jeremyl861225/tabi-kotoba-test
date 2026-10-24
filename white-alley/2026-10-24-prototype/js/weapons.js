@@ -34,13 +34,13 @@ export const WEAPONS = {
     desc: '放開就揮砍前方。按住超過 0.35 秒放開會往前衝刺再砍。舉劍時正面飛來的石頭、手榴彈、子彈都擋得掉。走得比較快。',
   },
   cat: {
-    key: 'cat', name: '馴獸師', short: '貓會追人・貓不多', kind: 'arc', proj: 'catball',
+    key: 'cat', name: '馴獸師', short: '大橘貓會追人・貓不多', kind: 'arc', proj: 'catball',
     ammo: 2, start: 2, regen: 7.5,
     vsCrystal: 1.6,
     dmg: 33, cd: 0.8, vMin: 10, vMax: 20, chargeT: 0.9, speedMul: 1.06,
     catSpeed: 5.2, catLife: 6, catSight: 16,
     stats: { power: 3, range: 3, ease: 5 },
-    desc: '丟出貓咪，落地後自己追最近的敵人咬一口。最多帶 2 隻、每 7.5 秒回來 1 隻；貓被任何攻擊碰到就跑掉。',
+    desc: '丟出大橘貓，落地後自己追最近的敵人咬一口。最多帶 2 隻、每 7.5 秒回來 1 隻；貓被任何攻擊碰到就跑掉。',
   },
   boomerang: {
     key: 'boomerang', name: '回力鏢', short: '去回都打・要等回來', kind: 'boom', proj: 'boom',

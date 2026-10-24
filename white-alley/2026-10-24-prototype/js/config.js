@@ -28,10 +28,22 @@ export const CFG = {
   // 水晶戰：兩隊各守一顆水晶，被打破就輸；時間到比水晶剩多少
   TEAM_T: 360,
   TEAM_RESPAWN_T: 5,    // 水晶戰復活比較久：擊倒對手後才有推進的空檔
+  ELIM_T: 240,          // 殲滅戰：不會復活，一隊全倒就輸；4 分鐘到比剩幾人
   CRYSTAL_HP: 900,
   CRYSTAL_R: 0.75,      // 水晶（含底座）的碰撞半徑
   CRYSTAL_TOP: 2.6,     // 打得到的高度上限
 };
+
+// 地圖清單（選單照這個順序排；資料在 data/maps/<id>.json）
+export const MAP_LIST = [
+  { id: 'mykonos', name: '米克諾斯・迷城', sub: '希臘・白屋迷宮、矮房窄巷' },
+  { id: 'yongkang', name: '台北・永康街', sub: '台灣・四到七層公寓夾出的巷弄' },
+  { id: 'arena', name: '白色競技場', sub: '原創・左右對稱的古羅馬式競技場' },
+  { id: 'roma', name: '羅馬・萬神殿', sub: '義大利・圓頂神殿與噴水池廣場' },
+  { id: 'kyoto', name: '京都・八坂塔', sub: '日本・五重塔下的町家石坂' },
+  { id: 'paris', name: '巴黎・聖母院', sub: '法國・大教堂北側的修道院巷弄' },
+];
+export const mapName = (id) => (MAP_LIST.find((m) => m.id === id) || { name: id }).name;
 
 export const TEAMS = [
   { name: '藍隊', color: '#2f6fe8', hex: 0x2f6fe8 },

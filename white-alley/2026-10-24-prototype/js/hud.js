@@ -8,22 +8,25 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const icon = (id, cls = '') => `<svg class="i ${cls}"><use href="#${id}"/></svg>`;
 
 export class Hud {
-  constructor(root, map, weapon = 'stone', myTeam = -1) {
+  constructor(root, map, weapon = 'stone', myTeam = -1, mode = 'ffa') {
     this.root = root;
     this.map = map;
     this.W = WEAPONS[weapon] || WEAPONS.stone;
-    this.team = myTeam;   // ≥ 0：水晶戰（上方改成兩隊水晶血條，自己的隊伍永遠在左邊）
+    this.team = myTeam;   // ≥ 0：分隊（上方改成兩隊的比分，自己的隊伍永遠在左邊）
+    this.mode = mode;     // 'team' 水晶血條；'elim' 每個人一顆小人頭（倒下變空心）
+    this.spec = null;     // 殲滅戰出局後觀戰的隊友（小地圖改以他為中心）
     const T = myTeam >= 0, mineC = T ? TEAMS[myTeam].color : '', foeC = T ? TEAMS[1 - myTeam].color : '';
+    const E = mode === 'elim', bar = E ? '<div class="pp"></div>' : '<div class="cb"><i></i><em>100%</em></div>';
     root.innerHTML = `
       <button class="pause glass lens" aria-label="暫停" data-bezel="14" data-refract="6">${icon('i-pause')}</button>
       <div class="vitals glass lens" data-bezel="14" data-refract="7">
         <div class="hp"><div class="bar"><i class="ghost"></i><i class="fill"></i></div><em>100</em></div>
         <div class="ammo"></div><div class="rl" hidden><i></i><span>換彈</span></div>
       </div>
-      ${T ? `<div class="score teams glass lens" data-bezel="16" data-refract="7" style="--mine:${mineC};--foe:${foeC}">
-        <div class="side mine"><b class="tk">0</b><div class="cb"><i></i><em>100%</em></div></div>
-        <div class="meta"><span class="clock">6:00</span><span class="rank">你的 KO <u class="myko">0</u></span></div>
-        <div class="side foe"><div class="cb"><i></i><em>100%</em></div><b class="tk">0</b></div>
+      ${T ? `<div class="score teams glass lens${E ? ' elim' : ''}" data-bezel="16" data-refract="7" style="--mine:${mineC};--foe:${foeC}">
+        <div class="side mine"><b class="tk">0</b>${bar}</div>
+        <div class="meta"><span class="clock">${E ? '4:00' : '6:00'}</span><span class="rank">你的 KO <u class="myko">0</u></span></div>
+        <div class="side foe">${bar}<b class="tk">0</b></div>
       </div><div class="alert"></div>` : `<div class="score glass lens" data-bezel="16" data-refract="7">
         <div class="ko"><b>0</b><span>KO</span></div><i class="sep"></i>
         <div class="meta"><span class="rank"></span><span class="clock">5:00</span></div>
@@ -187,6 +190,7 @@ export class Hud {
 
   // 水晶戰上方：左邊自己隊、右邊敵隊；隊伍 KO、水晶血量（剛被打的那邊閃）
   _teamScore(sim) {
+    if (this.mode === 'elim') { this._elimScore(sim); return; }
     [this.team, 1 - this.team].forEach((t, k) => {
       const side = this.el.sides[k], c = sim.crystals[t];
       if (!side || !c) return;
@@ -198,6 +202,26 @@ export class Hud {
       side.classList.toggle('low', pct < 0.3);
       const tk = side.querySelector('.tk'), n = String(sim.teamKills[t]);
       if (tk.textContent !== n) { tk.textContent = n; bump(tk, 1.4); }
+    });
+  }
+
+  // 殲滅戰上方：大字是還站著的人數，旁邊一排小人頭（倒下的變空心、剛倒下的抖一下）
+  _elimScore(sim) {
+    [this.team, 1 - this.team].forEach((t, k) => {
+      const side = this.el.sides[k];
+      if (!side) return;
+      const ps = sim.players.filter((p) => p.team === t);
+      const key = ps.map((p) => (p.alive ? 1 : 0)).join('');
+      const pp = side.querySelector('.pp');
+      if (pp.dataset.k === key) return;
+      const was = pp.dataset.k || '';
+      pp.dataset.k = key;
+      const order = k === 0 ? ps : [...ps].reverse();   // 敵隊那排從右往左排，倒下的都靠中間
+      pp.innerHTML = order.map((p) => `<i class="${p.alive ? 'on' : ''}" title="${p.name.replace(/"/g, '')}"></i>`).join('');
+      const n = ps.filter((p) => p.alive).length, tk = side.querySelector('.tk');
+      tk.textContent = n;
+      if (was && was !== key) { bump(tk, 1.5); side.classList.add('hit'); setTimeout(() => side.classList.remove('hit'), 600); }
+      side.classList.toggle('low', n === 1);
     });
   }
 
@@ -280,24 +304,41 @@ export class Hud {
     this.lased = me.alive ? r.lasedFrom : null;
     // 小地圖每秒 20 次就夠（省電時 12 次）；受擊方向只有在有東西要畫時才重畫整張全螢幕畫布
     this.miniT = (this.miniT || 0) - dt;
-    if (this.miniT <= 0 || dt === 0) { this.miniT = this.power ? 1 / 12 : 1 / 20; this.drawMini(sim, me, view, visible); }
+    if (this.miniT <= 0 || dt === 0) {
+      this.miniT = this.power ? 1 / 12 : 1 / 20;
+      const c = !me.alive && this.spec && this.spec.alive ? this.spec : me;
+      this.drawMini(sim, c, c === me ? view : { yaw: c.yaw, pitch: 0 }, visible);
+    }
     this._labels(sim, me, seen, r);
     this._damage(view, me, dt);
 
-    // 陣亡倒數（圓環＋擊倒者）
-    if (!me.alive) {
+    // 陣亡倒數（圓環＋擊倒者）；殲滅戰改成「出局」＋正在看哪位隊友
+    if (!me.alive && this.mode === 'elim') {
+      const k = sim.byId(me.killedBy), sp = this.spec;
+      const key = `out${sp ? sp.id : -1}`;
+      if (this._toastKey !== key) {
+        const first = !this._toastKey;
+        this._toastKey = key;
+        e.toast.hidden = false;
+        e.toast.classList.add('out');
+        e.toast.innerHTML = `<span class="outx">${icon('i-x')}</span>
+          <div class="tt"><b>被 <em style="color:${esc(k ? k.accent : '#000')}">${esc(k ? k.name : '?')}</em> 擊倒・出局</b><small>${sp ? `觀戰中：<em style="color:${esc(sp.accent)}">${esc(sp.name)}</em>・幫隊友看小地圖` : '等待這場結束'}</small></div>`;
+        if (first) animate(e.toast, { opacity: [0, 1], scale: [0.85, 1], y: [10, 0] }, spring(300, 22));
+      }
+    } else if (!me.alive) {
       const k = sim.byId(me.killedBy);
-      const left2 = Math.max(0, me.respawnAt - sim.time);
+      const left2 = Math.max(0, me.respawnAt - sim.time), total = this.mode === 'team' ? CFG.TEAM_RESPAWN_T : CFG.RESPAWN_T;
       const key = `dead${me.deaths}`;
       if (this._toastKey !== key) {
         this._toastKey = key;
         e.toast.hidden = false;
+        e.toast.classList.remove('out');
         e.toast.innerHTML = `<svg class="ring" viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle class="fg" cx="22" cy="22" r="18" stroke-dasharray="113.1"/><text x="22" y="22.5">3</text></svg>
-          <div class="tt"><b>被 <em style="color:${esc(k ? k.accent : '#000')}">${esc(k ? k.name : '?')}</em> 擊倒</b><small>馬上在別的巷子復活</small></div>`;
+          <div class="tt"><b>被 <em style="color:${esc(k ? k.accent : '#000')}">${esc(k ? k.name : '?')}</em> 擊倒</b><small>${this.mode === 'team' ? '等一下在自家水晶後面復活' : '馬上在別的巷子復活'}</small></div>`;
         animate(e.toast, { opacity: [0, 1], scale: [0.85, 1], y: [10, 0] }, spring(300, 22));
       }
       const fg = e.toast.querySelector('.fg');
-      if (fg) fg.style.strokeDashoffset = `${113.1 * (left2 / CFG.RESPAWN_T)}`;
+      if (fg) fg.style.strokeDashoffset = `${113.1 * (left2 / total)}`;
       const tx = e.toast.querySelector('text');
       if (tx) tx.textContent = Math.ceil(left2);
     } else if (this._toastKey) {

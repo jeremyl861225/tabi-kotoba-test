@@ -38,6 +38,7 @@ export class Renderer {
     this._ground();
     this._landmarks();
     this._sea();
+    this._waterEdges();
     this._weaponsInit();
     this._handInit();
     this._fxInit();
@@ -87,7 +88,9 @@ export class Renderer {
     c.left = -42; c.right = 42; c.top = 42; c.bottom = -42; c.near = 1; c.far = 170;
     sun.shadow.bias = -0.0004;
     sun.shadow.normalBias = 0.035;
-    this.sunOfs = new THREE.Vector3(-34, 62, 26);
+    // 太陽方向：大部分地圖從西南照；萬神殿、聖母院的主立面朝北，改從東北照才不會整面背光
+    const sunBy = { roma: [26, 62, -34], paris: [-18, 64, -38] };
+    this.sunOfs = new THREE.Vector3(...(sunBy[this.map.data.style] || [-34, 62, 26]));
     this.scene.add(sun, sun.target);
   }
 
@@ -151,6 +154,36 @@ export class Renderer {
   _landmarks() {
     const data = this.map.data, W = new THREE.Color(0xffffff);
     const parts = [];
+    // 依真實方位擺在遠處（縮成 430 m 外看到的大小）
+    const farAt = (lat, lon, R = 430) => {
+      const o = data.origin, k = Math.cos((o.lat * Math.PI) / 180);
+      const dx = (lon - o.lon) * 111320 * k, dz = -(lat - o.lat) * 110540, D = Math.hypot(dx, dz);
+      return { s: R / D, x: (dx / D) * R, z: (dz / D) * R };
+    };
+    if (data.style === 'paris') {
+      // 艾菲爾鐵塔：四隻往內收的腳、兩層平台、往上收的塔身與天線
+      const { s, x, z } = farAt(48.85837, 2.29448);
+      const leg = (sx, sz) => { const g = new THREE.CylinderGeometry(4 * s, 9 * s, 58 * s, 4).rotateY(Math.PI / 4); const q = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(sz, 0, -sx).normalize(), 0.42); g.applyMatrix4(q); parts.push([g, [x + sx * 34 * s, 29 * s, z + sz * 34 * s], W]); };
+      for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) leg(sx, sz);
+      parts.push([new THREE.BoxGeometry(68 * s, 5 * s, 68 * s), [x, 58 * s, z], W]);
+      parts.push([new THREE.CylinderGeometry(11 * s, 22 * s, 58 * s, 4).rotateY(Math.PI / 4), [x, 87 * s, z], W]);
+      parts.push([new THREE.BoxGeometry(32 * s, 4 * s, 32 * s), [x, 116 * s, z], W]);
+      parts.push([new THREE.CylinderGeometry(2.5 * s, 11 * s, 160 * s, 4).rotateY(Math.PI / 4), [x, 196 * s, z], W]);
+      parts.push([new THREE.CylinderGeometry(0.8 * s, 2 * s, 54 * s, 6), [x, 303 * s, z], W]);
+    } else if (data.style === 'roma') {
+      // 聖彼得大教堂的大圓頂（鼓座＋圓頂＋燈籠）
+      const { s, x, z } = farAt(41.90217, 12.45394);
+      parts.push([new THREE.BoxGeometry(150 * s, 46 * s, 120 * s), [x, 23 * s, z], W]);
+      parts.push([new THREE.CylinderGeometry(30 * s, 30 * s, 26 * s, 24), [x, 59 * s, z], W]);
+      parts.push([new THREE.SphereGeometry(28 * s, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.25, 1), [x, 72 * s, z], W]);
+      parts.push([new THREE.CylinderGeometry(4 * s, 5 * s, 17 * s, 12), [x, 115 * s, z], W]);
+    } else if (data.style === 'kyoto') {
+      // 東山：近處一排緩丘（往東）
+      for (let i = 0; i < 7; i++) {
+        const a = -0.9 + i * 0.3, R = 520 + (i % 2) * 80;
+        parts.push([new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2).scale(170 + (i % 3) * 40, 70 + (i % 2) * 30, 140), [Math.cos(a) * R, -5, Math.sin(a) * R], new THREE.Color(0xe2e6e3)]);
+      }
+    }
     if (data.style === 'taipei') {
       const o = data.origin, k = Math.cos((o.lat * Math.PI) / 180);
       const dx = (121.56447 - o.lon) * 111320 * k, dz = -(25.03396 - o.lat) * 110540, D = Math.hypot(dx, dz);
@@ -229,6 +262,32 @@ export class Renderer {
     this.seaTex = t;
     const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: t, color: 0xffffff }));
     m.receiveShadow = true;
+    this.scene.add(m);
+  }
+
+  // 河岸、噴水池的石欄（米克諾斯的海岸是真的海岸線，不加）
+  _waterEdges() {
+    const st = this.map.data.style;
+    if (!['roma', 'kyoto', 'paris'].includes(st)) return;
+    const p = this.map.play, H = st === 'paris' ? 0.95 : 0.6, T = st === 'paris' ? 0.45 : 0.35;
+    const parts = [], W = new THREE.Color(0xffffff);
+    for (const flat of this.map.data.sea || []) {
+      const n = flat.length / 2;
+      for (let i = 0; i < n; i++) {
+        const ax = flat[i * 2], az = flat[i * 2 + 1], bx = flat[((i + 1) % n) * 2], bz = flat[((i + 1) % n) * 2 + 1];
+        const mx = (ax + bx) / 2, mz = (az + bz) / 2;
+        if (mx < p.minX - 60 || mx > p.maxX + 60 || mz < p.minZ - 60 || mz > p.maxZ + 60) continue;
+        const L = Math.hypot(bx - ax, bz - az);
+        if (L < 0.2) continue;
+        const g = new THREE.BoxGeometry(L + T, H, T).rotateY(-Math.atan2(bz - az, bx - ax));
+        parts.push([g, [mx, H / 2, mz], W]);
+        const cap = new THREE.BoxGeometry(L + T + 0.1, 0.1, T + 0.12).rotateY(-Math.atan2(bz - az, bx - ax));
+        parts.push([cap, [mx, H + 0.05, mz], new THREE.Color(0xf4f2ee)]);
+      }
+    }
+    if (!parts.length) return;
+    const m = new THREE.Mesh(mergeColored(parts), new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: true }));
+    m.castShadow = true; m.receiveShadow = true;
     this.scene.add(m);
   }
 
@@ -708,6 +767,7 @@ export class Renderer {
   frame(sim, me, view, alpha, dt, opts = {}) {
     const now = sim.time;
     // 人物
+    this.eye = me.alive ? { x: me.px + (me.x - me.px) * alpha, z: me.pz + (me.z - me.pz) * alpha } : null;
     const seen = new Set();
     for (const p of sim.players) {
       seen.add(p.id);
@@ -809,6 +869,21 @@ export class Renderer {
       this.fovNow += (fov - this.fovNow) * Math.min(1, dt * 8);
       if (Math.abs(cam.fov - this.fovNow) > 0.01) { cam.fov = this.fovNow; cam.updateProjectionMatrix(); }
       this.deathCam = null;
+    } else if (opts.spec && this.deathCam && this.deathCam.t > 2.2) {
+      // 殲滅戰出局：鏡頭飛到還站著的隊友背後跟拍（被牆擋住就拉近）
+      const p = opts.spec, d = this.deathCam;
+      d.t += dt;
+      const sx = p.px + (p.x - p.px) * alpha, sz = p.pz + (p.z - p.pz) * alpha;
+      d.yaw = d.yaw == null ? p.yaw : d.yaw + Math.atan2(Math.sin(p.yaw - d.yaw), Math.cos(p.yaw - d.yaw)) * Math.min(1, dt * 5);
+      let back = 3.4;
+      while (back > 0.9 && !this.map.los(sx, 1.6, sz, sx + Math.sin(d.yaw) * back, 2.3, sz + Math.cos(d.yaw) * back)) back -= 0.3;
+      const tx = sx + Math.sin(d.yaw) * back, tz = sz + Math.cos(d.yaw) * back;
+      const k = d.specId === p.id ? Math.min(1, dt * 6) : 1;   // 換人時直接切過去
+      d.specId = p.id;
+      cam.position.set(cam.position.x + (tx - cam.position.x) * k, cam.position.y + (2.3 - cam.position.y) * k, cam.position.z + (tz - cam.position.z) * k);
+      cam.lookAt(sx - Math.sin(d.yaw) * 4, 1.35, sz - Math.cos(d.yaw) * 4);
+      ex = sx; ez = sz;
+      if (Math.abs(cam.fov - 64) > 0.01) { cam.fov = this.fovNow = 64; cam.updateProjectionMatrix(); }
     } else {
       // 陣亡：從上方看著擊倒你的人
       const k = sim.byId(me.killedBy);
@@ -863,7 +938,7 @@ export class Renderer {
         const v = A && A.v ? A.v : chargeSpeedW(AW, me.charge);
         const o = throwOrigin(ex, ez, A ? A.yaw : view.yaw);
         const f = A && A.pitch != null ? forward(A.yaw, A.pitch) : forward(view.yaw, view.pitch);
-        const foes = sim.mode === 'team' ? sim.players.filter((q) => q === me || q.team !== me.team) : sim.players;
+        const foes = sim.teams ? sim.players.filter((q) => q === me || q.team !== me.team) : sim.players;
         arc = simulateArc(this.map, o, { x: f.x * v, y: f.y * v, z: f.z * v }, { players: foes, ignoreId: me.id, every: 1 });
         // 預覽線碰到水晶就停在水晶上（模擬裡投射物也會撞到水晶）
         for (let i = 1; i < arc.pts.length; i++) {
@@ -947,7 +1022,7 @@ export class Renderer {
       } else {
         const c = this.chars.get(p.id);
         const d = forward(p.yaw, p.pitch);
-        const foes = sim.mode === 'team' ? sim.players.filter((q) => q === p || q.team !== p.team) : sim.players;   // 隊友的雷射穿過自己人
+        const foes = sim.teams ? sim.players.filter((q) => q === p || q.team !== p.team) : sim.players;   // 隊友的雷射穿過自己人
         hit = raycast(this.map, p.x, CFG.EYE, p.z, d, foes, p.id, 70);
         const gx = c ? c.g.position.x : p.x, gz = c ? c.g.position.z : p.z;
         o = { x: gx + d.x * 0.95 + Math.cos(p.yaw) * 0.15, y: 1.48 + d.y * 0.95, z: gz + d.z * 0.95 - Math.sin(p.yaw) * 0.15 };
@@ -1166,8 +1241,9 @@ export class Renderer {
       return;
     }
     if (c.fall) { c.fall = 0; g.rotation.x = 0; g.position.y = 0; }
-    g.visible = true;
     g.position.set(p.px + (p.x - p.px) * alpha, 0, p.pz + (p.z - p.pz) * alpha);
+    // 跟鏡頭疊在一起的人不畫（不然身體或刀光會整個糊在畫面上）
+    g.visible = !this.eye || Math.hypot(g.position.x - this.eye.x, g.position.z - this.eye.z) > 0.75;
     g.rotation.y = p.yaw;
     const shield = now < p.shieldUntil;
     for (const m of c.mats) m.opacity = shield ? 0.45 + 0.2 * Math.sin(now * 20) : 1;
@@ -1333,7 +1409,32 @@ function paveTexture(style) {
   const d = img.data;
   let seed = 9;
   const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-  if (style === 'taipei') {
+  if (style === 'roma' || style === 'kyoto' || style === 'paris') {
+    // 石塊鋪面：羅馬是斜排的小方石（sampietrini）、京都是錯縫的長條石板、巴黎是一排排的長方石塊（pavé）
+    const cfg = { roma: [16, 16, 0.5, 0.86, 0.06, true], kyoto: [72, 36, 0.5, 0.9, 0.035, false], paris: [22, 30, 0.5, 0.88, 0.05, false] }[style];
+    const [cw, chh, stag, base, var_, diag] = cfg;
+    const tone = new Float32Array(4096); for (let i = 0; i < tone.length; i++) tone[i] = base + (rnd() - 0.5) * var_ * 2;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      let X = x, Y = y;
+      if (diag) { X = (x + y) * 0.7071; Y = (y - x) * 0.7071 + N; }
+      const row = Math.floor(Y / chh), sx = X + (row % 2 ? cw * stag : 0), col = Math.floor(sx / cw);
+      const fx = sx - col * cw, fy = Y - row * chh;
+      const edge = Math.min(fx, cw - fx, fy, chh - fy);
+      let v = tone[((row * 131 + col * 31) & 4095)] + (rnd() - 0.5) * 0.025;
+      if (edge < 1.6) v = 0.97;                                   // 縫（白）
+      else if (edge < 3) v -= 0.025;                              // 石塊邊緣微暗（有厚度）
+      const i = (y * N + x) * 4;
+      d[i] = v * 255; d[i + 1] = v * 253; d[i + 2] = v * 249; d[i + 3] = 255;
+    }
+  } else if (style === 'arena') {
+    // 競技場：細沙地，帶淡淡的耙痕與腳印般的斑駁
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      let v = 0.925 + (rnd() - 0.5) * 0.05 + Math.sin((x + Math.sin(y / 37) * 9) / 5.2) * 0.008;
+      if (rnd() < 0.012) v -= 0.04;
+      const i = (y * N + x) * 4;
+      d[i] = v * 255; d[i + 1] = v * 247; d[i + 2] = v * 234; d[i + 3] = 255;
+    }
+  } else if (style === 'taipei') {
     // 柏油：細顆粒＋偶爾的補丁，每 2 m 一道伸縮縫
     const patch = [];
     for (let k = 0; k < 3; k++) patch.push([rnd() * N, rnd() * N, 40 + rnd() * 90, 30 + rnd() * 60]);

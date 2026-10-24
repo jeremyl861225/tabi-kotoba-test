@@ -9,7 +9,7 @@ import { PROJ_CODE, WEAPONS, chargeSpeedW } from './weapons.js';
 
 const IDLE = { mx: 0, mz: 0, yaw: 0, pitch: 0, aim: false, cancel: false };
 const DEG = Math.PI / 180;
-const CAT_R = 0.24, CAT_HIT = 0.42, CAT_TOP = 0.65;
+const CAT_R = 0.27, CAT_HIT = 0.46, CAT_TOP = 0.72;   // 大橘貓：比一般貓胖一圈、高一點
 
 // 移動（房主模擬與客人的本機預測共用，兩邊才會算出一樣的位置）
 export function movePlayer(map, p, inp, dt) {
@@ -28,11 +28,13 @@ const facing = (yaw) => ({ x: -Math.sin(yaw), z: -Math.cos(yaw) });
 
 export class Sim {
   // mode：'ffa' 大亂鬥（先到 10 KO）／'team' 水晶戰（兩隊各守一顆水晶，打破就贏，時間到比水晶剩多少）
+  //       'elim' 殲滅戰（兩隊、不會復活，一隊全倒就輸，時間到比剩幾人）
   constructor(map, { seed = 1, mode = 'ffa', matchTime, koLimit, swap = false } = {}) {
     this.mode = mode;
+    this.teams = mode === 'team' || mode === 'elim';   // 有分隊的模式
     const team = mode === 'team';
-    matchTime ??= team ? CFG.TEAM_T : CFG.MATCH_T;
-    koLimit ??= team ? Infinity : CFG.KO_LIMIT;
+    matchTime ??= team ? CFG.TEAM_T : mode === 'elim' ? CFG.ELIM_T : CFG.MATCH_T;
+    koLimit ??= this.teams ? Infinity : CFG.KO_LIMIT;
     this.map = map;
     this.rng = mulberry32(seed);
     this.time = 0;
@@ -52,9 +54,9 @@ export class Sim {
     this.stats = { throws: 0, hits: 0, heads: 0, kos: 0 };
     this.wstats = {};     // 每種武器的 KO／死亡／造成傷害（平衡用）
     // swap：兩隊交換基地（每場隨機換邊，地形不對稱也不會永遠吃虧在同一隊）
-    this.bases = team ? (swap ? [map.bases[1], map.bases[0]] : map.bases) : [];
+    this.bases = this.teams ? (swap ? [map.bases[1], map.bases[0]] : map.bases) : [];
     const hp = map.data.crystalHp || CFG.CRYSTAL_HP;   // 開闊、兩基地近的地圖水晶要硬一點（地圖檔可指定）
-    this.crystals = this.bases.map((b, i) => ({ team: i, x: b.x, z: b.z, hp, max: hp, lastHit: -99 }));
+    this.crystals = team ? this.bases.map((b, i) => ({ team: i, x: b.x, z: b.z, hp, max: hp, lastHit: -99 })) : [];
     this.teamKills = [0, 0];
     this.winnerTeam = -1;
   }
@@ -62,7 +64,7 @@ export class Sim {
   // 同一邊的（自己或同隊）：不會互相傷害、投射物直接穿過
   ally(aId, bId) {
     if (aId === bId) return true;
-    if (this.mode !== 'team') return false;
+    if (!this.teams) return false;
     const a = this.byId(aId), b = this.byId(bId);
     return !!(a && b && a.team === b.team);
   }
@@ -79,7 +81,7 @@ export class Sim {
       shieldUntil: 0, killedBy: 0, throwAt: -99, heads: 0,
       reloadUntil: 0, regenAt: 0, dashUntil: 0, dashX: 0, dashZ: 0, pendingSlash: false, crystalDmg: 0,
     };
-    if (this.mode === 'team') {   // 沒指定就補到人少的那隊
+    if (this.teams) {   // 沒指定就補到人少的那隊
       const n0 = this.players.filter((q) => q.team === 0).length, n1 = this.players.filter((q) => q.team === 1).length;
       p.team = team === 0 || team === 1 ? team : n0 <= n1 ? 0 : 1;
     }
@@ -103,7 +105,7 @@ export class Sim {
     return {
       ht: r3(this.time), st: this.state === 'play' ? 0 : 1, mt: this.matchTime,   // ht：房主時間（t 留給訊息種類）
       pl: this.players.map((p) => [p.id, r2(p.x), r2(p.z), r3(p.yaw), r3(p.pitch), Math.round(p.hp * 10) / 10, p.stones, p.alive ? 1 : 0, p.aiming ? 1 : 0, r2(p.charge),
-        p.kills, p.deaths, p.heads, r2(p.respawnAt), r2(p.shieldUntil), p.killedBy || 0, r2(p.throwAt), r2(p.speed), acks[p.id] || 0, r2(p.spawnAt || 0), r2(p.reloadUntil || 0), r2(p.regenAt || 0), p.crystalDmg || 0]),
+        p.kills, p.deaths, p.heads, r2(p.respawnAt), r2(p.shieldUntil), p.killedBy || 0, r2(p.throwAt), r2(p.speed), acks[p.id] || 0, r2(p.spawnAt || 0), r2(p.reloadUntil || 0), r2(p.regenAt || 0), p.crystalDmg || 0, p.dmgDealt || 0]),
       sn: this.stones.map((s) => [s.id, s.owner, r3(s.x), r3(s.y), r3(s.z), r2(s.vx), r2(s.vy), r2(s.vz), s.rest ? 1 : 0, s.active ? 1 : 0, r3(s.age), PROJ_CODE[s.kind] || 0]),
       ct: this.cats.map((c) => [c.id, c.owner, r2(c.x), r2(c.z), r3(c.yaw), r2(c.speed || 0)]),
       lo: this.loose.map((l) => [l.id, r2(l.x), r2(l.z), l.count]),
@@ -114,14 +116,16 @@ export class Sim {
 
   respawn(p) {
     const W = WEAPONS[p.weapon];
-    const team = this.mode === 'team';
-    // 水晶戰：在自己隊的基地旁出生，離敵人越遠越好
+    const team = this.teams;
+    // 分隊的模式：在自己隊的基地旁出生，離敵人越遠越好
     const others = this.players.filter((q) => q !== p && q.alive && !(team && q.team === p.team));
     const spots = team ? this.bases[p.team].spawns : this.map.spawns;
     const cand = spots.map((s) => {
       let d = 1e9;
       for (const q of others) d = Math.min(d, Math.hypot(q.x - s.x, q.z - s.z));
-      return { s, d: d + this.rng() * 8 };
+      // 已經有人站著的出生點不要再塞一個（隊友會疊在一起、刀光貼在鏡頭上）
+      const crowded = this.players.some((q) => q !== p && q.alive && Math.hypot(q.x - s.x, q.z - s.z) < 2.5);
+      return { s, d: d + this.rng() * 8 - (crowded ? 500 : 0) };
     }).sort((a, b) => b.d - a.d);
     const s = cand[Math.floor(this.rng() * Math.min(3, cand.length))].s;
     p.x = p.px = s.x; p.z = p.pz = s.z; p.vx = p.vz = 0;
@@ -291,7 +295,7 @@ export class Sim {
     const dir = forward(p.yaw + Math.cos(a) * r, p.pitch + Math.sin(a) * r);
     const f = facing(p.yaw);
     const x0 = p.x + f.x * 0.4 + Math.cos(p.yaw) * 0.18, y0 = CFG.EYE - 0.12, z0 = p.z + f.z * 0.4 - Math.sin(p.yaw) * 0.18;
-    const foes = this.mode === 'team' ? this.players.filter((q) => q === p || q.team !== p.team) : this.players;   // 子彈穿過隊友
+    const foes = this.teams ? this.players.filter((q) => q === p || q.team !== p.team) : this.players;   // 子彈穿過隊友
     let hit = raycast(this.map, p.x, CFG.EYE, p.z, dir, foes, p.id, W.range);
     // 水晶或貓擋在線上就打到它們
     const cr = this._crystalOnRay(p.x, CFG.EYE, p.z, dir, hit.t, p.team);
@@ -411,6 +415,11 @@ export class Sim {
         s.y = CFG.STONE_R;
         s.vy = Math.abs(s.vy) * 0.28;
         s.vx *= 0.5; s.vz *= 0.5;
+        if (this.map.isWater(s.x, s.z)) {   // 掉進河裡／噴水池：沉下去
+          s.alive = false;
+          this.events.push({ type: 'splash', x: s.x, z: s.z });
+          break;
+        }
         if (Math.hypot(s.vx, s.vy, s.vz) < 1.4) {
           s.rest = true; s.age = 0; s.vx = s.vy = s.vz = 0;
           if (this.map.heightAt(s.x, s.z) > 0) s.alive = false;
@@ -677,20 +686,25 @@ export class Sim {
       return false;
     }
     const shooter = this.byId(byId);
+    const real = Math.min(dmg, q.hp);   // 統計用：只算真的打掉的血
     q.hp -= dmg;
     q.lastDmgAt = this.time;
     q.lastAttacker = byId;
     this.stats.hits++;
+    if (shooter && shooter !== q) shooter.dmgDealt = (shooter.dmgDealt || 0) + real;
     if (shooter && shooter !== q) { this.wstats[shooter.weapon].dmg += dmg; this.wstats[shooter.weapon].hits = (this.wstats[shooter.weapon].hits || 0) + 1; }
     if (info.head) { this.stats.heads++; if (shooter) shooter.heads++; }
     this.events.push({ type: 'hit', target: q.id, by: byId, head: !!info.head, dmg, x: info.x ?? q.x, y: info.y ?? 1, z: info.z ?? q.z, fromX: info.fromX ?? q.x, fromZ: info.fromZ ?? q.z, w: info.w });
     if (q.hp <= 0) {
       q.hp = 0; q.alive = false; q.deaths++;
-      q.killedBy = byId; q.respawnAt = this.time + (this.mode === 'team' ? CFG.TEAM_RESPAWN_T : CFG.RESPAWN_T);
+      // 殲滅戰不會復活（1e9 而不是 Infinity：快照要能轉成 JSON）
+      q.killedBy = byId; q.respawnAt = this.mode === 'elim' ? 1e9 : this.time + (this.mode === 'team' ? CFG.TEAM_RESPAWN_T : CFG.RESPAWN_T);
       q.aiming = false; q.charge = 0; q.dashUntil = 0; q.pendingSlash = false;
       q.stones = 0;
       this.wstats[q.weapon].deaths++;
-      if (shooter && shooter !== q) { shooter.kills++; this.wstats[shooter.weapon].kills++; if (this.mode === 'team') this.teamKills[shooter.team]++; }
+      if (shooter && shooter !== q) { shooter.kills++; this.wstats[shooter.weapon].kills++; if (this.teams) this.teamKills[shooter.team]++; }
+      // 殲滅戰：這隊全倒就結束
+      if (this.mode === 'elim' && !this.players.some((p) => p.team === q.team && p.alive)) this.end(1 - q.team);
       this.stats.kos++;
       this.events.push({ type: 'ko', victim: q.id, by: byId, head: !!info.head, w: info.w });
       if (shooter && shooter !== q && shooter.kills >= this.koLimit) this.end();
@@ -731,7 +745,13 @@ export class Sim {
     if (this.state === 'over') return;
     this.state = 'over';
     this.winner = this.ranking()[0];
-    if (this.mode === 'team') {
+    if (this.mode === 'elim' && winnerTeam === undefined) {
+      // 時間到：剩比較多人的贏；一樣多比剩下的總血量
+      const alive = [0, 1].map((t) => this.players.filter((p) => p.team === t && p.alive));
+      const n = alive.map((a) => a.length), hp = alive.map((a) => a.reduce((s, p) => s + p.hp, 0));
+      winnerTeam = n[0] !== n[1] ? (n[0] > n[1] ? 0 : 1) : Math.abs(hp[0] - hp[1]) > 0.5 ? (hp[0] > hp[1] ? 0 : 1) : -1;
+    }
+    if (this.teams) {
       if (winnerTeam === undefined) {
         const [a, b] = this.crystals.map((c) => c.hp / c.max);
         winnerTeam = Math.abs(a - b) > 1e-6 ? (a > b ? 0 : 1) : this.teamKills[0] !== this.teamKills[1] ? (this.teamKills[0] > this.teamKills[1] ? 0 : 1) : -1;

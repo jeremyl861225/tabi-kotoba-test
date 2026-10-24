@@ -10,10 +10,11 @@ export class MirrorSim {
   constructor(map, roster, matchTime, mode = 'ffa', swap = false) {
     this.map = map;
     this.mode = mode;
+    this.teams = mode === 'team' || mode === 'elim';
     // 水晶戰：基地位置跟房主一樣從地圖算（swap 也一樣），血量看快照
-    this.bases = mode === 'team' ? (swap ? [map.bases[1], map.bases[0]] : map.bases) : [];
+    this.bases = this.teams ? (swap ? [map.bases[1], map.bases[0]] : map.bases) : [];
     const hp = map.data.crystalHp || CFG.CRYSTAL_HP;
-    this.crystals = this.bases.map((b, i) => ({ team: i, x: b.x, z: b.z, hp, max: hp, lastHit: -99 }));
+    this.crystals = (mode === 'team' ? this.bases : []).map((b, i) => ({ team: i, x: b.x, z: b.z, hp, max: hp, lastHit: -99 }));
     this.teamKills = [0, 0];
     this.winnerTeam = -1;
     this.players = roster.map((r) => {
@@ -40,7 +41,7 @@ export class MirrorSim {
   }
 
   byId(id) { return this.players.find((p) => p.id === id); }
-  ally(a, b) { if (a === b) return true; if (this.mode !== 'team') return false; const p = this.byId(a), q = this.byId(b); return !!(p && q && p.team === q.team); }
+  ally(a, b) { if (a === b) return true; if (!this.teams) return false; const p = this.byId(a), q = this.byId(b); return !!(p && q && p.team === q.team); }
   ranking() { return [...this.players].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths || b.heads - a.heads); }
   removePlayer(id) { this.players = this.players.filter((p) => p.id !== id); }
 
@@ -53,12 +54,12 @@ export class MirrorSim {
     const ids = new Set(s.pl.map((a) => a[0]));
     this.players = this.players.filter((p) => ids.has(p.id));
     for (const a of s.pl) {
-      const [id, x, z, yaw, pitch, hp, stones, alive, aiming, charge, kills, deaths, heads, respawnAt, shieldUntil, killedBy, throwAt, speed, ack, spawnAt, reloadUntil, regenAt, crystalDmg] = a;
+      const [id, x, z, yaw, pitch, hp, stones, alive, aiming, charge, kills, deaths, heads, respawnAt, shieldUntil, killedBy, throwAt, speed, ack, spawnAt, reloadUntil, regenAt, crystalDmg, dmgDealt] = a;
       const p = this.byId(id);
       if (!p) continue;
       // 位置與「看得到的動作」（生死、舉手、出手）放進時間軸，跟著延遲 100 ms 的畫面一起播
       pos.set(id, { x, z, yaw, pitch, speed, alive: !!alive, aiming: !!aiming, charge, throwAt, spawnAt });
-      Object.assign(p, { hp, stones, kills, deaths, heads, respawnAt, shieldUntil, killedBy, spawnAt, reloadUntil: reloadUntil || 0, regenAt: regenAt || 0, crystalDmg: crystalDmg || 0 });
+      Object.assign(p, { hp, stones, kills, deaths, heads, respawnAt, shieldUntil, killedBy, spawnAt, reloadUntil: reloadUntil || 0, regenAt: regenAt || 0, crystalDmg: crystalDmg || 0, dmgDealt: dmgDealt || 0 });
       if (id === meId) { mine = { x, z, yaw, alive: !!alive, ack, hp }; p.alive = !!alive; }
     }
     this.snaps.push({ t: s.ht, pos });

@@ -4,114 +4,11 @@
 //   台北（taipei）：樓層線、鋁窗＋鐵窗、冷氣、陽台、一樓鐵捲門＋招牌＋側招、頂樓加蓋、水塔、機車
 // 依位置切成 32 m 的區塊，畫面可以逐塊剔除、遠處區塊只畫主體。
 import { at, clearance, edgeFrame, openAt, ringOf, ringSign } from './arch.js';
+import { Buf, C, archPanel, centroid, cylinder, distToRing, dome, fbox, flatPoly, fpanel, inRing, wbox } from './geom.js';
+import { STYLES, kyotoFacades, kyotoRoof, landmark, parisFacades, parisRoof, romaFacades, romaRoof } from './styles.js';
 import { mulberry32 } from './map.js';
 
 export const CHUNK = 32;
-
-// 顏色（乘在白色材質上）
-const C = {
-  wall: 1, roof: 0.965, trim: 1, under: 0.8,
-  glass: [0.6, 0.65, 0.72], glassDeep: [0.5, 0.55, 0.62],
-  door: [0.82, 0.79, 0.74], shutter: [0.9, 0.91, 0.93], rolling: [0.86, 0.87, 0.89],
-  metal: [0.8, 0.82, 0.85], dark: [0.38, 0.4, 0.44], tank: [0.93, 0.94, 0.95],
-};
-
-class Buf {
-  constructor(uv = false) { this.p = []; this.n = []; this.c = []; this.uv = uv ? [] : null; }
-  get tris() { return this.p.length / 9; }
-  // 依法線決定繞行方向，三角形永遠朝外
-  tri(a, b, c, n, ca, cb, cc, ta, tb, tc) {
-    const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
-    const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
-    const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
-    if (cx * n[0] + cy * n[1] + cz * n[2] < 0) { [b, c] = [c, b]; [cb, cc] = [cc, cb]; [tb, tc] = [tc, tb]; }
-    for (const [p, k, t] of [[a, ca, ta], [b, cb, tb], [c, cc, tc]]) {
-      this.p.push(p[0], p[1], p[2]); this.n.push(n[0], n[1], n[2]);
-      if (Array.isArray(k)) this.c.push(k[0], k[1], k[2]); else this.c.push(k, k, k * 0.988);
-      if (this.uv) this.uv.push(t ? t[0] : 0, t ? t[1] : 0);
-    }
-  }
-  quad(a, b, c, d, n, k, uvs) {
-    this.tri(a, b, c, n, k, k, k, uvs && uvs[0], uvs && uvs[1], uvs && uvs[2]);
-    this.tri(a, c, d, n, k, k, k, uvs && uvs[0], uvs && uvs[2], uvs && uvs[3]);
-  }
-}
-
-// 牆面局部座標的方塊：u 沿牆、y 往上、w 往外（w=0 是牆面）
-function fbox(B, f, u0, u1, y0, y1, w0, w1, k, o = {}) {
-  const P = (u, y, w) => { const [x, z] = at(f, u, w); return [x, y, z]; };
-  const U = [f.ux, 0, f.uz], N = [f.nx, 0, f.nz];
-  const kk = (s) => (Array.isArray(k) ? k.map((v) => v * s) : k * s);
-  B.quad(P(u0, y0, w1), P(u1, y0, w1), P(u1, y1, w1), P(u0, y1, w1), N, k);                                         // 正面
-  if (o.top !== false) B.quad(P(u0, y1, w0), P(u1, y1, w0), P(u1, y1, w1), P(u0, y1, w1), [0, 1, 0], kk(0.98));      // 頂
-  if (o.bottom) B.quad(P(u0, y0, w0), P(u1, y0, w0), P(u1, y0, w1), P(u0, y0, w1), [0, -1, 0], kk(0.82));            // 底
-  if (o.ends !== false) {
-    B.quad(P(u0, y0, w0), P(u0, y0, w1), P(u0, y1, w1), P(u0, y1, w0), [-U[0], 0, -U[2]], kk(0.97));
-    B.quad(P(u1, y0, w0), P(u1, y0, w1), P(u1, y1, w1), P(u1, y1, w0), U, kk(0.97));
-  }
-  if (o.back) B.quad(P(u0, y0, w0), P(u1, y0, w0), P(u1, y1, w0), P(u0, y1, w0), [-N[0], 0, -N[2]], k);
-}
-
-// 貼在牆上的平面（窗玻璃、門板）
-function fpanel(B, f, u0, u1, y0, y1, w, k) {
-  const P = (u, y) => { const [x, z] = at(f, u, w); return [x, y, z]; };
-  B.quad(P(u0, y0), P(u1, y0), P(u1, y1), P(u0, y1), [f.nx, 0, f.nz], k);
-}
-
-// 世界座標的軸對齊方塊／旋轉方塊（屋頂設備用）
-function wbox(B, cx, cz, ux, uz, hu, hw, y0, y1, k, o = {}) {
-  const f = { ax: cx - ux * hu + uz * hw, az: cz - uz * hu - ux * hw, ux, uz, nx: -uz, nz: ux, L: hu * 2 };
-  // 上面這個 frame 的 w 方向是 (-uz, ux)；方塊從 w=0 到 2hw
-  fbox(B, f, 0, hu * 2, y0, y1, 0, hw * 2, k, { back: true, ...o });
-}
-
-function cylinder(B, cx, cz, r, y0, y1, seg, k, caps = true) {
-  for (let i = 0; i < seg; i++) {
-    const a0 = (i / seg) * Math.PI * 2, a1 = ((i + 1) / seg) * Math.PI * 2, am = (a0 + a1) / 2;
-    const p0 = [cx + Math.cos(a0) * r, y0, cz + Math.sin(a0) * r], p1 = [cx + Math.cos(a1) * r, y0, cz + Math.sin(a1) * r];
-    const q0 = [p0[0], y1, p0[2]], q1 = [p1[0], y1, p1[2]];
-    B.quad(p0, p1, q1, q0, [Math.cos(am), 0, Math.sin(am)], k);
-    if (caps) B.tri([cx, y1, cz], q0, q1, [0, 1, 0], k, k, k);
-  }
-}
-
-// 圓頂：經緯細分的半球（教堂）
-function dome(B, cx, y0, cz, r, seg, rings, k) {
-  const pt = (i, j) => {
-    const a = (i / seg) * Math.PI * 2, t = (j / rings) * Math.PI / 2;
-    return [cx + Math.cos(a) * Math.cos(t) * r, y0 + Math.sin(t) * r, cz + Math.sin(a) * Math.cos(t) * r];
-  };
-  for (let j = 0; j < rings; j++) {
-    for (let i = 0; i < seg; i++) {
-      const a = pt(i, j), b = pt(i + 1, j), c = pt(i + 1, j + 1), d = pt(i, j + 1);
-      const m = [(a[0] + c[0]) / 2 - cx, (a[1] + c[1]) / 2 - y0, (a[2] + c[2]) / 2 - cz], l = Math.hypot(...m);
-      const n = [m[0] / l, m[1] / l, m[2] / l];
-      if (j === rings - 1) B.tri(a, b, c, n, k, k, k); else B.quad(a, b, c, d, n, k);
-    }
-  }
-}
-
-// 多邊形（含洞）三角化交給呼叫端（render 用 THREE.ShapeUtils），這裡只記下來
-function flatPoly(list, ring, holes, y, k, up = true) { list.push({ ring, holes, y, k, up }); }
-
-function centroid(pts) { let x = 0, z = 0; pts.forEach((p) => { x += p[0]; z += p[1]; }); return [x / pts.length, z / pts.length]; }
-function distToRing(pts, x, z) {
-  let d = Infinity;
-  for (let i = 0; i < pts.length; i++) {
-    const [ax, az] = pts[i], [bx, bz] = pts[(i + 1) % pts.length];
-    const dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
-    d = Math.min(d, Math.hypot(ax + dx * t - x, az + dz * t - z));
-  }
-  return d;
-}
-function inRing(pts, x, z) {
-  let ins = false;
-  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
-    const [xi, zi] = pts[i], [xj, zj] = pts[j];
-    if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) ins = !ins;
-  }
-  return ins;
-}
 
 export function buildCity(map) {
   const data = map.data;
@@ -131,16 +28,18 @@ export function buildCity(map) {
   const lines = [];
   const wires = [];
   const tyo = style === 'taipei';
+  const ST = STYLES[style];   // 羅馬、京都、巴黎（styles.js）
   const FH = tyo ? 3.2 : 3.1;
-  const PH = tyo ? 1.1 : 0.34;   // 女兒牆高
+  const PH = ST ? ST.PH : tyo ? 1.1 : 0.34;   // 女兒牆高
 
   data.buildings.forEach((b, bi) => {
     const rng = mulberry32(bi * 7919 + 13);
     const ring = ringOf(b.r || b.p);
     const sg = ringSign(ring);
-    const inset = b.i ? ringOf(b.i) : null;
     const [mx, mz] = centroid(ring);
     const ch = chunk(mx, mz);
+    if (b.lm) { landmark(ch, b, ring); return; }   // 地標（萬神殿、八坂塔、聖母院、方尖碑）整棟另外做模型
+    const inset = b.i && !(ST && ST.noParapet) ? ringOf(b.i) : null;
     const H = b.h;
     const roofY = inset ? H - PH : H;
     const n = ring.length;
@@ -178,22 +77,32 @@ export function buildCity(map) {
       if (!tyo) for (let i = 0; i < inset.length; i++) { const [ax, az] = inset[i], [bx, bz] = inset[(i + 1) % inset.length]; lines.push(ax, H, az, bx, H, bz); }
     } else flatPoly(ch.polys, ring, [], H, C.roof);
 
+    // 京都的瓦頂、巴黎的斜屋頂連背景樓都要有（天際線就靠它）
+    if (style === 'kyoto') kyotoRoof(ch, b, H);
+    const pl = data.play, M = style === 'arena' ? 26 : 10;
+    const near = !(mx < pl.minX - M || mx > pl.maxX + M || mz < pl.minZ - M || mz > pl.maxZ + M);
+    if (style === 'paris') parisRoof(ch, b, ring, sg, near ? rng : () => 0.99, H);
+
     // ---- 牆面細節（可玩範圍外的背景樓只留主體）----
-    const pl = data.play, M = 10;
-    if (mx < pl.minX - M || mx > pl.maxX + M || mz < pl.minZ - M || mz > pl.maxZ + M) return;
+    if (!near) return;
+    if (style === 'arena') { arenaDetails(ch, b, ring, sg, rng, H); return; }
     const edges = [];
     for (let i = 0; i < n; i++) {
       const f = edgeFrame(ring, i, sg);
-      if (f.L >= (tyo ? 2.2 : 1.5) && openAt(heightAt, f, f.L / 2, 0.7)) edges.push(f);
+      if (f.L >= (ST ? ST.minEdge : tyo ? 2.2 : 1.5) && openAt(heightAt, f, f.L / 2, 0.7)) edges.push(f);
     }
     edges.sort((a, b2) => b2.L - a.L);
-    if (tyo) { taipeiFacades(ch, b, edges, rng, heightAt, H, roofY, FH); overheadWires(wires, edges, rng, heightAt, H); }
+    if (style === 'roma') romaFacades(ch, b, edges, rng, H);
+    else if (style === 'kyoto') kyotoFacades(ch, b, edges, rng, H);
+    else if (style === 'paris') parisFacades(ch, b, edges, rng, H);
+    else if (tyo) { taipeiFacades(ch, b, edges, rng, heightAt, H, roofY, FH); overheadWires(wires, edges, rng, heightAt, H); }
     else cycladicFacades(ch, b, edges, rng, heightAt, H, FH);
 
     // ---- 屋頂設備 ----
     if (inset) {
-      if (tyo) taipeiRoof(ch, b, inset, rng, roofY);
-      else cycladicRoof(ch, b, inset, rng, roofY, H, edges);
+      if (style === 'roma') romaRoof(ch, b, inset, rng, roofY);
+      else if (tyo) taipeiRoof(ch, b, inset, rng, roofY);
+      else if (!ST) cycladicRoof(ch, b, inset, rng, roofY, H, edges);
     }
   });
 
@@ -207,6 +116,77 @@ export function buildCity(map) {
   }
 
   return { chunks: [...chunks.values()], lines, wires };
+}
+
+// ======================= 競技場 =======================
+function arenaDetails(ch, b, ring, sg, rng, H) {
+  const t = b.t || 'ruin', n = ring.length;
+  const [mx, mz] = centroid(ring);
+  const frames = [];
+  for (let i = 0; i < n; i++) { const f = edgeFrame(ring, i, sg); if (f.L > 0.05) frames.push(f); }
+  // 朝向場中央的那一面（外圈的段才有意義）
+  const inner = frames.filter((f) => { const [ex, ez] = at(f, f.L / 2, 0); return f.nx * -ex + f.nz * -ez > 0.5 * Math.hypot(ex, ez); }).sort((a, b2) => b2.L - a.L)[0];
+  const DARK = [0.58, 0.6, 0.64], STONE = 0.95;
+  if (t === 'podium' && inner) {
+    const f = inner;
+    fbox(ch.cast, f, 0, f.L, H - 0.3, H + 0.05, -0.02, 0.18, 1);                    // 頂上壓簷
+    fbox(ch.fine, f, 0, f.L, 0, 0.45, 0, 0.12, 0.92, { top: true });                 // 牆腳
+    fbox(ch.fine, f, 0, 0.32, 0.45, H - 0.3, 0, 0.1, 1); fbox(ch.fine, f, f.L - 0.32, f.L, 0.45, H - 0.3, 0, 0.1, 1);   // 壁柱
+    archPanel(ch.fine, f, f.L / 2, Math.min(1.5, f.L - 1.4), 0.8, 2.6, DARK);       // 拱形壁龕
+    fbox(ch.fine, f, f.L / 2 - 0.95, f.L / 2 + 0.95, 0.7, 0.8, 0, 0.14, STONE);      // 龕底石台
+  } else if (t === 'gate' && inner) {
+    const f = inner, w = Math.min(3.4, f.L - 1.2);
+    archPanel(ch.fine, f, f.L / 2, w, 0, 4.6, [0.42, 0.44, 0.48]);                   // 大門洞（關著）
+    fbox(ch.cast, f, f.L / 2 - w / 2 - 0.45, f.L / 2 - w / 2, 0, 4.6, 0, 0.25, 1);  // 門框
+    fbox(ch.cast, f, f.L / 2 + w / 2, f.L / 2 + w / 2 + 0.45, 0, 4.6, 0, 0.25, 1);
+    fbox(ch.cast, f, f.L / 2 - 0.3, f.L / 2 + 0.3, 4.6 + w / 2 - 0.2, 4.6 + w / 2 + 0.45, 0, 0.3, 1);   // 拱心石
+    fbox(ch.cast, f, 0, f.L, H - 0.45, H + 0.05, -0.02, 0.28, 1);                    // 簷
+    fbox(ch.fine, f, 0.3, f.L - 0.3, H - 1.2, H - 0.95, 0, 0.12, STONE);
+  } else if ((t === 'tier' || t === 'facade') && inner) {
+    const f = inner, lo = b.lo || 0;
+    if (t === 'tier') {
+      // 座位：前一圈頂上到這一圈頂之間分三排，每排一道陰影線＋凸出的座板
+      for (let k = 1; k <= 3; k++) {
+        const y = lo + ((H - lo) * k) / 3.2;
+        fbox(ch.fine, f, 0, f.L, y - 0.1, y, 0, 0.42, 0.97, { bottom: true });
+      }
+      fbox(ch.fine, f, 0, f.L, H - 0.08, H + 0.04, -0.02, 0.12, 1);
+    } else {
+      // 最外圈：上層一排拱窗＋壁柱＋大簷
+      for (const u of [f.L * 0.5]) archPanel(ch.fine, f, u, Math.min(1.3, f.L * 0.45), lo + 1.4, lo + 3.6, DARK);
+      fbox(ch.fine, f, 0, 0.35, lo, H - 0.6, 0, 0.14, 1); fbox(ch.fine, f, f.L - 0.35, f.L, lo, H - 0.6, 0, 0.14, 1);
+      fbox(ch.cast, f, 0, f.L, H - 0.6, H + 0.05, -0.02, 0.4, 1);
+      fbox(ch.fine, f, 0, f.L, lo + 0.9, lo + 1.05, 0, 0.16, STONE);
+    }
+  } else if (t === 'col') {
+    let r = 0; for (const [x, z] of ring) r += Math.hypot(x - mx, z - mz); r /= n;
+    cylinder(ch.cast, mx, mz, r * 1.32, 0, 0.32, 14, 0.96);                         // 柱礎
+    cylinder(ch.fine, mx, mz, r * 1.18, 0.32, 0.46, 14, 0.98);
+    cylinder(ch.fine, mx, mz, r * 1.12, H - 0.5, H - 0.32, 14, 0.98);               // 柱頭
+    wbox(ch.cast, mx, mz, 1, 0, r * 1.45, r * 1.45, H - 0.32, H + 0.05, 1);          // 頂板（wbox 從 w=0 往外 2hw）
+  } else if (t === 'obelisk') {
+    // 金字塔形尖頂
+    const top = H + 1.3, ap = [mx, top, mz];
+    for (let i = 0; i < n; i++) {
+      const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % n];
+      const ex = (ax + bx) / 2 - mx, ez = (az + bz) / 2 - mz, el = Math.hypot(ex, ez) || 1;
+      ch.cast.tri([ax, H, az], [bx, H, bz], ap, [ex / el * 0.8, 0.6, ez / el * 0.8], 0.97, 0.97, 1);
+    }
+    for (const f of frames) fbox(ch.fine, f, 0, f.L, 3.0, 3.12, 0, 0.04, 0.9);       // 刻線
+  } else if (t === 'pedestal' || t === 'lowwall') {
+    for (const f of frames) {
+      fbox(ch.cast, f, -0.06, f.L + 0.06, H - 0.14, H + 0.03, -0.01, 0.08, 1);     // 壓頂
+      if (t === 'pedestal') fbox(ch.fine, f, -0.06, f.L + 0.06, 0, 0.22, 0, 0.1, 0.93);
+    }
+  } else if (t === 'ruin') {
+    // 斷垣：頂上幾塊碎石、旁邊一塊倒下的石塊
+    for (let k = 0; k < 3; k++) {
+      const a = rng() * Math.PI * 2, d = rng() * 0.8, s = 0.25 + rng() * 0.35;
+      wbox(ch.cast, mx + Math.cos(a) * d, mz + Math.sin(a) * d, Math.cos(a), Math.sin(a), s, s * 0.8, H, H + s * (0.6 + rng()), 0.95);
+    }
+    const f = frames[0];
+    if (f) for (let i = 0; i < Math.floor(f.L / 0.9); i++) fbox(ch.fine, f, i * 0.9 + 0.05, i * 0.9 + 0.12, 0.2, H - 0.2, 0, 0.03, 0.9);   // 石塊接縫
+  }
 }
 
 // ======================= 米克諾斯 =======================

@@ -237,11 +237,11 @@ export class Bot {
 
     // ---- 看 ----
     let best = null, bestScore = Infinity;
-    const team = sim.mode === 'team';
+    const team = sim.mode === 'team', teams = !!sim.teams;
     // 水晶戰：進攻的只理會近的、或正在打自己的；守家的只理會靠近自家水晶的（不在中場遠距離互射）
     const role = team ? this.role() : null, ownC = team ? sim.crystals[p.team] : null;
     for (const q of sim.players) {
-      if (q === p || !q.alive || (team && q.team === p.team)) continue;
+      if (q === p || !q.alive || (teams && q.team === p.team)) continue;
       const dx = q.x - p.x, dz = q.z - p.z, dist = Math.hypot(dx, dz);
       if (dist > d.sight) continue;
       const hitMe = p.lastAttacker === q.id && now - p.lastDmgAt < 2;
@@ -340,7 +340,7 @@ export class Bot {
       this.lookAt = null;
       if (!this.wanderGoal || Math.hypot(this.wanderGoal.x - p.x, this.wanderGoal.z - p.z) < 2) {
         // 沒有線索時多半往某個人大概的方向找（差個十公尺），不然地圖再小也常常繞半天碰不到人
-        const others = sim.players.filter((q) => q !== p && q.alive);
+        const others = sim.players.filter((q) => q !== p && q.alive && !(teams && q.team === p.team));   // 分隊時只找敵人
         let g = null;
         if (others.length && this.rng() < 0.7) {
           const q = others[Math.floor(this.rng() * others.length)];

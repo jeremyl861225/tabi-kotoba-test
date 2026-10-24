@@ -4,7 +4,9 @@ import * as THREE from 'three';
 
 const C = (h) => new THREE.Color(h);
 const INK = C(0x2d2f34), METAL = C(0xb9bdc4), LIGHT = C(0xe9eaec), MID = C(0x8c9098);
-export const CAT_COLS = [0xe2985a, 0x8e9299, 0x34353a, 0xb07a4f];   // 橘、灰、黑、咖啡（一個馴獸師一種顏色）
+export const CAT_COLS = [0xec9545, 0xf2a553, 0xe2843a, 0xf4b060];   // 全是大橘貓，深淺各一（一個馴獸師一種）
+const CREAM = C(0xfdf0dc), PINK = C(0xeea4a0);
+const stripe = (fur) => fur.clone().lerp(C(0xa04a18), 0.5);   // 虎斑：同色系偏紅的深橘
 
 // 幾個幾何體（各自的位置與顏色）併成一個有頂點色的 BufferGeometry
 export function merge(parts) {
@@ -41,18 +43,23 @@ export function grenadeGeo() {
   ]);
 }
 
-// 蜷成一球的貓（被丟出去的樣子）
+// 蜷成一球的大橘貓（被丟出去的樣子）：圓滾滾的身體繞三圈虎斑、奶油色肚子與嘴邊、尾巴環著身體
 export function catballGeo(col) {
-  const fur = C(col), dark = fur.clone().multiplyScalar(0.62), pink = C(0xe9a8a1);
-  const ear = (x) => [new THREE.ConeGeometry(0.028, 0.05, 4).rotateZ(x > 0 ? -0.4 : 0.4).rotateY(Math.PI / 4), [x, 0.11, -0.05], fur];
+  const fur = C(col), dark = stripe(fur);
+  const ear = (x) => [new THREE.ConeGeometry(0.032, 0.055, 4).rotateZ(x > 0 ? -0.4 : 0.4).rotateY(Math.PI / 4), [x, 0.13, -0.07], fur];
+  const band = (rx, rz, y) => [new THREE.TorusGeometry(0.124, 0.012, 4, 22, Math.PI * 1.1).rotateX(Math.PI / 2 + rx).rotateZ(rz).scale(1.06, 0.86, 1.08), [0, y, 0.01], dark];   // 跟著身體的扁圓貼平
   return merge([
-    [new THREE.SphereGeometry(0.105, 14, 10).scale(1, 0.86, 1.06), [0, 0, 0], fur],
-    [new THREE.SphereGeometry(0.06, 12, 9), [0, 0.05, -0.075], fur],
-    ear(0.034), ear(-0.034),
-    [new THREE.TorusGeometry(0.098, 0.02, 6, 18, Math.PI * 1.25).rotateX(Math.PI / 2).rotateY(0.6), [0, -0.035, 0], dark],
-    [new THREE.SphereGeometry(0.012, 6, 4), [0, 0.04, -0.134], pink],
-    [new THREE.BoxGeometry(0.02, 0.004, 0.004), [0.022, 0.062, -0.128], INK],
-    [new THREE.BoxGeometry(0.02, 0.004, 0.004), [-0.022, 0.062, -0.128], INK],
+    [new THREE.SphereGeometry(0.13, 16, 12).scale(1.06, 0.86, 1.08), [0, 0, 0], fur],
+    [new THREE.SphereGeometry(0.1, 12, 9).scale(1, 0.6, 1.05), [0, -0.05, 0.005], CREAM],          // 肚子
+    [new THREE.SphereGeometry(0.075, 14, 10).scale(1.12, 0.96, 1), [0, 0.06, -0.095], fur],         // 頭（埋在身上）
+    [new THREE.SphereGeometry(0.036, 10, 8).scale(1.3, 0.8, 0.9), [0, 0.04, -0.16], CREAM],          // 嘴邊
+    ear(0.044), ear(-0.044),
+    band(0.25, 0.5, 0.012), band(-0.1, 1.4, 0.005), band(0.15, 2.4, 0),
+    [new THREE.TorusGeometry(0.12, 0.026, 6, 18, Math.PI * 1.25).rotateX(Math.PI / 2).rotateY(0.6), [0, -0.045, 0], fur],   // 尾巴
+    [new THREE.SphereGeometry(0.03, 8, 6), [0.105, -0.045, -0.06], dark],                             // 尾巴尖
+    [new THREE.SphereGeometry(0.012, 6, 4), [0, 0.06, -0.172], PINK],
+    [new THREE.BoxGeometry(0.024, 0.005, 0.004), [0.027, 0.083, -0.164], INK],
+    [new THREE.BoxGeometry(0.024, 0.005, 0.004), [-0.027, 0.083, -0.164], INK],
   ]);
 }
 
@@ -137,45 +144,66 @@ export function armGroup(skin, cloth, cuffMat) {
   return g;
 }
 
-// 地上跑的貓：身體併成一塊，四條腿與尾巴各自一個關節；項圈是主人的顏色
+// 地上跑的大橘貓：胖身體＋垂下來的奶油色肚子、大圓臉帶腮幫子、額頭 M 字紋、背上虎斑、白手套、粗尾巴一節深一節淺。
+// 身體併成一塊，四條腿與尾巴各自一個關節；項圈是主人的顏色
 export function catModel(col, accent, mat) {
-  const fur = C(col), dark = fur.clone().multiplyScalar(0.6), light = fur.clone().lerp(C(0xffffff), 0.45), pink = C(0xe9a8a1);
+  const fur = C(col), dark = stripe(fur);
   const g = new THREE.Group();
-  const ear = (x) => [new THREE.ConeGeometry(0.03, 0.06, 4).rotateY(Math.PI / 4).rotateZ(x > 0 ? -0.3 : 0.3), [x, 0.375, -0.2], fur];
+  const HY = 0.35;   // 頭的高度
+  const ear = (x) => [new THREE.ConeGeometry(0.042, 0.074, 4).rotateY(Math.PI / 4).rotateZ(x > 0 ? -0.34 : 0.34), [x, HY + 0.088, -0.19], fur];
+  const earIn = (x) => [new THREE.ConeGeometry(0.023, 0.046, 4).rotateY(Math.PI / 4).rotateZ(x > 0 ? -0.34 : 0.34), [x * 0.98, HY + 0.082, -0.206], PINK];
+  // 背上的虎斑：TorusGeometry 的半圈本來就在 XY 平面上、從一側拱過背到另一側；照身體橫向放寬
+  const back = (z, r) => [new THREE.TorusGeometry(r, 0.011, 4, 18, Math.PI).scale(1.2, 1, 1), [0, 0.235, z], dark];
+  // 額頭的 M 字：三撇細條貼在頭頂前緣
+  const brow = (x, rz) => [new THREE.BoxGeometry(0.009, 0.042, 0.006).rotateZ(rz).rotateX(-0.75), [x, HY + 0.062, -0.272], dark];
   const body = new THREE.Mesh(merge([
-    [new THREE.CapsuleGeometry(0.082, 0.22, 4, 12).rotateX(Math.PI / 2).scale(0.92, 1, 1), [0, 0.21, 0.01], fur],
-    [new THREE.SphereGeometry(0.08, 14, 10), [0, 0.3, -0.2], fur],
-    [new THREE.SphereGeometry(0.042, 10, 8).scale(1.1, 0.8, 1), [0, 0.275, -0.265], light],
-    [new THREE.SphereGeometry(0.011, 6, 4), [0, 0.29, -0.302], pink],
-    [new THREE.SphereGeometry(0.012, 6, 4), [0.032, 0.315, -0.265], INK],
-    [new THREE.SphereGeometry(0.012, 6, 4), [-0.032, 0.315, -0.265], INK],
-    ear(0.046), ear(-0.046),
-    [new THREE.TorusGeometry(0.06, 0.012, 6, 16).rotateX(Math.PI / 2 + 0.7), [0, 0.265, -0.145], C(accent)],
-    [new THREE.SphereGeometry(0.014, 6, 4), [0, 0.215, -0.175], C(0xf2c94c)],
-    // 背上兩道虎斑（貼著身體的細環）
-    [new THREE.TorusGeometry(0.079, 0.007, 4, 14, Math.PI).rotateY(Math.PI / 2).rotateX(Math.PI / 2).rotateZ(Math.PI / 2), [0, 0.21, 0.02], dark],
-    [new THREE.TorusGeometry(0.077, 0.007, 4, 14, Math.PI).rotateY(Math.PI / 2).rotateX(Math.PI / 2).rotateZ(Math.PI / 2), [0, 0.21, 0.09], dark],
+    [new THREE.CapsuleGeometry(0.12, 0.2, 4, 16).rotateX(Math.PI / 2).scale(1.2, 1, 1), [0, 0.235, 0.03], fur],    // 胖身體
+    [new THREE.SphereGeometry(0.11, 14, 10).scale(1.15, 0.7, 1.5), [0, 0.16, 0.05], CREAM],             // 垂垂的肚子
+    [new THREE.SphereGeometry(0.075, 12, 9).scale(1.1, 1.15, 0.7), [0, 0.255, -0.13], CREAM],           // 胸前的白圍兜
+    [new THREE.SphereGeometry(0.105, 16, 12).scale(1.15, 0.95, 1), [0, HY, -0.2], fur],                 // 大圓臉
+    [new THREE.SphereGeometry(0.052, 10, 8), [0.07, HY - 0.035, -0.232], fur],                          // 腮幫子
+    [new THREE.SphereGeometry(0.052, 10, 8), [-0.07, HY - 0.035, -0.232], fur],
+    [new THREE.SphereGeometry(0.05, 12, 9).scale(1.3, 0.78, 0.85), [0, HY - 0.032, -0.285], CREAM],     // 嘴邊
+    [new THREE.SphereGeometry(0.03, 8, 6).scale(1.2, 0.7, 1), [0, HY - 0.066, -0.265], CREAM],          // 下巴
+    [new THREE.SphereGeometry(0.012, 6, 4).scale(1.3, 0.9, 1), [0, HY - 0.01, -0.327], PINK],
+    [new THREE.SphereGeometry(0.016, 8, 6), [0.044, HY + 0.022, -0.292], INK],
+    [new THREE.SphereGeometry(0.016, 8, 6), [-0.044, HY + 0.022, -0.292], INK],
+    [new THREE.SphereGeometry(0.0048, 4, 3), [0.049, HY + 0.029, -0.306], C(0xffffff)],                // 眼睛反光
+    [new THREE.SphereGeometry(0.0048, 4, 3), [-0.039, HY + 0.029, -0.306], C(0xffffff)],
+    brow(-0.026, 0.35), brow(0, 0), brow(0.026, -0.35),
+    [new THREE.BoxGeometry(0.032, 0.008, 0.006).rotateY(0.5), [0.088, HY + 0.012, -0.258], dark],      // 臉頰旁的紋
+    [new THREE.BoxGeometry(0.032, 0.008, 0.006).rotateY(-0.5), [-0.088, HY + 0.012, -0.258], dark],
+    ear(0.062), ear(-0.062), earIn(0.062), earIn(-0.062),
+    [new THREE.TorusGeometry(0.08, 0.014, 6, 18).rotateX(Math.PI / 2 + 0.7), [0, HY - 0.06, -0.15], C(accent)],
+    [new THREE.SphereGeometry(0.018, 8, 6), [0, HY - 0.118, -0.185], C(0xf2c94c)],
+    back(-0.08, 0.123), back(-0.01, 0.125), back(0.06, 0.125), back(0.13, 0.12),
+    [new THREE.SphereGeometry(0.06, 10, 8).scale(0.9, 0.85, 1.1), [0.085, 0.2, 0.15], fur],            // 後腿的大腿肉
+    [new THREE.SphereGeometry(0.06, 10, 8).scale(0.9, 0.85, 1.1), [-0.085, 0.2, 0.15], fur],
   ]), mat);
   body.castShadow = true;
   g.add(body);
+  // 短短粗粗的腿＋白手套
   const legs = [];
-  for (const [x, z] of [[0.048, -0.12], [-0.048, -0.12], [0.048, 0.13], [-0.048, 0.13]]) {
+  for (const [x, z] of [[0.07, -0.13], [-0.07, -0.13], [0.078, 0.16], [-0.078, 0.16]]) {
     const pv = new THREE.Group();
-    pv.position.set(x, 0.17, z);
-    const m = new THREE.Mesh(merge([[new THREE.CapsuleGeometry(0.024, 0.1, 3, 8), [0, -0.075, 0], fur], [new THREE.SphereGeometry(0.027, 8, 6), [0, -0.145, -0.008], light]]), mat);
+    pv.position.set(x, 0.15, z);
+    const m = new THREE.Mesh(merge([
+      [new THREE.CapsuleGeometry(0.036, 0.06, 3, 8), [0, -0.05, 0], fur],
+      [new THREE.SphereGeometry(0.04, 10, 7).scale(1, 0.8, 1.15), [0, -0.112, -0.01], CREAM],
+    ]), mat);
     m.castShadow = true;
     pv.add(m); g.add(pv); legs.push(pv);
   }
-  // 尾巴：一串小膠囊沿著往上彎的圓弧接起來，尾端深色
+  // 尾巴：一串膠囊沿著往上彎的圓弧接起來，一節深一節淺，尾端深色
   const tail = new THREE.Group();
-  tail.position.set(0, 0.25, 0.17);
-  const R = 0.12, tp = [];
-  for (let i = 0; i <= 5; i++) { const th = (i / 5) * 2.0; tp.push(new THREE.Vector3(0, R * (1 - Math.cos(th)), R * Math.sin(th))); }
+  tail.position.set(0, 0.28, 0.22);
+  const R = 0.13, tp = [];
+  for (let i = 0; i <= 6; i++) { const th = (i / 6) * 2.0; tp.push(new THREE.Vector3(0, R * (1 - Math.cos(th)), R * Math.sin(th))); }
   const seg = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     const a = tp[i], b = tp[i + 1], d = b.clone().sub(a), len = d.length();
-    const g = new THREE.CapsuleGeometry(0.017 - i * 0.0012, len, 3, 8).applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()));
-    seg.push([g, [(a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2], i === 4 ? dark : fur]);
+    const gg = new THREE.CapsuleGeometry(0.034 - i * 0.0025, len, 3, 8).applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()));
+    seg.push([gg, [(a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2], i % 2 || i === 5 ? dark : fur]);
   }
   const tm = new THREE.Mesh(merge(seg), mat);
   tm.castShadow = true;

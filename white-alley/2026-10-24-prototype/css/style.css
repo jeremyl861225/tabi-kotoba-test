@@ -115,7 +115,10 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .opts { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
 .lbl-row { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.24em; color: var(--ink-2); }
 .lbl-row .i { width: 14px; height: 14px; }
-.maps { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+/* 地圖卡片橫向滑動：一次看到兩張多一點，捲動會停在卡片上 */
+.maps { display: flex; gap: 9px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: -4px -6px; padding: 4px 6px; -webkit-overflow-scrolling: touch; }
+.maps::-webkit-scrollbar { display: none; }
+.maps .mapcard { flex: 0 0 calc(44% - 5px); scroll-snap-align: start; }
 .mapcard { position: relative; display: block; text-align: left; border-radius: 18px; overflow: hidden; aspect-ratio: 16 / 9.4;
   background: oklch(0.96 0.004 250); box-shadow: 0 0 0 1px var(--line), 0 6px 16px -10px oklch(0.25 0.03 260 / 0.4); }
 .mapcard canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: transform 0.8s var(--ease); }
@@ -128,7 +131,8 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .mapcard.on::after { content: ""; position: absolute; top: 9px; right: 9px; width: 20px; height: 20px; border-radius: 50%;
   background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 12.5l3.5 3.5 7.5-8' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat;
   box-shadow: 0 0 0 2px oklch(1 0 0 / 0.9); }
-.two { display: grid; grid-template-columns: 1.15fr 0.9fr 1.25fr; gap: 10px; }
+.two { display: grid; grid-template-columns: 1.5fr 0.78fr 1.12fr; gap: 10px; }
+.seg[data-k=mode] button { font-size: 13px; letter-spacing: 0; }
 .two > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 /* 分段選擇：墨色膠囊滑過去（位置由 Motion 彈簧推動） */
 .seg { position: relative; display: flex; padding: 3px; border-radius: 999px; background: oklch(0.21 0.012 262 / 0.07); box-shadow: inset 0 1px 2px oklch(0.2 0.02 262 / 0.1); }
@@ -187,6 +191,7 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 #resTable tr.me td:first-child { border-radius: 10px 0 0 10px; }
 #resTable tr.me td:last-child { border-radius: 0 10px 10px 0; }
 #resTable .nm { display: flex; align-items: center; gap: 8px; }
+#resTable tr.out .nm { opacity: 0.5; }
 #resTable .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 -1px 0 oklch(0 0 0 / 0.2); }
 #resTable tr.p1 td:first-child { color: var(--gold); }
 
@@ -354,17 +359,32 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 .score.teams .cb em { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: 10px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px oklch(0.2 0.02 262 / 0.5); font-variant-numeric: tabular-nums; }
 .score.teams .side.hit .cb { animation: crhit 0.3s steps(2) infinite; }
 .score.teams .side.low .cb em { color: #fff; }
+/* 殲滅戰：每人一個小人頭，倒下的變淡 */
+.score.teams .pp { display: flex; gap: 3px; min-width: 40px; }
+.score.teams .foe .pp { justify-content: flex-end; }
+.score.teams .pp i { position: relative; width: 9px; height: 15px; color: var(--mine); transition: opacity 0.3s var(--ease), transform 0.3s var(--ease); }
+.score.teams .foe .pp i { color: var(--foe); }
+.score.teams .pp i::before { content: ''; position: absolute; left: 2px; top: 0; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.score.teams .pp i::after { content: ''; position: absolute; left: 0; bottom: 0; width: 9px; height: 8.5px; border-radius: 5px 5px 2px 2px; background: currentColor; }
+.score.teams .pp i:not(.on) { opacity: 0.2; transform: scale(0.86) translateY(1px); }
+.score.teams .side.hit .pp { animation: pphit 0.15s ease-in-out 4; }
+.score.teams .side.low .tk { animation: lastone 0.9s ease-in-out infinite; }
+@keyframes pphit { 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+@keyframes lastone { 50% { opacity: 0.4; } }
 @keyframes crhit { 50% { box-shadow: 0 0 0 2px oklch(1 0 0 / 0.95), 0 0 12px var(--red); } }
 .score.teams .meta { align-items: center; }
 .score.teams .rank { font-size: 10px; }
 .score.teams .rank u { text-decoration: none; font-weight: 800; color: var(--ink); }
-.alert { position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content; top: calc(64px + var(--st)); padding: 6px 18px; border-radius: 999px; font-size: 15px; font-weight: 800; letter-spacing: 0.12em; opacity: 0; pointer-events: none;
+/* 提示放在準心下方：上方的擊倒訊息最多疊四行，會蓋到 */
+.alert { position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content; top: 61%; padding: 6px 18px; border-radius: 999px; font-size: 15px; font-weight: 800; letter-spacing: 0.12em; opacity: 0; pointer-events: none;
   color: #fff; background: var(--red); box-shadow: 0 8px 24px -8px oklch(0.61 0.21 27 / 0.7); }
-.alert.win { background: var(--ink); font-size: 26px; padding: 8px 28px; top: 26%; }
-.alert.lose { background: oklch(0.45 0.02 262); font-size: 26px; padding: 8px 28px; top: 26%; }
+.alert.win { background: var(--ink); font-size: 26px; padding: 8px 28px; top: 36%; }
+.alert.lose { background: oklch(0.45 0.02 262); font-size: 26px; padding: 8px 28px; top: 36%; }
 .tag.mate span { box-shadow: inset 0 1px 0 oklch(1 0 0), 0 0 0 1.5px var(--tc), 0 2px 6px oklch(0.2 0.02 262 / 0.15); }
 .tag.mate em u { background: var(--tc); }
-@media (max-width: 860px) { .hp .bar { width: 118px; } .score.teams .cb { width: 58px; } }
+/* 940：iPhone 橫拿時左邊還要讓出動態島的安全區，874 寬也會擠到上方比分 */
+@media (max-width: 940px) { .hp .bar { width: 118px; } .score.teams .cb { width: 58px; } }
+.nw { white-space: nowrap; }
 #resTable tr.tsep td { padding-top: 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; border-top: 0; }
 
 .minimap { position: absolute; right: calc(12px + var(--sr)); top: calc(10px + var(--st)); width: 136px; height: 136px; --r: 50%; padding: 5px; }
@@ -434,6 +454,12 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 .toast .tt b { font-size: 18px; letter-spacing: 0.02em; white-space: nowrap; }
 .toast .tt b em { font-style: normal; }
 .toast .tt small { font-size: 11.5px; color: var(--ink-2); }
+.toast .tt small em { font-style: normal; font-weight: 700; }
+/* 殲滅戰出局：移到下方，不擋觀戰畫面 */
+.toast.out { top: auto; bottom: calc(16px + var(--sb, 0px)); gap: 11px; padding: 8px 18px 8px 9px; }
+.toast.out .tt b { font-size: 15px; }
+.toast .outx { width: 32px; height: 32px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--red); box-shadow: 0 6px 16px -6px oklch(0.61 0.21 27 / 0.7); }
+.toast .outx .i { width: 16px; height: 16px; stroke: #fff; stroke-width: 2.8; }
 .banner { position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content; top: 23%; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0; }
 .banner b { font-size: 44px; font-weight: 800; letter-spacing: 0.08em; line-height: 1; color: var(--ink); text-shadow: 0 1px 0 #fff, 0 10px 30px oklch(0.2 0.02 262 / 0.3); }
 .banner b.head { color: var(--gold); }
@@ -451,6 +477,7 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
   .opts { gap: 7px; }
   .mapcard { aspect-ratio: 16 / 8.4; }
   .seg button { height: 32px; }
+  .seg[data-k=mode] button { font-size: 12px; }
   .screen h2 { font-size: 22px; }
   .how-c { padding: 8px 10px; }
   .how-c span { font-size: 11px; }
@@ -461,3 +488,6 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* 殲滅戰出局觀戰：自己的血條、搖桿用不到了，淡出 */
+body.spectating #touch, body.spectating #hud .vitals { opacity: 0 !important; pointer-events: none; transition: opacity 0.5s var(--ease); }

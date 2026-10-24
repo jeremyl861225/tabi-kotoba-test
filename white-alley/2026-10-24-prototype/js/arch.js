@@ -26,7 +26,7 @@ export const at = (f, u, w) => [f.ax + f.ux * u + f.nx * w, f.az + f.uz * u + f.
 // 牆外 w 公尺處是不是空地（不是別棟樓）
 export function openAt(heightAt, f, u, w = 0.6) {
   const [x, z] = at(f, u, w);
-  return heightAt(x, z) <= 0;
+  return heightAt(x, z) <= 0.05;   // 水面（0.02）也算空地：面河的牆照樣開窗
 }
 
 // 從牆往外量，空地有多深（最多 maxD）
@@ -78,7 +78,7 @@ export function planObstacles(data, heightAt) {
             taken.push({ x: cx, z: cz, r: len / 2 + 0.4 });
           }
         }
-      } else if (f.L >= 4 && roll < 0.32) {
+      } else if (style === 'taipei' && f.L >= 4 && roll < 0.32) {
         // 台北：一排機車，車頭朝外、間距 0.72 m
         const n = Math.min(8, 2 + Math.floor(rng() * Math.min(7, (f.L - 1.2) / 0.72)));
         const len = n * 0.72, u0 = 0.4 + rng() * Math.max(0, f.L - len - 0.8);
