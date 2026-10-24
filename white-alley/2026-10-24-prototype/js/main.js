@@ -619,8 +619,11 @@ function onEvents() {
       case 'reloaded':
         if (e.id === me.id) { sfx.play('reloaded'); haptic('pickup'); }
         break;
-      case 'regen':
-        if (e.id === me.id) sfx.play('meow', null, null, 0.5);
+      case 'regen':   // 彈藥補回一發：貓會叫一聲，其他武器補滿時輕輕提示
+        if (e.id === me.id) {
+          if (me.weapon === 'cat') sfx.play('meow', null, null, 0.5);
+          else if (me.stones >= (WEAPONS[me.weapon] || WEAPONS.stone).ammo) sfx.play('pickup');
+        }
         break;
       case 'impact':
         sfx.play(e.surf, e.x, e.z, Math.min(1.2, e.sp / 18));
@@ -646,9 +649,6 @@ function onEvents() {
         if (e.victim === me.id) haptic('die');
         break;
       }
-      case 'pickup':
-        if (e.id === me.id) { sfx.play('pickup'); haptic('pickup'); }
-        break;
       case 'spawn':
         if (e.id === me.id) {
           if (G.mode === 'guest') {

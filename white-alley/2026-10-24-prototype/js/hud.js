@@ -41,8 +41,9 @@ export class Hud {
     // 彈藥格：每種武器自己的圖示與數量（光劍只有一格，冷卻時變淡）
     this.el.ammo.classList.add(`w-${this.W.key}`);
     this.el.cross.classList.add(`w-${this.W.key}`);
-    this.el.ammo.innerHTML = Array.from({ length: Math.max(1, this.W.ammo) }, () => icon(`i-w-${this.W.key}`)).join('');
-    this.pips = [...this.el.ammo.children];
+    this.el.ammo.innerHTML = Array.from({ length: Math.max(1, this.W.ammo) }, () => icon(`i-w-${this.W.key}`)).join('') + (this.W.regen ? '<i class="nx"></i>' : '');
+    this.nx = $('.nx', this.el.ammo);
+    this.pips = [...this.el.ammo.querySelectorAll('.i')];
     this.mini = $('.minimap canvas', root);
     this.dmg = $('.dmg', root);
     this.dmgs = [];
@@ -113,35 +114,6 @@ export class Hud {
     g.addColorStop(0, 'rgba(47,95,208,0.22)'); g.addColorStop(1, 'rgba(47,95,208,0)');
     c.fillStyle = g;
     c.beginPath(); c.moveTo(R, R); c.arc(R, R, R, -Math.PI / 2 - fov, -Math.PI / 2 + fov); c.closePath(); c.fill();
-    // 沒石頭：最近的石堆一直閃，超出小地圖範圍就在邊緣畫箭頭
-    if (me.alive && me.stones === 0 && this.W.pile > 0) {
-      let best = null, bd = Infinity;
-      for (const pl of sim.piles) { if (pl.readyAt > sim.time) continue; const d = Math.hypot(pl.x - me.x, pl.z - me.z); if (d < bd) { bd = d; best = pl; } }
-      for (const l of sim.loose) { const d = Math.hypot(l.x - me.x, l.z - me.z); if (d < bd) { bd = d; best = l; } }
-      if (best) {
-        let [x, y] = to(best.x, best.z);
-        const dx = x - R, dy = y - R, dd = Math.hypot(dx, dy), lim = R - 14 * dpr;
-        const pulse = 0.5 + 0.5 * Math.sin(sim.time * 7);
-        c.strokeStyle = `rgba(47,95,208,${0.5 + 0.5 * pulse})`; c.lineWidth = 2.2 * dpr;
-        if (dd > lim) {
-          x = R + (dx / dd) * lim; y = R + (dy / dd) * lim;
-          const a = Math.atan2(dy, dx);
-          c.fillStyle = '#2f5fd0';
-          c.beginPath(); c.moveTo(x + Math.cos(a) * 8 * dpr, y + Math.sin(a) * 8 * dpr);
-          c.lineTo(x + Math.cos(a + 2.5) * 6 * dpr, y + Math.sin(a + 2.5) * 6 * dpr);
-          c.lineTo(x + Math.cos(a - 2.5) * 6 * dpr, y + Math.sin(a - 2.5) * 6 * dpr); c.closePath(); c.fill();
-        } else {
-          c.beginPath(); c.arc(x, y, (6 + pulse * 4) * dpr, 0, Math.PI * 2); c.stroke();
-        }
-      }
-    }
-    // 石堆
-    for (const pl of sim.piles) {
-      const [x, y] = to(pl.x, pl.z);
-      const ready = pl.readyAt <= sim.time;
-      c.fillStyle = ready ? '#55595f' : 'rgba(85,89,95,0.28)';
-      c.beginPath(); c.ellipse(x, y, 3.4 * dpr, 2.6 * dpr, 0.3, 0, Math.PI * 2); c.fill();
-    }
     // 剛出手的人：在小地圖擴散一圈
     for (const pg of this.pings) {
       const a = 1 - (sim.time - pg.t) / 1.6;
@@ -200,6 +172,16 @@ export class Hud {
       });
       if (ammo < this._ammo && this.pips[ammo]) animate(this.pips[ammo], { scale: [0.6, 1] }, spring(500, 18));
       this._ammo = ammo;
+    }
+    // 下一發補回的進度：空著的第一格底下一條細線慢慢長滿
+    if (this.nx) {
+      const regenning = me.alive && me.stones < W.ammo && me.regenAt > 0;
+      this.nx.style.opacity = regenning ? 1 : 0;
+      if (regenning) {
+        const k = Math.max(0, Math.min(1, 1 - (me.regenAt - sim.time) / W.regen));
+        this.nx.style.left = `${me.stones * 22}px`;
+        this.nx.style.transform = `scaleX(${k.toFixed(3)})`;
+      }
     }
     // 步槍換彈進度
     const reloading = W.kind === 'hitscan' && me.alive && (me.reloadUntil || 0) > sim.time;

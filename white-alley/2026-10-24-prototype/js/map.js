@@ -1,4 +1,4 @@
-// 地圖：建物輪廓 → 高度格（碰撞、彈道、視線）＋導航格（A*）＋出生點與石堆。
+// 地圖：建物輪廓 → 高度格（碰撞、彈道、視線）＋導航格（A*）＋出生點（石堆位置仍會算，但遊戲已不用）。
 // 不碰 Three 與 DOM，node 也能跑。座標：x 向東、z 向南、y 向上，單位公尺。
 import { CFG } from './config.js';
 import { obstacleBoxes, planObstacles } from './arch.js';

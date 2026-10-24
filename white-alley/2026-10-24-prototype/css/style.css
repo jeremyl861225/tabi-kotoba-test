@@ -311,7 +311,8 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 .vitals.low { animation: lowpulse 1s ease-in-out infinite; }
 @keyframes lowpulse { 50% { box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.95), 0 0 0 2px oklch(0.61 0.21 27 / 0.45), 0 18px 40px -18px oklch(0.25 0.03 260 / 0.38); } }
 .hp em { min-width: 26px; text-align: right; font-style: normal; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.ammo { display: flex; gap: 3px; align-items: center; }
+.ammo { position: relative; display: flex; gap: 3px; align-items: center; }
+.ammo .nx { position: absolute; left: 0; bottom: -3px; width: 19px; height: 2.5px; border-radius: 2px; background: var(--aegean); transform-origin: left; transform: scaleX(0); opacity: 0; transition: opacity 0.2s; }
 .ammo .i { width: 19px; height: 19px; stroke-width: 1.5; color: oklch(0.21 0.012 262 / 0.22); transition: color 0.2s; }
 .ammo .i.on { color: var(--ink); fill: oklch(0.45 0.012 262); }
 .ammo.w-saber .i.on, .ammo.w-rifle .i.on, .ammo.w-boomerang .i.on { fill: none; stroke-width: 1.9; }

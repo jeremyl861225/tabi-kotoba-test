@@ -20,7 +20,7 @@ export class Input {
       <div class="stick left" hidden><div class="base glass"></div><div class="knob"></div></div>
       <div class="stick right"><div class="base glass lens" data-bezel="18" data-refract="9"></div>
         <svg class="ring" viewBox="0 0 138 138"><circle class="pw" cx="69" cy="69" r="66"/></svg>
-        <div class="knob"><svg class="i"><use href="#i-pebble"/></svg></div><span class="need">沒石頭・去石堆補</span></div>
+        <div class="knob"><svg class="i"><use href="#i-pebble"/></svg></div><span class="need">補充中…</span></div>
       <div class="cancel glass" hidden><svg class="i"><use href="#i-x"/></svg></div>`;
     this.elL = root.querySelector('.stick.left');
     this.elR = root.querySelector('.stick.right');
@@ -203,7 +203,7 @@ export class Input {
   setWeapon(W) {
     this.W = W;
     this.elR.querySelector('.knob use').setAttribute('href', `#i-w-${W.key}`);
-    this.elR.querySelector('.need').textContent = { stone: '沒石頭・去石堆補', grenade: '沒手榴彈・去石堆補', rifle: '換彈中…', cat: '貓還沒回來・石堆也能補', boomerang: '等回力鏢飛回來', saber: '' }[W.key] || '';
+    this.elR.querySelector('.need').textContent = { stone: '石頭補充中…', grenade: '手榴彈補充中…', rifle: '換彈中…', cat: '貓還沒回來…', boomerang: '等回力鏢飛回來', saber: '' }[W.key] || '';
   }
 
   setStones(n, reloading = false) { this.elR.classList.toggle('empty', this.W && this.W.kind === 'melee' ? false : n <= 0 || reloading); }

@@ -1,4 +1,4 @@
-// 電腦對手：看（視野＋視線）、聽（附近有人出手）→ 戰鬥／追擊／補給／撤退／遊蕩。
+// 電腦對手：看（視野＋視線）、聽（附近有人出手）→ 戰鬥／追擊／等彈藥／撤退／遊蕩。
 // 每種武器有自己的交戰距離與出手方式；瞄準照武器算（拋物線預判走位、步槍直線、光劍貼近揮砍或衝刺、回力鏢補彎度），
 // 再依難度加誤差。輸出跟搖桿一樣的輸入。
 import { CFG, DIFFICULTY } from './config.js';
@@ -14,7 +14,8 @@ const BAND = { stone: [7, 24], grenade: [8, 20], cat: [6, 16], rifle: [9, 30], b
 
 export class Bot {
   constructor(sim, p, diffKey, rng) {
-    this.sim = sim; this.p = p; this.d = DIFFICULTY[diffKey]; this.rng = rng;
+    this.sim = sim; this.p = p; this.rng = rng;
+    this.d = typeof diffKey === 'object' ? diffKey : DIFFICULTY[diffKey];   // 也可以直接給一組能力值（測試用的「手機玩家」）
     this.W = WEAPONS[p.weapon] || WEAPONS.stone;
     this.yaw = p.yaw; this.pitch = 0;
     this.mem = new Map();          // id → { x, z, t, since }
@@ -216,7 +217,7 @@ export class Bot {
       if (!map.los(p.x, CFG.EYE, p.z, q.x, CFG.EYE, q.z)) continue;
       const m = this.mem.get(q.id);
       this.mem.set(q.id, { x: q.x, z: q.z, t: now, since: m && now - m.t < 0.5 ? m.since : now });
-      const score = dist - (hitMe ? 15 : 0) - (q.hp < 50 ? 4 : 0) - (q.id === this.target ? 6 : 0);
+      const score = dist - (hitMe ? 15 : 0) - (q.hp < 50 ? 4 : 0) - (q.id === this.target ? 6 : 0) + (q.isBot ? 0 : d.humanBias || 0);
       if (score < bestScore) { bestScore = score; best = q; }
     }
     // 追著我的貓：近了就先處理牠（光劍砍、其他武器打）
@@ -224,7 +225,7 @@ export class Bot {
     for (const c of sim.cats) {
       if (c.owner === p.id || c.target !== p.id) continue;
       const dist = Math.hypot(c.x - p.x, c.z - p.z);
-      if (dist < 9 && map.los(p.x, CFG.EYE, p.z, c.x, 0.4, c.z) && this.rng() < d.dodge + 0.3) { this.catTarget = c.id; break; }
+      if (dist < 9 && map.los(p.x, CFG.EYE, p.z, c.x, 0.4, c.z) && this.rng() < Math.min(0.6, d.dodge + 0.3)) { this.catTarget = c.id; break; }
     }
     // 被看不見的人打到：轉過去
     if (!best && now - p.lastDmgAt < 0.3 && p.lastAttacker) {
@@ -249,16 +250,12 @@ export class Bot {
     }
     if (this.state === 'retreat' && (now > this.retreatUntil || p.hp > 75 || !this.cover)) this.state = '';
 
-    const needSupply = W.pile > 0 && p.stones === 0;
     if (this.state === 'retreat' && this.cover) {
       // 繼續躲
     } else if ((best || this.catTarget) && this.canAttack()) {
       this.state = 'fight';
-    } else if ((best || this.catTarget) && !needSupply) {
-      this.state = 'reload';   // 步槍換彈、回力鏢在外面：先拉開距離
-    } else if (needSupply || (W.loose && p.stones < 3 && !best)) {
-      this.state = 'resupply';
-      this.goal = this.nearestStones();
+    } else if (best || this.catTarget) {
+      this.state = 'reload';   // 彈藥還在回補、步槍換彈、回力鏢在外面：先拉開距離
     } else if (recent) {
       this.state = 'seek';
       this.goal = { x: recent[1].x, z: recent[1].z };
@@ -272,7 +269,15 @@ export class Bot {
       this.state = 'wander';
       this.lookAt = null;
       if (!this.wanderGoal || Math.hypot(this.wanderGoal.x - p.x, this.wanderGoal.z - p.z) < 2) {
-        this.wanderGoal = this.rng() < 0.4 ? sim.piles[Math.floor(this.rng() * sim.piles.length)] : map.randomReach(this.rng);
+        // 沒有線索時多半往某個人大概的方向找（差個十公尺），不然地圖再小也常常繞半天碰不到人
+        const others = sim.players.filter((q) => q !== p && q.alive);
+        let g = null;
+        if (others.length && this.rng() < 0.7) {
+          const q = others[Math.floor(this.rng() * others.length)];
+          const n = map.nearestReach(q.x + (this.rng() - 0.5) * 20, q.z + (this.rng() - 0.5) * 20, 12);
+          if (n >= 0) g = map.navCenter(n);
+        }
+        this.wanderGoal = g || map.randomReach(this.rng);
       }
       this.goal = this.wanderGoal;
     }
@@ -291,7 +296,7 @@ export class Bot {
       this.noShot = !plan;
       if (plan) {
         const keep = this.plan && this.plan.low === plan.low && this.plan.kind === plan.kind;
-        const errMul = { rifle: 0.9, boomerang: 1.4, saber: 0 }[W.key] ?? 1;
+        const errMul = { rifle: 0.75, boomerang: 1.4, saber: 0 }[W.key] ?? 1;   // 步槍端著不動，手比較穩
         plan.ey = keep ? this.plan.ey : this.gauss() * d.aimErr * errMul * DEG;
         plan.ep = keep ? this.plan.ep : this.gauss() * d.aimErr * 0.7 * errMul * DEG;
         plan.yaw += plan.ey; plan.pitch += plan.ep;
@@ -400,18 +405,6 @@ export class Bot {
       this.dodge = { x: px, z: pz, until: sim.time + (s.kind === 'grenade' ? 0.6 : 0.38) };
       return;
     }
-  }
-
-  nearestStones() {
-    const { sim, p, W } = this;
-    let best = null, bd = Infinity;
-    if (W.loose) for (const l of sim.loose) { const dd = Math.hypot(l.x - p.x, l.z - p.z) + 2; if (dd < bd) { bd = dd; best = l; } }
-    for (const pl of sim.piles) {
-      if (pl.readyAt > sim.time + 3) continue;
-      const dd = Math.hypot(pl.x - p.x, pl.z - p.z);
-      if (dd < bd) { bd = dd; best = pl; }
-    }
-    return best ? { x: best.x, z: best.z } : sim.map.randomReach(this.rng);
   }
 
   findCover(enemy) {

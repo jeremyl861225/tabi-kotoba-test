@@ -13,28 +13,25 @@ export const CFG = {
 
   // 血量
   HP: 100,
-  DMG_BODY: 25, DMG_HEAD: 50,
-  REGEN_DELAY: 6, REGEN_RATE: 8,
+  REGEN_DELAY: 4.5, REGEN_RATE: 12,   // 只有真人會回血（電腦不會）
   SPAWN_SHIELD: 1.5,
   RESPAWN_T: 3.5,
 
-  // 石頭
-  MAX_STONES: 6, START_STONES: 4,
-  V_MIN: 13, V_MAX: 25, CHARGE_T: 0.9,
-  THROW_CD: 0.45,
+  // 投擲（各武器的彈藥、初速、冷卻在 weapons.js）
+  V_MIN: 13, V_MAX: 25,            // 只給沒指定武器時的預設值用
   STONE_R: 0.07, STONE_HIT_R: 0.1,
   HAND_OFS: [0.22, -0.12, 0.35],   // 出手點相對眼睛：右、上、前
-  LOOSE_LIFE: 25,
-  PILE_CD: 12,
 
   // 比賽
   MATCH_T: 300, KO_LIMIT: 10,
 };
 
+// 電腦的能力值。humanBias：挑目標時真人要多「遠」幾公尺才算（附近有別的電腦就先打電腦，不會全場圍攻你）。
+// 用 node tests/difficulty.mjs 量（手機玩家替身對各難度的 KO／倒下）。
 export const DIFFICULTY = {
-  easy:   { label: '簡單', reaction: 0.65, aimErr: 4.5, lead: 0.3, dodge: 0.12, turn: 170, pause: 1.1, sight: 45 },
-  normal: { label: '普通', reaction: 0.4,  aimErr: 2.6, lead: 0.65, dodge: 0.35, turn: 260, pause: 0.55, sight: 55 },
-  hard:   { label: '困難', reaction: 0.22, aimErr: 1.3, lead: 0.9, dodge: 0.6, turn: 380, pause: 0.2, sight: 65 },
+  easy:   { label: '簡單', reaction: 1.0,  aimErr: 7.5, lead: 0.1,  dodge: 0.04, turn: 130, pause: 1.7, sight: 38, humanBias: 10 },
+  normal: { label: '普通', reaction: 0.6,  aimErr: 4.2, lead: 0.4,  dodge: 0.15, turn: 200, pause: 0.9, sight: 50, humanBias: 4 },
+  hard:   { label: '困難', reaction: 0.25, aimErr: 1.8, lead: 0.85, dodge: 0.55, turn: 340, pause: 0.3, sight: 62, humanBias: 0 },
 };
 
 export const BOT_NAMES = ['阿石', '小礫', '卵哥', '砂姐', '碎碎', '岩仔', '圓圓', '鵝卵', '石頭公', '粗礪', '小沙', '磐'];

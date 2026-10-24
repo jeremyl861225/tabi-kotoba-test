@@ -43,7 +43,7 @@ export class Renderer {
     this.trails = new Map();     // 飛行中石頭 id → 最近幾個位置
     this.stoneGeo = new THREE.IcosahedronGeometry(CFG.STONE_R, 0);
     this.stoneMat = new THREE.MeshLambertMaterial({ color: 0x86898f, flatShading: true });
-    this._piles();
+    this._rocks();
     this._arcInit();
     this.shake = 0;
     this.bob = 0;
@@ -295,24 +295,13 @@ export class Renderer {
     mk(w, 0.2, cx, p.minZ - 0.1); mk(w, 0.2, cx, p.maxZ + 0.1); mk(0.2, d, p.minX - 0.1, cz); mk(0.2, d, p.maxX + 0.1, cz);
   }
 
-  // 石頭全部用同一個 InstancedMesh（石堆、地上的、飛行中的），一次畫完
-  _piles() {
-    this.rocks = new THREE.InstancedMesh(this.stoneGeo, this.stoneMat, 1400);
+  // 石頭全部用同一個 InstancedMesh（飛行中的、剛落地的），一次畫完
+  _rocks() {
+    this.rocks = new THREE.InstancedMesh(this.stoneGeo, this.stoneMat, 400);
     this.rocks.castShadow = true;
     this.rocks.frustumCulled = false;
     this.rocks.count = 0;
     this.scene.add(this.rocks);
-    this.pileRocks = [];   // 每堆 9 顆的局部位置
-    for (let i = 0; i < 9; i++) {
-      const a = i * 2.4, r = i === 0 ? 0 : 0.18 + (i % 3) * 0.1, sc = 1.6 + ((i * 7) % 5) * 0.25;
-      this.pileRocks.push({ x: Math.cos(a) * r, y: CFG.STONE_R * sc * (i < 3 ? 1.6 : 0.8), z: Math.sin(a) * r, s: sc, q: new THREE.Quaternion().setFromEuler(new THREE.Euler(a, a * 1.3, 0)) });
-    }
-    const piles = this.map.piles;
-    const ring = new THREE.InstancedMesh(new THREE.RingGeometry(0.62, 0.78, 32).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: 0xc9ccd1, transparent: true, opacity: 0.8, depthWrite: false }), piles.length);
-    const m = new THREE.Matrix4();
-    piles.forEach((pl, i) => ring.setMatrixAt(i, m.makeTranslation(pl.x, 0.012, pl.z)));
-    this.scene.add(ring);
     this._m4 = new THREE.Matrix4(); this._v3 = new THREE.Vector3(); this._s3 = new THREE.Vector3(); this._q = new THREE.Quaternion(); this._e = new THREE.Euler();
     // 石頭飛行的殘影線（一條 LineSegments，越舊越淡）
     const TN = 64 * 7;
@@ -667,20 +656,8 @@ export class Renderer {
     }
     for (const [id, c] of this.chars) if (!seen.has(id)) { this.scene.remove(c.g); this.chars.delete(id); }
 
-    // 石頭（石堆、地上的、飛行中的）全部填進同一個 InstancedMesh
+    // 石頭（飛行中的、剛落地的）全部填進同一個 InstancedMesh
     let ri = 0;
-    sim.piles.forEach((pl) => {
-      const ready = pl.readyAt <= now;
-      const grow = ready ? 1 : 1 - (pl.readyAt - now) / CFG.PILE_CD;
-      const show = ready ? 9 : 2 + Math.floor(grow * 6);
-      for (let k = 0; k < show; k++) { const r = this.pileRocks[k]; this._rock(ri++, pl.x + r.x, r.y, pl.z + r.z, r.s, r.q); }
-    });
-    for (const l of sim.loose) {
-      for (let k = 0; k < Math.min(3, l.count); k++) {
-        this._q.setFromEuler(this._e.set(k + l.id, k * 2, 0));
-        this._rock(ri++, l.x + (k - 1) * 0.1, CFG.STONE_R * 0.8, l.z + (k % 2) * 0.08, 1, this._q);
-      }
-    }
     const live = new Set();
     const tp = this.trailLine.geometry.attributes.position, tc = this.trailLine.geometry.attributes.color;
     let ti = 0;

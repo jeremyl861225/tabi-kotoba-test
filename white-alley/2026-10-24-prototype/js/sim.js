@@ -35,8 +35,8 @@ export class Sim {
     this.players = [];
     this.stones = [];     // 所有飛行物：kind = stone／grenade／catball／boom
     this.cats = [];       // 落地後在追人的貓
-    this.loose = [];
-    this.piles = map.piles.map((p, i) => ({ id: i, x: p.x, z: p.z, readyAt: 0 }));
+    this.loose = [];      // 舊版地上可撿的石頭；彈藥改成自動回補後一直是空的（快照格式不變）
+    this.piles = [];
     this.events = [];
     this.noise = [];      // 最近的出手聲（電腦用來「聽」）
     this.state = 'play';
@@ -80,7 +80,7 @@ export class Sim {
     return {
       ht: r3(this.time), st: this.state === 'play' ? 0 : 1, mt: this.matchTime,   // ht：房主時間（t 留給訊息種類）
       pl: this.players.map((p) => [p.id, r2(p.x), r2(p.z), r3(p.yaw), r3(p.pitch), Math.round(p.hp * 10) / 10, p.stones, p.alive ? 1 : 0, p.aiming ? 1 : 0, r2(p.charge),
-        p.kills, p.deaths, p.heads, r2(p.respawnAt), r2(p.shieldUntil), p.killedBy || 0, r2(p.throwAt), r2(p.speed), acks[p.id] || 0, r2(p.spawnAt || 0), r2(p.reloadUntil || 0)]),
+        p.kills, p.deaths, p.heads, r2(p.respawnAt), r2(p.shieldUntil), p.killedBy || 0, r2(p.throwAt), r2(p.speed), acks[p.id] || 0, r2(p.spawnAt || 0), r2(p.reloadUntil || 0), r2(p.regenAt || 0)]),
       sn: this.stones.map((s) => [s.id, s.owner, r3(s.x), r3(s.y), r3(s.z), r2(s.vx), r2(s.vy), r2(s.vz), s.rest ? 1 : 0, s.active ? 1 : 0, r3(s.age), PROJ_CODE[s.kind] || 0]),
       ct: this.cats.map((c) => [c.id, c.owner, r2(c.x), r2(c.z), r3(c.yaw), r2(c.speed || 0)]),
       lo: this.loose.map((l) => [l.id, r2(l.x), r2(l.z), l.count]),
@@ -171,7 +171,7 @@ export class Sim {
         }
       }
 
-      // 武器自己的節奏：步槍換彈完成、貓咪慢慢回來
+      // 彈藥自己會回來：步槍打完自動換彈；石頭、手榴彈、貓每隔幾秒補一發（滿了計時停住）
       if (W.kind === 'hitscan' && p.stones === 0 && p.reloadUntil && this.time >= p.reloadUntil) {
         p.stones = W.ammo; p.reloadUntil = 0;
         this.events.push({ type: 'reloaded', id: p.id });
@@ -182,31 +182,8 @@ export class Sim {
       }
       if (W.regen && p.stones >= W.ammo) p.regenAt = this.time + W.regen;
 
-      // 回血
-      if (this.time - p.lastDmgAt > CFG.REGEN_DELAY && p.hp < CFG.HP) p.hp = Math.min(CFG.HP, p.hp + CFG.REGEN_RATE * dt);
-
-      // 石堆：補到這種武器的 pile 數；地上的石頭只有用石頭的人撿
-      if (W.pile && p.stones < W.pile) {
-        for (const pile of this.piles) {
-          if (pile.readyAt > this.time) continue;
-          if ((pile.x - p.x) ** 2 + (pile.z - p.z) ** 2 < 1.3 * 1.3) {
-            p.stones = W.pile; pile.readyAt = this.time + CFG.PILE_CD;
-            this.events.push({ type: 'pickup', id: p.id, pile: pile.id, x: pile.x, z: pile.z });
-            break;
-          }
-        }
-      }
-      if (W.loose && p.stones < W.ammo) {
-        for (const l of this.loose) {
-          if (l.count <= 0) continue;
-          if ((l.x - p.x) ** 2 + (l.z - p.z) ** 2 < 1.0) {
-            const take = Math.min(l.count, W.ammo - p.stones);
-            p.stones += take; l.count -= take;
-            this.events.push({ type: 'pickup', id: p.id, x: l.x, z: l.z, n: take });
-            if (p.stones >= W.ammo) break;
-          }
-        }
-      }
+      // 回血：只有真人會（電腦不回血，打殘的電腦跑掉也不會滿血回來）
+      if (!p.isBot && this.time - p.lastDmgAt > CFG.REGEN_DELAY && p.hp < CFG.HP) p.hp = Math.min(CFG.HP, p.hp + CFG.REGEN_RATE * dt);
     }
 
     // 人與人推開
@@ -230,7 +207,6 @@ export class Sim {
 
     this._stepStones(dt);
     this._stepCats(dt);
-    this.loose = this.loose.filter((l) => l.count > 0 && l.until > this.time);
 
     if (this.time >= this.matchTime) this.end();
   }
@@ -351,7 +327,7 @@ export class Sim {
       s.age += dt;
       if (s.kind === 'boom') { this._stepBoom(s, dt); continue; }
       if (s.rest) {
-        if (s.age > 8) s.alive = false;
+        if (s.age > 4) s.alive = false;   // 落地的石頭躺一下就消失（不能撿）
         continue;
       }
       for (let k = 0; k < SUB && s.alive && !s.rest; k++) {
@@ -396,8 +372,8 @@ export class Sim {
         s.vy = Math.abs(s.vy) * 0.28;
         s.vx *= 0.5; s.vz *= 0.5;
         if (Math.hypot(s.vx, s.vy, s.vz) < 1.4) {
-          s.alive = false;
-          this._drop(s.x, s.z, 1);
+          s.rest = true; s.age = 0; s.vx = s.vy = s.vz = 0;
+          if (this.map.heightAt(s.x, s.z) > 0) s.alive = false;
         }
       }
     }
@@ -524,7 +500,7 @@ export class Sim {
     }
     const W = WEAPONS.cat;
     this.cats.push({ id: this._id++, owner, x: cx, z: cz, px: cx, pz: cz, vx: 0, vz: 0, yaw: 0, speed: 0, life: W.catLife, target: 0, retarget: 0, path: null, pi: 0, repathAt: 0, alive: true });
-    this.events.push({ type: 'cat', id: owner, x: cx, z: cz });
+    this.events.push({ type: 'cat', id: owner, x: cx, z: cz, lx: x, lz: z });   // lx／lz：球真正落地的點（貓可能被挪到旁邊走得到的地方）
   }
 
   _catDown(c, by) {
@@ -605,17 +581,8 @@ export class Sim {
   }
 
   // ---------- 傷害 ----------
-  _drop(x, z, n) {
-    if (this.map.heightAt(x, z) > 0) return;
-    for (const l of this.loose) {
-      if ((l.x - x) ** 2 + (l.z - z) ** 2 < 0.36) { l.count += n; l.until = this.time + CFG.LOOSE_LIFE; return; }
-    }
-    this.loose.push({ id: this._id++, x, z, count: n, until: this.time + CFG.LOOSE_LIFE });
-  }
-
   _hit(q, s, part) {
     s.alive = false;
-    if (s.kind === 'stone') this._drop(q.x + (this.rng() - 0.5) * 0.6, q.z + (this.rng() - 0.5) * 0.6, 1);
     const head = part === 'head';
     this.damage(q, head ? WEAPONS.stone.dmgHead : WEAPONS.stone.dmg, s.owner, { head, x: s.x, y: s.y, z: s.z, fromX: s.ox, fromZ: s.oz, w: 'stone' });
   }
@@ -639,7 +606,6 @@ export class Sim {
       q.hp = 0; q.alive = false; q.deaths++;
       q.killedBy = byId; q.respawnAt = this.time + CFG.RESPAWN_T;
       q.aiming = false; q.charge = 0; q.dashUntil = 0; q.pendingSlash = false;
-      if (q.weapon === 'stone' && q.stones > 0) this._drop(q.x, q.z, q.stones);
       q.stones = 0;
       this.wstats[q.weapon].deaths++;
       if (shooter && shooter !== q) { shooter.kills++; this.wstats[shooter.weapon].kills++; }

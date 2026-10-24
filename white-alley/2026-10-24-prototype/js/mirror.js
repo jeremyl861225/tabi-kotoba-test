@@ -22,7 +22,7 @@ export class MirrorSim {
     this.cats = [];
     this.catBase = [];
     this.loose = [];
-    this.piles = map.piles.map((p, i) => ({ id: i, x: p.x, z: p.z, readyAt: 0 }));
+    this.piles = [];
     this.events = [];
     this.time = 0;
     this.matchTime = matchTime;
@@ -45,12 +45,12 @@ export class MirrorSim {
     const ids = new Set(s.pl.map((a) => a[0]));
     this.players = this.players.filter((p) => ids.has(p.id));
     for (const a of s.pl) {
-      const [id, x, z, yaw, pitch, hp, stones, alive, aiming, charge, kills, deaths, heads, respawnAt, shieldUntil, killedBy, throwAt, speed, ack, spawnAt, reloadUntil] = a;
+      const [id, x, z, yaw, pitch, hp, stones, alive, aiming, charge, kills, deaths, heads, respawnAt, shieldUntil, killedBy, throwAt, speed, ack, spawnAt, reloadUntil, regenAt] = a;
       const p = this.byId(id);
       if (!p) continue;
       // 位置與「看得到的動作」（生死、舉手、出手）放進時間軸，跟著延遲 100 ms 的畫面一起播
       pos.set(id, { x, z, yaw, pitch, speed, alive: !!alive, aiming: !!aiming, charge, throwAt, spawnAt });
-      Object.assign(p, { hp, stones, kills, deaths, heads, respawnAt, shieldUntil, killedBy, spawnAt, reloadUntil: reloadUntil || 0 });
+      Object.assign(p, { hp, stones, kills, deaths, heads, respawnAt, shieldUntil, killedBy, spawnAt, reloadUntil: reloadUntil || 0, regenAt: regenAt || 0 });
       if (id === meId) { mine = { x, z, yaw, alive: !!alive, ack, hp }; p.alive = !!alive; }
     }
     this.snaps.push({ t: s.ht, pos });
@@ -58,8 +58,6 @@ export class MirrorSim {
     this.stoneBase = s.sn.map(([id, owner, x, y, z, vx, vy, vz, rest, active, age, kind]) => ({ id, owner, x, y, z, vx, vy, vz, rest: !!rest, active: !!active, age: age || 0, kind: PROJ_KIND[kind || 0] }));
     this.catBase = (s.ct || []).map(([id, owner, x, z, yaw, speed]) => ({ id, owner, x, z, yaw, speed }));
     this.stoneT = s.ht;
-    this.loose = s.lo.map(([id, x, z, count]) => ({ id, x, z, count }));
-    s.pi.forEach((r, i) => { if (this.piles[i]) this.piles[i].readyAt = r; });
     this.matchTime = s.mt;
     if (s.st) this.state = 'over';
     this.lastSnap = { t: s.ht, recvAt };
