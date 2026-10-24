@@ -617,9 +617,11 @@ export class Renderer {
     // 拋物線預覽
     this.arcHit = null;
     if (me.alive && me.aiming && opts.showArc !== false) {
-      const v = chargeSpeed(me.charge);
-      const o = throwOrigin(ex, ez, view.yaw);
-      const f = forward(view.yaw, view.pitch);
+      // 有準心落點解就照它畫（石頭真正會走的路）；沒有才照視線與蓄力
+      const A = opts.aim && opts.aim.yaw != null ? opts.aim : null;
+      const v = A ? A.v : chargeSpeed(me.charge);
+      const o = throwOrigin(ex, ez, A ? A.yaw : view.yaw);
+      const f = A ? forward(A.yaw, A.pitch) : forward(view.yaw, view.pitch);
       const arc = simulateArc(this.map, o, { x: f.x * v, y: f.y * v, z: f.z * v }, { players: sim.players, ignoreId: me.id, every: 1 });
       const pa = this.arcLine.geometry.attributes.position, la = this.arcLine.geometry.attributes.lineDistance;
       const n = Math.min(arc.pts.length, pa.count);

@@ -39,6 +39,6 @@ export class RemoteInput {
     if (!m) return null;
     const cancelled = m.cx != null && m.cx === m.pr;
     const still = this.idle > STALE_TICKS;
-    return { mx: still ? 0 : m.mx, mz: still ? 0 : m.mz, yaw: m.yaw, pitch: m.pitch, aim: !!m.aim && !cancelled, cancel: cancelled, ch: m.ch };
+    return { mx: still ? 0 : m.mx, mz: still ? 0 : m.mz, yaw: m.yaw, pitch: m.pitch, aim: !!m.aim && !cancelled, cancel: cancelled, ch: m.ch, ty: m.ty, tp: m.tp, tv: m.tv };
   }
 }

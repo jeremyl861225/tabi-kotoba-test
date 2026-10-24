@@ -133,7 +133,7 @@ export class Sim {
         if (!inp.aim && !inp.cancel) {
           // 連線玩家回報自己畫面上的蓄力（延遲會讓房主這邊少算一點），最多多給 0.3
           if (typeof inp.ch === 'number') p.charge = Math.max(0, Math.min(1, inp.ch, p.charge + 0.3));
-          this.throwStone(p);
+          this.throwStone(p, inp);
         }
       }
 
@@ -189,10 +189,13 @@ export class Sim {
     if (this.time >= this.matchTime) this.end();
   }
 
-  throwStone(p) {
-    const v = chargeSpeed(p.charge);
-    const o = throwOrigin(p.x, p.z, p.yaw);
-    const f = forward(p.yaw, p.pitch);
+  // 玩家的輸入可以帶「準心落點解」ty／tp／tv（出手方向、仰角、初速）；電腦沒帶就照視線與蓄力
+  throwStone(p, inp = {}) {
+    const aimed = typeof inp.tp === 'number' && typeof inp.ty === 'number' && typeof inp.tv === 'number';
+    const v = aimed ? Math.max(4, Math.min(CFG.V_MAX, inp.tv)) : chargeSpeed(p.charge);
+    const ty = aimed ? inp.ty : p.yaw, tp = aimed ? Math.max(-1.4, Math.min(1.4, inp.tp)) : p.pitch;
+    const o = throwOrigin(p.x, p.z, ty);
+    const f = forward(ty, tp);
     const s = {
       id: this._id++, owner: p.id, x: o.x, y: o.y, z: o.z,
       vx: f.x * v, vy: f.y * v, vz: f.z * v,

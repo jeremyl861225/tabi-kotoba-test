@@ -22,7 +22,7 @@ export class Hud {
       </div>
       <div class="minimap glass lens" data-bezel="12" data-refract="10"><canvas></canvas></div>
       <div class="feed"></div>
-      <div class="cross"><i></i><b></b><b></b><b></b><b></b></div>
+      <div class="cross"><i></i><b></b><b></b><b></b><b></b><span>太遠</span></div>
       <div class="hitmark"><b></b><b></b><b></b><b></b><span></span></div>
       <canvas class="dmg"></canvas>
       <div class="vig"></div>
@@ -170,7 +170,7 @@ export class Hud {
 
   ping(x, z, t) { this.pings.push({ x, z, t }); }
 
-  update(sim, me, view, visible, r, dt) {
+  update(sim, me, view, visible, r, dt, aim = null) {
     const e = this.el;
     // 血量：受傷時紅色殘影停一下再縮
     const hp = Math.max(0, me.hp);
@@ -199,8 +199,10 @@ export class Hud {
     const left = Math.max(0, sim.matchTime - sim.time);
     e.clock.textContent = `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`;
     e.clock.classList.toggle('hurry', left < 30 && sim.state === 'play');
+    // 準心＝落點：指到人變紅、太遠（丟不到）變灰並提示
     e.cross.classList.toggle('aim', me.aiming);
-    e.cross.classList.toggle('lock', !!(me.aiming && r.arcHit && r.arcHit.type === 'player'));
+    e.cross.classList.toggle('lock', !!(aim && aim.hit && aim.hit.player));
+    e.cross.classList.toggle('far', !!(me.aiming && aim && aim.far));
     e.cross.style.opacity = me.alive ? 1 : 0;
 
     this.drawMini(sim, me, view, visible);

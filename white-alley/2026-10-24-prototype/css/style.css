@@ -309,6 +309,9 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 .cross.aim b:nth-of-type(3) { transform: rotate(180deg) translateY(-7px); }
 .cross.aim b:nth-of-type(4) { transform: rotate(270deg) translateY(-7px); }
 .cross.lock b, .cross.lock i { background: var(--red); }
+.cross span { position: absolute; left: 0; top: 16px; transform: translateX(-50%); font-size: 11px; font-weight: 700; color: var(--ink-2); white-space: nowrap; opacity: 0; transition: opacity 0.2s; text-shadow: 0 0 4px #fff, 0 0 8px #fff; }
+.cross.far b, .cross.far i { background: var(--ink-3); }
+.cross.far span { opacity: 1; }
 .hitmark { position: absolute; left: 50%; top: 50%; width: 0; height: 0; opacity: 0; }
 .hitmark b { position: absolute; width: 3px; height: 11px; margin: -5.5px 0 0 -1.5px; border-radius: 2px; background: var(--ink); box-shadow: 0 0 0 1px oklch(1 0 0 / 0.8); }
 .hitmark b:nth-of-type(1) { transform: rotate(45deg) translateY(-14px); }

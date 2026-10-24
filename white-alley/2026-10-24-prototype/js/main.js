@@ -5,6 +5,7 @@ import { Sim, movePlayer } from './sim.js';
 import { MirrorSim } from './mirror.js';
 import { P2P, genRoomCode, newId, normCode } from './net.js';
 import { RemoteInput } from './remote.js';
+import { aimSolve, chargeSpeed, forward, raycast } from './physics.js';
 import { Bot } from './bot.js';
 import { Renderer } from './render.js';
 import { Hud } from './hud.js';
@@ -384,7 +385,7 @@ function hostGone(why) {
 function guestTick(inp) {
   const { sim, me } = G;
   // 每次按下給一個編號；取消與放手時的蓄力之後每包都帶，掉包也不會被房主誤判（js/remote.js）
-  if (inp.aim && !G.wasAim) { G.pr++; G.ch = undefined; }
+  if (inp.aim && !G.wasAim) { G.pr++; G.ch = undefined; G.tsol = null; }
   G.wasAim = inp.aim;
   if (inp.cancel) G.cx = G.pr;
   if (inp.cancel && me.aiming) { me.aiming = false; me.charge = 0; }
@@ -394,6 +395,7 @@ function guestTick(inp) {
     me.charge = Math.min(1, me.charge + CFG.TICK / CFG.CHARGE_T);
     if (!inp.aim && !inp.cancel) {
       G.ch = Math.round(me.charge * 1000) / 1000;
+      if (inp.tp != null) G.tsol = { ty: Math.round(inp.ty * 1e4) / 1e4, tp: Math.round(inp.tp * 1e4) / 1e4, tv: Math.round(inp.tv * 100) / 100 };
       me.aiming = false; me.charge = 0; me.throwAt = sim.time; G.cdT = Math.round(CFG.THROW_CD / CFG.TICK);
       renderer.kick = 1;
     }
@@ -405,7 +407,7 @@ function guestTick(inp) {
   G.hist.push({ s, x: me.x, z: me.z });
   if (G.hist.length > 240) G.hist.shift();
   const r3 = (v) => Math.round(v * 1000) / 1000;
-  if (L) L.net.send(L.net.hostId, { t: 'in', s, mx: r3(inp.mx), mz: r3(inp.mz), yaw: r3(inp.yaw), pitch: r3(inp.pitch), aim: inp.aim, pr: G.pr, cx: G.cx, ch: G.ch }, false);
+  if (L) L.net.send(L.net.hostId, { t: 'in', s, mx: r3(inp.mx), mz: r3(inp.mz), yaw: r3(inp.yaw), pitch: r3(inp.pitch), aim: inp.aim, pr: G.pr, cx: G.cx, ch: G.ch, ...(G.tsol || {}) }, false);
 }
 
 function endIntro() {
@@ -428,7 +430,7 @@ function coach() {
   el.innerHTML = `
     <i class="ghostring" style="left:120px;top:${H - 110}px"></i>
     <div class="tip glass" style="left:186px;top:${H - 150}px"><b>左下：拖曳移動</b><span>手指放哪，搖桿就出現在哪</span></div>
-    <div class="tip glass" style="right:${window.innerWidth - r.left + 18}px;top:${r.top - 6}px"><b>右邊：按住蓄力・放開丟</b><span>推動轉視角；拖到 ✕ 再放開就不丟</span></div>
+    <div class="tip glass" style="right:${window.innerWidth - r.left + 18}px;top:${r.top - 6}px"><b>右邊：按住拖曳・放開丟</b><span>準心就是落點；拖到 ✕ 再放開就不丟</span></div>
     <p class="go">點一下開始</p>`;
   hud.root.appendChild(el);
   glass.add(el);
@@ -558,19 +560,21 @@ function updateVisible() {
   }
 }
 
-// 觸控瞄準輔助：拋物線預覽打得到人、或準星壓在看得到的敵人身上時，轉視角變慢（不會自動轉過去）
+// 準心就是落點：從眼睛沿視線找準心指著的東西，再算出往上拋的出手方向、仰角與初速（physics.aimSolve）
+function computeAim() {
+  const { sim, me, view } = G;
+  if (!me.alive) { G.aimSol = null; return; }
+  const hit = raycast(sim.map, me.x, CFG.EYE, me.z, forward(view.yaw, view.pitch), sim.players, me.id, 70);
+  if (!me.aiming) { G.aimSol = { hit }; return; }   // 沒在蓄力只要知道準心指著誰
+  const sol = aimSolve(sim.map, me.x, me.z, hit, chargeSpeed(me.charge), sim.players, hit.player ? hit.player.id : -1, me.id);
+  sol.hit = hit;
+  G.aimSol = sol;
+}
+
+// 觸控瞄準輔助：準心壓在敵人身上時轉視角變慢（不會自動轉過去）；倍率慢慢變，不會一下快一下慢
 function aimFriction() {
-  const { me, view, sim, visible } = G;
-  if (me.aiming && renderer.arcHit && renderer.arcHit.type === 'player') return 0.42;
-  for (const p of sim.players) {
-    if (p === me || !p.alive || !visible.has(p.id)) continue;
-    const dx = p.x - me.x, dz = p.z - me.z, d = Math.hypot(dx, dz);
-    const dyaw = Math.atan2(-dx, -dz) - view.yaw;
-    const ay = Math.abs(Math.atan2(Math.sin(dyaw), Math.cos(dyaw)));
-    const ap = Math.abs(Math.atan2(1.15 - CFG.EYE, d) - view.pitch);
-    const tol = Math.atan2(0.45, d) + 0.03;
-    if (ay < tol && ap < tol * 2.2) return 0.62;
-  }
+  const s = G.aimSol;
+  if (s && s.hit && s.hit.player) return G.me.aiming ? 0.5 : 0.7;
   return 1;
 }
 
@@ -579,6 +583,8 @@ function tickOnce(fr) {
   const sy = Math.sin(view.yaw), cy = Math.cos(view.yaw);
   const a = input.tickAim();
   let mine = { mx: cy * fr.mx - sy * fr.my, mz: -sy * fr.mx - cy * fr.my, yaw: view.yaw, pitch: view.pitch, aim: a.aim, cancel: a.cancel };
+  const sol = G.aimSol;
+  if (sol && sol.yaw != null) { mine.ty = sol.yaw; mine.tp = sol.pitch; mine.tv = sol.v; }
   if (window.__wa.autoplay && G.mode === 'solo') {   // 測試：我方也交給電腦，用來整場浸泡測試
     if (!G.autoBot) G.autoBot = new Bot(sim, me, 'normal', mulberry32(99));
     mine = G.autoBot.input(CFG.TICK);
@@ -634,10 +640,12 @@ function loop(t) {
   const frozen = G.mode === 'solo' && (G.paused || G.coach);
   if (!frozen && sim.state === 'play') {
     if (me.alive) {
-      const k = settings.assist && COARSE ? aimFriction() : 1;
-      view.yaw += fr.dyaw * k;
-      view.pitch = Math.max(-1.2, Math.min(1.2, view.pitch + fr.dpitch * k));
+      const target = settings.assist && COARSE ? aimFriction() : 1;
+      G.fk = (G.fk ?? 1) + (target - (G.fk ?? 1)) * Math.min(1, dt * 6);
+      view.yaw += fr.dyaw * G.fk;
+      view.pitch = Math.max(-1.2, Math.min(1.2, view.pitch + fr.dpitch * G.fk));
     }
+    computeAim();
     G.acc += dt;
     let n = 0;
     while (G.acc >= CFG.TICK && n < 6) {
@@ -656,8 +664,8 @@ function loop(t) {
   input.setCharge(me.charge, me.aiming && me.alive);
   input.setStones(me.stones);
   const still = frozen;
-  renderer.frame(sim, me, view, still ? 1 : G.acc / CFG.TICK, still ? 0 : dt, { showArc: settings.arc });
-  hud.update(sim, me, view, G.visible, renderer, still ? 0 : dt);
+  renderer.frame(sim, me, view, still ? 1 : G.acc / CFG.TICK, still ? 0 : dt, { showArc: settings.arc, aim: G.aimSol });
+  hud.update(sim, me, view, G.visible, renderer, still ? 0 : dt, G.aimSol);
 }
 
 window.addEventListener('resize', () => { renderer && renderer.resize(); hud && hud.resize(); input.layout(); if (!G) syncMenu(true); });
@@ -673,12 +681,13 @@ window.__wa = {
   // 同步跑 n 個 tick（Browser pane 隱藏時 rAF 幾乎不跑），再畫一格
   advance(n, mx = 0, my = 0) {
     if (G && G.intro < INTRO) { G.intro = INTRO; endIntro(); }
-    for (let i = 0; i < n && G && G.sim.state === 'play'; i++) tickOnce({ mx, my });
+    for (let i = 0; i < n && G && G.sim.state === 'play'; i++) { computeAim(); tickOnce({ mx, my }); }
     if (G) {
       updateVisible();
+      computeAim();
       input.setCharge(G.me.charge, G.me.aiming && G.me.alive);
-      renderer.frame(G.sim, G.me, G.view, 1, 1 / 60, { showArc: settings.arc });
-      hud.update(G.sim, G.me, G.view, G.visible, renderer, 1 / 60);
+      renderer.frame(G.sim, G.me, G.view, 1, 1 / 60, { showArc: settings.arc, aim: G.aimSol });
+      hud.update(G.sim, G.me, G.view, G.visible, renderer, 1 / 60, G.aimSol);
     }
   },
   skipIntro() { if (G && G.intro < INTRO) { G.intro = INTRO; endIntro(); } },

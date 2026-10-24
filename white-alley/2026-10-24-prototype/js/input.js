@@ -1,14 +1,14 @@
-// 操作：左下浮動搖桿（移動）、右中搖桿（按住蓄力＋轉視角、放開投擲、拖到 ✕ 取消）、
+// 操作：左下浮動搖桿（移動）、右中搖桿（按住蓄力＋拖曳轉視角、放開投擲、拖到 ✕ 取消）、
 // 右半邊空白處拖曳（純轉視角）、電腦 WASD＋滑鼠。
 const DEG = Math.PI / 180;
 const KNOB = 52;          // 搖桿可推的半徑（CSS px）
+const DRAG = 0.0042;      // 拖曳轉視角：每 px 幾弧度（右搖桿與右半邊空白處一樣）
 
 export class Input {
   constructor(root, settings) {
     this.root = root;
     this.settings = settings;
     this.move = { x: 0, y: 0 };
-    this.lookRate = { x: 0, y: 0 };    // 右搖桿（-1..1）
     this.lookAcc = { x: 0, y: 0 };     // 觸控板／滑鼠累積（弧度）
     this.aimHeld = false; this.aimLatch = false; this.cancelLatch = false;
     this.keys = new Set();
@@ -61,7 +61,6 @@ export class Input {
   reset() {
     this.aimLatch = false; this.cancelLatch = false;
     this.move.x = this.move.y = 0;
-    this.lookRate.x = this.lookRate.y = 0;
     this.aimHeld = false;
     this.touch.left = this.touch.right = null;
     this.touch.pads.clear();
@@ -92,6 +91,7 @@ export class Input {
     const dR = Math.hypot(e.clientX - this.rc.x, e.clientY - this.rc.y);
     if (dR < 88 && this.touch.right == null) {
       this.touch.right = e.pointerId;
+      this.rLast = { x: e.clientX, y: e.clientY };
       this.elR.classList.add('on');
       this.press();
       this.elC.hidden = false;
@@ -121,7 +121,7 @@ export class Input {
       e.preventDefault();
     } else if (this.touch.pads.has(e.pointerId)) {
       const p = this.touch.pads.get(e.pointerId);
-      const k = 0.0045 * this.settings.sens;
+      const k = DRAG * this.settings.sens;
       this.lookAcc.x -= (e.clientX - p.x) * k;
       this.lookAcc.y -= (e.clientY - p.y) * k;
       p.x = e.clientX; p.y = e.clientY;
@@ -140,10 +140,13 @@ export class Input {
     const toward = d > KNOB * 0.85 && (dx * cx + dy * cy) / (d * Math.hypot(cx, cy)) > Math.cos(32 * DEG);
     if (d > KNOB) { dx *= KNOB / d; dy *= KNOB / d; }
     this.setKnob(this.elR, dx, dy);
-    if (this.overCancel || toward) { this.lookRate.x = this.lookRate.y = 0; return; }
-    const curve = (v) => Math.sign(v) * Math.abs(v) ** 1.7;
-    this.lookRate.x = curve(dx / KNOB);
-    this.lookRate.y = curve(dy / KNOB);
+    // 手指移多少、視角就轉多少（像拖動畫面）：不會因為推到底就越轉越快
+    const ddx = x - this.rLast.x, ddy = y - this.rLast.y;
+    this.rLast = { x, y };
+    if (this.overCancel || toward) return;
+    const k = DRAG * this.settings.sens;
+    this.lookAcc.x -= ddx * k;
+    this.lookAcc.y -= ddy * k;
   }
 
   up(e, cancelled = false) {
@@ -155,7 +158,6 @@ export class Input {
       this.touch.left = null; this.move.x = this.move.y = 0; this.elL.hidden = true;
     } else if (this.touch.right === e.pointerId) {
       this.touch.right = null;
-      this.lookRate.x = this.lookRate.y = 0;
       this.setKnob(this.elR, 0, 0, true);
       this.elR.classList.remove('on');
       this.elC.hidden = true; this.elC.classList.remove('hot');
@@ -175,10 +177,9 @@ export class Input {
     if (k.has('KeyS') || k.has('ArrowDown')) my -= 1;
     if (k.has('KeyD') || k.has('ArrowRight')) mx += 1;
     if (k.has('KeyA') || k.has('ArrowLeft')) mx -= 1;
-    const s = this.settings.sens;
-    const dyaw = -this.lookRate.x * 190 * DEG * s * dt + this.lookAcc.x;
-    const dpitch = -this.lookRate.y * 105 * DEG * s * dt + this.lookAcc.y;
+    const dyaw = this.lookAcc.x, dpitch = this.lookAcc.y;
     this.lookAcc.x = this.lookAcc.y = 0;
+    void dt;
     return { mx, my, dyaw, dpitch };
   }
 

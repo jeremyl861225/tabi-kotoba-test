@@ -85,3 +85,53 @@ export function solvePitch(d, dh, v, low = true) {
   const r = Math.sqrt(disc);
   return Math.atan((v2 + (low ? -r : r)) / (g * d));
 }
+
+// 準心射線：從眼睛沿視線找第一個碰到的東西（其他人、地面、建物），最遠 maxD 公尺
+export function raycast(map, ox, oy, oz, d, players = null, ignoreId = -1, maxD = 70) {
+  const step = 0.1;
+  for (let t = step; t <= maxD; t += step) {
+    const x = ox + d.x * t, y = oy + d.y * t, z = oz + d.z * t;
+    if (players) {
+      for (const q of players) {
+        if (!q.alive || q.id === ignoreId) continue;
+        const part = hitPart(x, y, z, q);
+        if (part) return { x, y, z, t, surf: 'player', player: q, part };
+      }
+    }
+    if (y <= 0) return { x, y: 0, z, t, surf: 'ground' };
+    if (!map.inGrid(x, z)) return { x, y, z, t, surf: 'air' };
+    if (map.heightAt(x, z) > y) return { x, y, z, t, surf: 'wall' };
+  }
+  return { x: ox + d.x * maxD, y: oy + d.y * maxD, z: oz + d.z * maxD, t: maxD, surf: 'air' };
+}
+
+// 準心就是落點：要讓石頭從手上出發、落在 P，該往哪個方向、多少仰角、多快丟。
+// 初速 = 蓄力給的速度與「剛好丟得到」的速度取大的（輕點也丟得到，蓄滿就丟得又平又快）；
+// 低弧被牆擋住就改高弧；超出最遠射程就用最遠的角度丟（far = true，會落在準心前面）。
+export function aimSolve(map, x, z, P, vBase, players = null, targetId = -1, meId = -1) {
+  const g = CFG.G;
+  let yaw = Math.atan2(-(P.x - x), -(P.z - z));
+  let o = throwOrigin(x, z, yaw);
+  yaw = Math.atan2(-(P.x - o.x), -(P.z - o.z));   // 出手點在右手邊，方向從手算回準心，修正視差
+  o = throwOrigin(x, z, yaw);
+  const d = Math.hypot(P.x - o.x, P.z - o.z), dh = P.y - o.y;
+  const vNeed = Math.sqrt(g * (dh + Math.hypot(d, dh)));
+  if (vNeed > CFG.V_MAX * 0.995) {
+    const v = CFG.V_MAX, q = v * v - 2 * g * dh;
+    return { yaw, pitch: q > 0 ? Math.atan(v / Math.sqrt(q)) : Math.PI / 4, v, far: true, o };
+  }
+  const v = Math.min(CFG.V_MAX, Math.max(vBase, vNeed * 1.03));
+  const reaches = (pitch) => {
+    const c = Math.cos(pitch);
+    const arc = simulateArc(map, o, { x: -Math.sin(yaw) * c * v, y: Math.sin(pitch) * v, z: -Math.cos(yaw) * c * v }, { players, ignoreId: meId, maxT: 4, every: 8 });
+    const h = arc.hit;
+    if (!h) return false;
+    if (h.type === 'player') return targetId < 0 || h.id === targetId;
+    return Math.hypot(h.x - P.x, h.y - P.y, h.z - P.z) < 1.2;
+  };
+  const low = solvePitch(d, dh, v, true) ?? Math.PI / 4;
+  if (reaches(low)) return { yaw, pitch: low, v, far: false, o };
+  const high = solvePitch(d, dh, v, false);
+  if (high != null && reaches(high)) return { yaw, pitch: high, v, far: false, o, lob: true };
+  return { yaw, pitch: low, v, far: false, o, blocked: true };
+}
