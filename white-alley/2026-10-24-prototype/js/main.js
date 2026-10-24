@@ -5,7 +5,8 @@ import { Sim, movePlayer } from './sim.js';
 import { MirrorSim } from './mirror.js';
 import { P2P, genRoomCode, newId, normCode } from './net.js';
 import { RemoteInput } from './remote.js';
-import { aimSolve, chargeSpeed, forward, raycast } from './physics.js';
+import { aimSolve, forward, raycast } from './physics.js';
+import { WEAPONS, WEAPON_KEYS, chargeSpeedW } from './weapons.js';
 import { Bot } from './bot.js';
 import { Renderer } from './render.js';
 import { Hud } from './hud.js';
@@ -17,7 +18,7 @@ import { animate, drawMapThumb, hudIn, menuIn, popIn, segSet, spring, stagger } 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const KEY = 'white-alley:settings';
-const DEFAULTS = { sens: 1, arc: true, sound: true, assist: true, map: 'mykonos', bots: 5, diff: 'normal', coached: false };
+const DEFAULTS = { sens: 1, arc: true, sound: true, assist: true, map: 'mykonos', bots: 5, diff: 'normal', coached: false, weapon: 'stone' };
 const settings = (() => {
   try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch { return { ...DEFAULTS }; }
 })();
@@ -90,7 +91,10 @@ $('#optArc').addEventListener('change', (e) => { settings.arc = e.target.checked
 $('#optAssist').addEventListener('change', (e) => { settings.assist = e.target.checked; save(); });
 $('#optSound').addEventListener('change', (e) => { settings.sound = e.target.checked; sfx.on = settings.sound; save(); });
 
-$('#go').addEventListener('click', () => start());
+$('#go').addEventListener('click', () => openWeapons('solo'));
+$('#wpGo').addEventListener('click', () => weaponConfirm());
+$('#wpBack').addEventListener('click', () => show(weaponMode === 'lobby' ? '#lobbyPane' : '#menu'));
+$('#lbWeapon').addEventListener('click', () => openWeapons('lobby'));
 $('#again').addEventListener('click', () => start());
 $('#restart').addEventListener('click', () => start());
 $('#netBtn').addEventListener('click', () => openLobby());
@@ -108,7 +112,7 @@ $('.closeHow').addEventListener('click', () => show(G ? '#pausePane' : '#menu'))
 document.querySelectorAll('.toMenu').forEach((b) => b.addEventListener('click', () => toMenu()));
 
 function show(id) {
-  const screens = ['#menu', '#pausePane', '#results', '#loading', '#howPane', '#lobbyPane'];
+  const screens = ['#menu', '#pausePane', '#results', '#loading', '#howPane', '#lobbyPane', '#weaponPane'];
   for (const s of screens) $(s).hidden = s !== id;
   const inGame = id === null;
   $('#hud').hidden = !G;
@@ -141,20 +145,69 @@ async function start() {
   renderer.reset();
   const seed = (Date.now() & 0xfffff) + 1;
   const sim = new Sim(map, { seed });
-  const me = sim.addPlayer({ name: '你', accent: PLAYER_ACCENT });
+  const me = sim.addPlayer({ name: '你', accent: PLAYER_ACCENT, weapon: settings.weapon });
   const rng = mulberry32(seed * 7);
   const names = [...BOT_NAMES].sort(() => rng() - 0.5);
+  const bag = botWeapons(rng, settings.bots);
   const bots = [];
   for (let i = 0; i < settings.bots; i++) {
-    const p = sim.addPlayer({ name: names[i], accent: ACCENTS[i % ACCENTS.length], isBot: true });
+    const p = sim.addPlayer({ name: names[i], accent: ACCENTS[i % ACCENTS.length], isBot: true, weapon: bag[i] });
     bots.push(new Bot(sim, p, settings.diff, rng));
   }
   setupGame(map, sim, me, bots, 'solo');
 }
 
+// 電腦的武器：六種輪流發（洗牌），一場裡盡量不重複
+function botWeapons(rng, n) {
+  const out = [];
+  while (out.length < n) out.push(...[...WEAPON_KEYS].sort(() => rng() - 0.5));
+  return out.slice(0, n);
+}
+
+// ---------- 選武器 ----------
+let weaponMode = 'solo';
+let weaponPick = null;
+function wIcon(k, cls = '') { return `<svg class="i ${cls}"><use href="#i-w-${k}"/></svg>`; }
+function openWeapons(mode) {
+  weaponMode = mode;
+  weaponPick = settings.weapon;
+  const grid = $('#wpGrid');
+  if (!grid.children.length) {
+    grid.innerHTML = WEAPON_KEYS.map((k) => {
+      const W = WEAPONS[k];
+      return `<button class="wcard" data-w="${k}"><span class="wic">${wIcon(k)}</span><b>${W.name}</b><small>${W.short}</small></button>`;
+    }).join('');
+    grid.addEventListener('click', (e) => { const b = e.target.closest('.wcard'); if (b) pickWeapon(b.dataset.w); });
+  }
+  pickWeapon(weaponPick, true);
+  $('#wpGo').innerHTML = mode === 'lobby' ? '<svg class="i"><use href="#i-check"/></svg>就用這把' : '<span class="lbl">出發</span><span class="ico"><svg class="i"><use href="#i-arrow"/></svg></span>';
+  $('#wpGo').className = mode === 'lobby' ? 'btn-ink' : 'btn-go';
+  show('#weaponPane');
+}
+function pickWeapon(k, instant = false) {
+  weaponPick = k;
+  const W = WEAPONS[k];
+  document.querySelectorAll('.wcard').forEach((b) => b.classList.toggle('on', b.dataset.w === k));
+  const bar = (n) => `<i style="--n:${n}"></i>`;
+  $('#wpDetail').innerHTML = `<div class="wd-head"><span class="wic big">${wIcon(k)}</span><div><h3 class="serif">${W.name}</h3><p>${W.short}</p></div></div>
+    <p class="wd-desc">${W.desc}</p>
+    <div class="wd-stats"><span>威力</span>${bar(W.stats.power)}<span>距離</span>${bar(W.stats.range)}<span>上手</span>${bar(W.stats.ease)}</div>`;
+  if (!instant) animate($('#wpDetail'), { opacity: [0.4, 1], x: [8, 0] }, { duration: 0.3 });
+}
+function weaponConfirm() {
+  settings.weapon = weaponPick; save();
+  if (weaponMode === 'lobby') {
+    if (L && L.role === 'guest' && L.net.hostId) L.net.send(L.net.hostId, { t: 'pick', w: settings.weapon });
+    if (L && L.role === 'host') lobbyBroadcast();
+    show('#lobbyPane'); renderLobby();
+  } else start();
+}
+
 function setupGame(map, sim, me, bots, mode, extra = {}) {
   if (hud) hud.root.innerHTML = '';
-  hud = new Hud($('#hud'), map);
+  hud = new Hud($('#hud'), map, me.weapon);
+  input.setWeapon(WEAPONS[me.weapon]);
+  renderer.setMyBlade(me.accent);
   hud.el.pause.addEventListener('click', () => pause(true));
   for (const el of hud.root.querySelectorAll('.pause, .vitals, .score, .minimap')) el.style.opacity = 0;
   $('#touch .stick.right').style.opacity = 0;
@@ -190,7 +243,9 @@ function renderLobby(status) {
   const list = L.role === 'host'
     ? [{ name: L.name, host: true, me: true }, ...L.peers]
     : (L.lobby ? L.lobby.players.map((p) => ({ ...p, me: p.id === L.net.id })) : [{ name: L.name, me: true }]);
-  $('#lbPlayers').innerHTML = list.map((p) => `<li class="${p.me ? 'me' : ''}"><i></i><span>${esc(p.name)}</span>${p.host ? '<em>房主</em>' : ''}${p.me ? '<em class="you">你</em>' : ''}</li>`).join('');
+  const wOf = (p) => (p.me ? settings.weapon : p.w || (L.role === 'host' ? (L.picks || {})[p.id] : null) || 'stone');
+  $('#lbPlayers').innerHTML = list.map((p) => `<li class="${p.me ? 'me' : ''}">${wIcon(wOf(p), 'wsm')}<span>${esc(p.name)}</span>${p.host ? '<em>房主</em>' : ''}${p.me ? '<em class="you">你</em>' : ''}</li>`).join('');
+  $('#lbWeapon').innerHTML = `${wIcon(settings.weapon)}<span>武器：${WEAPONS[settings.weapon].name}</span><small>更換</small>`;
   const lb = L.role === 'host' ? settings : (L.lobby || {});
   const MAPN = { mykonos: '米克諾斯・迷城', yongkang: '台北・永康街' };
   $('#lbRule').textContent = lb.map ? `${MAPN[lb.map] || lb.map}・電腦補到 ${Math.min(8, list.length + (lb.bots || 0))} 人・${(DIFFICULTY[lb.diff] || {}).label || ''}` : '';
@@ -229,7 +284,7 @@ async function joinRoom() {
   L = { role: 'guest', code, name, peers: [], connected: false };
   const net = new P2P({
     room: code, id: newId(), name, role: 'guest',
-    onPeers: (ps) => { if (!L) return; L.connected = ps.length > 0; renderLobby(); },
+    onPeers: (ps) => { if (!L) return; L.connected = ps.length > 0; if (L.connected) net.send(net.hostId, { t: 'pick', w: settings.weapon }); renderLobby(); },
     onData: (pid, m) => guestData(m),
     onClose: (pid, why) => hostGone(why),
     onBusy: () => { if (L && L.net === net && !L.connected) renderLobby('房間正在比賽，這場結束後會自動加入…'); },
@@ -267,7 +322,8 @@ async function shareRoom() {
 
 function lobbyBroadcast() {
   if (!L || L.role !== 'host') return;
-  L.net.broadcast({ t: 'lobby', players: [{ id: 'host', name: L.name, host: true }, ...L.peers], map: settings.map, bots: settings.bots, diff: settings.diff });
+  const picks = L.picks || {};
+  L.net.broadcast({ t: 'lobby', players: [{ id: 'host', name: L.name, host: true, w: settings.weapon }, ...L.peers.map((p) => ({ ...p, w: picks[p.id] || 'stone' }))], map: settings.map, bots: settings.bots, diff: settings.diff });
 }
 
 // 房主開局：自己＋連上的人＋電腦補人數
@@ -280,21 +336,22 @@ async function hostStart() {
   const seed = (Date.now() & 0xfffff) + 1;
   const sim = new Sim(map, { seed });
   L.net.accepting = false;
-  const me = sim.addPlayer({ name: L.name, accent: ACCENTS[0] });
+  const me = sim.addPlayer({ name: L.name, accent: ACCENTS[0], weapon: settings.weapon });
   const remote = new Map();
   L.peers.forEach((p, i) => {
-    const pl = sim.addPlayer({ name: p.name, accent: ACCENTS[(i + 1) % ACCENTS.length] });
+    const pl = sim.addPlayer({ name: p.name, accent: ACCENTS[(i + 1) % ACCENTS.length], weapon: (L.picks || {})[p.id] || 'stone' });
     remote.set(p.id, { pid: pl.id, input: new RemoteInput() });
   });
   const rng = mulberry32(seed * 7);
   const names = [...BOT_NAMES].sort(() => rng() - 0.5);
   const bots = [];
   const nb = Math.max(0, Math.min(settings.bots, 8 - sim.players.length));
+  const bag = botWeapons(rng, nb);
   for (let i = 0; i < nb; i++) {
-    const p = sim.addPlayer({ name: names[i], accent: ACCENTS[(sim.players.length) % ACCENTS.length], isBot: true });
+    const p = sim.addPlayer({ name: names[i], accent: ACCENTS[(sim.players.length) % ACCENTS.length], isBot: true, weapon: bag[i] });
     bots.push(new Bot(sim, p, settings.diff, rng));
   }
-  const roster = sim.players.map((p) => ({ id: p.id, name: p.name, accent: p.accent, isBot: p.isBot }));
+  const roster = sim.players.map((p) => ({ id: p.id, name: p.name, accent: p.accent, isBot: p.isBot, weapon: p.weapon }));
   for (const [pid, r] of remote) L.net.send(pid, { t: 'start', map: settings.map, roster, you: r.pid, mt: sim.matchTime });
   sim.events.length = 0;
   setupGame(map, sim, me, bots, 'host', { remote, snapT: 0 });
@@ -303,6 +360,7 @@ async function hostStart() {
 }
 
 function hostData(pid, m) {
+  if (m.t === 'pick' && L && WEAPONS[m.w]) { (L.picks ||= {})[pid] = m.w; renderLobby(); lobbyBroadcast(); return; }
   if (m.t !== 'in' || !G || G.mode !== 'host') return;
   const r = G.remote.get(pid);
   if (r) r.input.push(m);
@@ -390,13 +448,19 @@ function guestTick(inp) {
   if (inp.cancel) G.cx = G.pr;
   if (inp.cancel && me.aiming) { me.aiming = false; me.charge = 0; }
   G.cdT--;   // 冷卻用自己的 tick 數算（房主也是每個 tick 消化一包輸入）
-  if (me.alive && inp.aim && !me.aiming && G.cx !== G.pr && me.stones > 0 && G.cdT <= 0) { me.aiming = true; me.charge = 0; }
+  const W = WEAPONS[me.weapon];
+  const can = W.kind === 'melee' ? true : W.kind === 'hitscan' ? me.stones > 0 && (me.reloadUntil || 0) <= sim.time : me.stones > 0;
+  if (me.alive && inp.aim && !me.aiming && G.cx !== G.pr && can && G.cdT <= 0) { me.aiming = true; me.charge = 0; }
   if (me.aiming) {
-    me.charge = Math.min(1, me.charge + CFG.TICK / CFG.CHARGE_T);
+    if (W.kind !== 'hitscan' || me.speed < 1.2) me.charge = Math.min(1, me.charge + CFG.TICK / W.chargeT);
     if (!inp.aim && !inp.cancel) {
       G.ch = Math.round(me.charge * 1000) / 1000;
-      if (inp.tp != null) G.tsol = { ty: Math.round(inp.ty * 1e4) / 1e4, tp: Math.round(inp.tp * 1e4) / 1e4, tv: Math.round(inp.tv * 100) / 100 };
-      me.aiming = false; me.charge = 0; me.throwAt = sim.time; G.cdT = Math.round(CFG.THROW_CD / CFG.TICK);
+      const r4 = (v) => Math.round(v * 1e4) / 1e4;
+      if (inp.tp != null) G.tsol = { ty: r4(inp.ty), tp: r4(inp.tp), tv: Math.round(inp.tv * 100) / 100 };
+      else if (inp.ty != null) G.tsol = { ty: r4(inp.ty) };
+      const lunge = W.kind === 'melee' && me.charge * W.chargeT >= W.lungeT;
+      if (lunge) me.lungeAt = sim.time;
+      me.aiming = false; me.charge = 0; me.throwAt = sim.time; G.cdT = Math.round((lunge ? W.lungeCd : W.cd) / CFG.TICK);
       renderer.kick = 1;
     }
   }
@@ -430,7 +494,7 @@ function coach() {
   el.innerHTML = `
     <i class="ghostring" style="left:120px;top:${H - 110}px"></i>
     <div class="tip glass" style="left:186px;top:${H - 150}px"><b>左下：拖曳移動</b><span>手指放哪，搖桿就出現在哪</span></div>
-    <div class="tip glass" style="right:${window.innerWidth - r.left + 18}px;top:${r.top - 6}px"><b>右邊：按住拖曳・放開丟</b><span>準心就是落點；拖到 ✕ 再放開就不丟</span></div>
+    <div class="tip glass" style="right:${window.innerWidth - r.left + 18}px;top:${r.top - 6}px"><b>右邊：按住拖曳・放開出手</b><span>${{ rifle: '站穩按住越久越準；拖到 ✕ 再放開就不開槍', saber: '按住舉劍擋東西，放開揮砍；按久一點會衝刺' }[G.me.weapon] || '準心就是落點；拖到 ✕ 再放開就不丟'}</span></div>
     <p class="go">點一下開始</p>`;
   hud.root.appendChild(el);
   glass.add(el);
@@ -468,7 +532,7 @@ function results() {
   $('#resTitle').textContent = tie ? '平手' : win ? '你贏了！' : `${rank[0].name} 獲勝`;
   $('#resStats').innerHTML = [['KO', me.kills], ['倒下', me.deaths], ['爆頭', me.heads]].map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join('');
   $('#resTable').innerHTML = `<tr><th></th><th>玩家</th><th>KO</th><th>倒下</th><th>爆頭</th></tr>` + rank.map((p, i) =>
-    `<tr class="${p === me ? 'me' : ''} ${i === 0 && !tie ? 'p1' : ''}"><td>${i + 1}</td><td><span class="nm"><i class="dot" style="background:${esc(p.accent)}"></i>${esc(p.name)}</span></td><td>${p.kills}</td><td>${p.deaths}</td><td>${p.heads}</td></tr>`).join('');
+    `<tr class="${p === me ? 'me' : ''} ${i === 0 && !tie ? 'p1' : ''}"><td>${i + 1}</td><td><span class="nm"><i class="dot" style="background:${esc(p.accent)}"></i>${esc(p.name)}${p.weapon ? wIcon(p.weapon) : ''}</span></td><td>${p.kills}</td><td>${p.deaths}</td><td>${p.heads}</td></tr>`).join('');
   sfx.play(win ? 'win' : 'ko');
   document.exitPointerLock?.();
   $('#again').hidden = G.mode === 'guest';
@@ -487,11 +551,76 @@ function onEvents() {
   sim.events = [];
   for (const e of evs) {
     switch (e.type) {
-      case 'throw':
-        sfx.play('throw', e.x, e.z, e.v / CFG.V_MAX);
+      case 'throw': {
+        const W = WEAPONS[e.w] || WEAPONS.stone;
+        if (W.kind === 'boom') sfx.play('whirr', e.x, e.z);
+        else sfx.play('throw', e.x, e.z, e.v / (W.vMax || CFG.V_MAX));
+        if (e.w === 'cat') sfx.play('meow', e.x, e.z, 0.8);
+        if (e.w === 'grenade') sfx.play('pin', e.x, e.z);
         if (e.id === me.id && G.mode !== 'guest') renderer.kick = 1;
         if (e.id === me.id) haptic('throw');
         if (e.id !== me.id && Math.hypot(e.x - me.x, e.z - me.z) < 45) hud.ping(e.x, e.z, sim.time);
+        break;
+      }
+      case 'shot': {
+        renderer.tracer(e.x0, e.y0, e.z0, e.x1, e.y1, e.z1, e.id === me.id);
+        sfx.play('shot', e.x0, e.z0);
+        if (e.surf === 'wall' || e.surf === 'ground') { renderer.puff(e.x1, e.y1, e.z1, 0.14); renderer.chipBurst(e.x1, e.y1, e.z1, 0, 0.6, 0, 4); }
+        if (e.surf === 'deflect' || e.surf === 'cat') renderer.sparks(e.x1, e.y1, e.z1, 8, 3);
+        if (e.id === me.id) { if (G.mode !== 'guest') renderer.kick = 1.6; haptic('throw'); }
+        else if (Math.hypot(e.x0 - me.x, e.z0 - me.z) < 60) hud.ping(e.x0, e.z0, sim.time);
+        break;
+      }
+      case 'slash': {
+        const p = sim.byId(e.id);
+        renderer.slash(e.x, e.z, e.yaw, p ? p.accent : '#3a86ff');
+        renderer.charSlash(e.id, sim.time);
+        sfx.play('swing', e.x, e.z);
+        break;
+      }
+      case 'lunge':
+        renderer.charLunge(e.id, sim.time);
+        renderer.puff(e.x, 0.15, e.z, 0.3, 0xd9dadc, 0.45, 0.4);
+        sfx.play('lunge', e.x, e.z);
+        if (e.id === me.id) haptic('throw');
+        break;
+      case 'clash': case 'deflect': {
+        const y = e.y ?? 1.2;
+        renderer.sparks(e.x, y, e.z, e.type === 'clash' ? 16 : 10, 4);
+        renderer.flash(e.x, y, e.z, 0.18, 0xfff6d8, 0.08);
+        sfx.play('clash', e.x, e.z, e.type === 'clash' ? 1 : 0.7);
+        if (e.id === me.id) haptic('hit');
+        break;
+      }
+      case 'explode': {
+        renderer.explode(e.x, e.y, e.z, e.r);
+        sfx.play('boom', e.x, e.z);
+        const d = Math.hypot(e.x - me.x, e.z - me.z);
+        if (d < e.r * 4) { renderer.shake = Math.max(renderer.shake, 1.8 * (1 - d / (e.r * 4))); haptic('hit'); }
+        break;
+      }
+      case 'cat':
+        renderer.puff(e.x, 0.2, e.z, 0.28);
+        sfx.play('meow', e.x, e.z, 1);
+        break;
+      case 'catdown':
+        renderer.puff(e.x, 0.25, e.z, 0.35, 0xeeeeee, 0.5, 0.5);
+        if (e.by) sfx.play('meow', e.x, e.z, 0.6);
+        break;
+      case 'bite':
+        sfx.play('bite', e.x, e.z);
+        break;
+      case 'catch':
+        if (e.id === me.id) { sfx.play('catch'); haptic('pickup'); }
+        break;
+      case 'reload':
+        if (e.id === me.id) sfx.play('reload');
+        break;
+      case 'reloaded':
+        if (e.id === me.id) { sfx.play('reloaded'); haptic('pickup'); }
+        break;
+      case 'regen':
+        if (e.id === me.id) sfx.play('meow', null, null, 0.5);
         break;
       case 'impact':
         sfx.play(e.surf, e.x, e.z, Math.min(1.2, e.sp / 18));
@@ -502,7 +631,8 @@ function onEvents() {
         if (e.by === me.id) { hud.hitMarker(e.head); sfx.play('hitmark'); haptic(e.head ? 'head' : 'hit'); }
         sfx.play(e.head ? 'head' : 'hit', e.x, e.z);
         renderer.puff(e.x, e.y, e.z, 0.2, 0xe5b2ad);
-        renderer.chipBurst(e.x, e.y, e.z, 0, 0.6, 0, 5);
+        if (e.w !== 'saber' && e.w !== 'cat') renderer.chipBurst(e.x, e.y, e.z, 0, 0.6, 0, 5);
+        if (e.w === 'saber') renderer.sparks(e.x, e.y, e.z, 6, 2.5);
         if (e.target === me.id) { sfx.play('hurt'); haptic('hurt'); hud.hurtFrom(e.fromX, e.fromZ); renderer.shake = e.head ? 1.4 : 0.9; } else renderer.flashChar(e.target);
         break;
       }
@@ -511,7 +641,7 @@ function onEvents() {
         break;
       case 'ko': {
         const v = sim.byId(e.victim) || NOBODY, k = sim.byId(e.by) || NOBODY;   // 丟石頭的人可能已經離開
-        hud.feed(k, v, e.head, me.id);
+        hud.feed(k, v, e.head, me.id, e.w);
         if (e.by === me.id) { sfx.play('ko'); hud.koBanner(v.name, e.head); haptic('ko'); }
         if (e.victim === me.id) haptic('die');
         break;
@@ -564,9 +694,22 @@ function updateVisible() {
 function computeAim() {
   const { sim, me, view } = G;
   if (!me.alive) { G.aimSol = null; return; }
+  const W = WEAPONS[me.weapon];
   const hit = raycast(sim.map, me.x, CFG.EYE, me.z, forward(view.yaw, view.pitch), sim.players, me.id, 70);
+  if (W.kind === 'melee') {   // 光劍：準心指著的人在揮砍距離內就提示
+    G.aimSol = { hit, inReach: !!(hit.player && hit.t <= W.reach + 0.3), inLunge: !!(hit.player && hit.t <= W.lungeDist + W.reach * 0.6) };
+    return;
+  }
+  if (W.kind === 'hitscan') { G.aimSol = { hit }; return; }
+  if (W.kind === 'boom') {
+    // 回力鏢會往右彎：出手方向往左補，讓去程剛好經過準心指的距離
+    const raw = Math.hypot(hit.x - me.x, hit.z - me.z), d = Math.min(W.range, raw);
+    const bend = Math.sin(Math.PI * Math.min(1, d / W.range)) * 2.4;
+    G.aimSol = { hit, yaw: view.yaw + Math.atan2(bend, Math.max(2, d)), boom: true, far: raw > W.range + 1 && hit.surf !== 'air' };
+    return;
+  }
   if (!me.aiming) { G.aimSol = { hit }; return; }   // 沒在蓄力只要知道準心指著誰
-  const sol = aimSolve(sim.map, me.x, me.z, hit, chargeSpeed(me.charge), sim.players, hit.player ? hit.player.id : -1, me.id);
+  const sol = aimSolve(sim.map, me.x, me.z, hit, chargeSpeedW(W, me.charge), sim.players, hit.player ? hit.player.id : -1, me.id, W.vMax);
   sol.hit = hit;
   G.aimSol = sol;
 }
@@ -584,7 +727,8 @@ function tickOnce(fr) {
   const a = input.tickAim();
   let mine = { mx: cy * fr.mx - sy * fr.my, mz: -sy * fr.mx - cy * fr.my, yaw: view.yaw, pitch: view.pitch, aim: a.aim, cancel: a.cancel };
   const sol = G.aimSol;
-  if (sol && sol.yaw != null) { mine.ty = sol.yaw; mine.tp = sol.pitch; mine.tv = sol.v; }
+  if (sol && sol.boom) mine.ty = sol.yaw;
+  else if (sol && sol.yaw != null && sol.pitch != null) { mine.ty = sol.yaw; mine.tp = sol.pitch; mine.tv = sol.v; }
   if (window.__wa.autoplay && G.mode === 'solo') {   // 測試：我方也交給電腦，用來整場浸泡測試
     if (!G.autoBot) G.autoBot = new Bot(sim, me, 'normal', mulberry32(99));
     mine = G.autoBot.input(CFG.TICK);
@@ -662,7 +806,7 @@ function loop(t) {
   if (G.visT <= 0) { G.visT = 0.1; updateVisible(); }
   sfx.listener = { x: me.x, z: me.z, yaw: view.yaw };
   input.setCharge(me.charge, me.aiming && me.alive);
-  input.setStones(me.stones);
+  input.setStones(me.stones, (me.reloadUntil || 0) > sim.time);
   const still = frozen;
   renderer.frame(sim, me, view, still ? 1 : G.acc / CFG.TICK, still ? 0 : dt, { showArc: settings.arc, aim: G.aimSol });
   hud.update(sim, me, view, G.visible, renderer, still ? 0 : dt, G.aimSol);

@@ -1,5 +1,6 @@
 // HUD：血量（含受傷殘影）、石頭、比分與倒數、右上小地圖、受擊方向、擊倒訊息、敵人名牌、陣亡倒數、KO 橫幅。
 import { CFG } from './config.js';
+import { WEAPONS } from './weapons.js';
 import { animate, banner, bump, spring } from './ui.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -7,14 +8,15 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const icon = (id, cls = '') => `<svg class="i ${cls}"><use href="#${id}"/></svg>`;
 
 export class Hud {
-  constructor(root, map) {
+  constructor(root, map, weapon = 'stone') {
     this.root = root;
     this.map = map;
+    this.W = WEAPONS[weapon] || WEAPONS.stone;
     root.innerHTML = `
       <button class="pause glass lens" aria-label="暫停" data-bezel="14" data-refract="6">${icon('i-pause')}</button>
       <div class="vitals glass lens" data-bezel="14" data-refract="7">
         <div class="hp"><div class="bar"><i class="ghost"></i><i class="fill"></i></div><em>100</em></div>
-        <div class="ammo"></div>
+        <div class="ammo"></div><div class="rl" hidden><i></i><span>換彈</span></div>
       </div>
       <div class="score glass lens" data-bezel="16" data-refract="7">
         <div class="ko"><b>0</b><span>KO</span></div><i class="sep"></i>
@@ -22,7 +24,7 @@ export class Hud {
       </div>
       <div class="minimap glass lens" data-bezel="12" data-refract="10"><canvas></canvas></div>
       <div class="feed"></div>
-      <div class="cross"><i></i><b></b><b></b><b></b><b></b><span>太遠</span></div>
+      <div class="cross"><i></i><u></u><b></b><b></b><b></b><b></b><span>太遠</span></div>
       <div class="hitmark"><b></b><b></b><b></b><b></b><span></span></div>
       <canvas class="dmg"></canvas>
       <div class="vig"></div>
@@ -34,8 +36,12 @@ export class Hud {
       ammo: $('.ammo', root), ko: $('.ko b', root), rank: $('.rank', root), clock: $('.clock', root),
       feed: $('.feed', root), hit: $('.hitmark', root), vig: $('.vig', root), labels: $('.labels', root),
       toast: $('.toast', root), pause: $('.pause', root), cross: $('.cross', root), banner: $('.banner', root),
+      rl: $('.rl', root), crossTxt: $('.cross span', root),
     };
-    this.el.ammo.innerHTML = Array.from({ length: CFG.MAX_STONES }, () => icon('i-pebble')).join('');
+    // 彈藥格：每種武器自己的圖示與數量（光劍只有一格，冷卻時變淡）
+    this.el.ammo.classList.add(`w-${this.W.key}`);
+    this.el.cross.classList.add(`w-${this.W.key}`);
+    this.el.ammo.innerHTML = Array.from({ length: Math.max(1, this.W.ammo) }, () => icon(`i-w-${this.W.key}`)).join('');
     this.pips = [...this.el.ammo.children];
     this.mini = $('.minimap canvas', root);
     this.dmg = $('.dmg', root);
@@ -108,7 +114,7 @@ export class Hud {
     c.fillStyle = g;
     c.beginPath(); c.moveTo(R, R); c.arc(R, R, R, -Math.PI / 2 - fov, -Math.PI / 2 + fov); c.closePath(); c.fill();
     // 沒石頭：最近的石堆一直閃，超出小地圖範圍就在邊緣畫箭頭
-    if (me.alive && me.stones === 0) {
+    if (me.alive && me.stones === 0 && this.W.pile > 0) {
       let best = null, bd = Infinity;
       for (const pl of sim.piles) { if (pl.readyAt > sim.time) continue; const d = Math.hypot(pl.x - me.x, pl.z - me.z); if (d < bd) { bd = d; best = pl; } }
       for (const l of sim.loose) { const d = Math.hypot(l.x - me.x, l.z - me.z); if (d < bd) { bd = d; best = l; } }
@@ -183,16 +189,22 @@ export class Hud {
     e.ghost.style.transform = `scaleX(${this.ghostHp / CFG.HP})`;
     e.vitals.classList.toggle('low', me.alive && hp / CFG.HP < 0.35);
     e.hpNum.textContent = Math.ceil(hp);
-    if (this._ammo !== me.stones) {
+    const W = this.W;
+    const ammo = W.kind === 'melee' ? (me.cdUntil > sim.time ? 0 : 1) : me.stones;
+    if (this._ammo !== ammo) {
       const gained = me.stones > this._ammo && this._ammo >= 0;
       this.pips.forEach((p, i) => {
-        const on = i < me.stones;
+        const on = i < ammo;
         p.classList.toggle('on', on);
         if (gained && on && i >= this._ammo) animate(p, { scale: [1.5, 1], y: [-4, 0] }, spring(520, 14, { delay: (i - this._ammo) * 0.04 }));
       });
-      if (me.stones < this._ammo && this.pips[me.stones]) animate(this.pips[me.stones], { scale: [0.6, 1] }, spring(500, 18));
-      this._ammo = me.stones;
+      if (ammo < this._ammo && this.pips[ammo]) animate(this.pips[ammo], { scale: [0.6, 1] }, spring(500, 18));
+      this._ammo = ammo;
     }
+    // 步槍換彈進度
+    const reloading = W.kind === 'hitscan' && me.alive && (me.reloadUntil || 0) > sim.time;
+    if (reloading !== !e.rl.hidden) { e.rl.hidden = !reloading; e.ammo.hidden = reloading; }
+    if (reloading) e.rl.style.setProperty('--p', Math.max(0, Math.min(1, 1 - (me.reloadUntil - sim.time) / W.reload)).toFixed(3));
     if (this._ko !== me.kills) { this._ko = me.kills; e.ko.textContent = me.kills; bump(e.ko, 1.6); }
     const rank = sim.ranking().indexOf(me) + 1;
     e.rank.textContent = `第 ${rank} / ${sim.players.length}`;
@@ -201,10 +213,24 @@ export class Hud {
     e.clock.classList.toggle('hurry', left < 30 && sim.state === 'play');
     // 準心＝落點：指到人變紅、太遠（丟不到）變灰並提示
     e.cross.classList.toggle('aim', me.aiming);
-    e.cross.classList.toggle('lock', !!(aim && aim.hit && aim.hit.player));
-    e.cross.classList.toggle('far', !!(me.aiming && aim && aim.far));
-    e.cross.style.opacity = me.alive ? 1 : 0;
+    const melee = W.kind === 'melee';
+    e.cross.classList.toggle('lock', !!(aim && (melee ? aim.inReach : aim.hit && aim.hit.player)));
+    const lunge = !!(melee && aim && aim.inLunge && !aim.inReach && me.aiming && me.charge * W.chargeT >= W.lungeT);
+    const far = !!(!melee && aim && (me.aiming && aim.far || aim.boom && aim.far));
+    e.cross.classList.toggle('far', far);
+    e.cross.classList.toggle('lunge', lunge);
+    const txt = lunge ? '放開衝刺' : far ? '太遠' : '';
+    if (txt && e.crossTxt.textContent !== txt) e.crossTxt.textContent = txt;
+    if (W.kind === 'hitscan') {
+      // 散布圈：步槍目前的散布角換成螢幕上的像素
+      const sp = (W.spreadMax - (W.spreadMax - W.spreadMin) * (me.aiming ? me.charge : 0) + W.moveSpread * Math.min(1, me.speed / CFG.SPEED)) * Math.PI / 180;
+      const fov = (r.camera.fov * Math.PI) / 180;
+      const g = Math.max(4, (Math.tan(sp) / Math.tan(fov / 2)) * (window.innerHeight / 2));
+      e.cross.style.setProperty('--g', g.toFixed(1));
+    }
+    e.cross.style.opacity = me.alive && !reloading ? 1 : me.alive ? 0.35 : 0;
 
+    this.lased = me.alive ? r.lasedFrom : null;
     this.drawMini(sim, me, view, visible);
     this._labels(sim, me, visible, r);
     this._damage(view, me, dt);
@@ -285,6 +311,16 @@ export class Hud {
       c.beginPath(); c.arc(W / 2, H / 2, R + 12 * dpr, a0 - 0.2, a0 + 0.2); c.stroke();
     }
     this.dmgs = this.dmgs.filter((d) => d.a > 0);
+    // 被步槍雷射瞄著：那個方向一段一閃一閃的紅色虛線弧
+    const pulse = 0.55 + 0.45 * Math.sin(performance.now() / 70);
+    for (const s of this.lased || []) {
+      const dx = s.x - me.x, dz = s.z - me.z;
+      const ang = Math.atan2(dx * Math.cos(view.yaw) - dz * Math.sin(view.yaw), -dx * Math.sin(view.yaw) - dz * Math.cos(view.yaw)) - Math.PI / 2;
+      c.setLineDash([7 * dpr, 6 * dpr]);
+      c.strokeStyle = `rgba(255,59,48,${0.45 + 0.5 * pulse})`; c.lineWidth = 5 * dpr; c.lineCap = 'round';
+      c.beginPath(); c.arc(W / 2, H / 2, R * 1.12, ang - 0.38, ang + 0.38); c.stroke();
+      c.setLineDash([]);
+    }
     const hp = me.hp / CFG.HP;
     this.flashVig = Math.max(0, (this.flashVig || 0) - dt * 2.2);
     this.el.vig.style.opacity = me.alive ? Math.min(1, Math.max(0, 0.5 - hp) * 1.6 + this.flashVig) : 0;
@@ -311,13 +347,14 @@ export class Hud {
     banner(this.el.banner, `<b>KO</b><span class="glass">${esc(name)}${head ? '・爆頭' : ''}</span>`, head);
   }
 
-  feed(k, v, head, meId) {
+  feed(k, v, head, meId, w) {
     const who = (p) => (p.id === meId
       ? '<span class="who you"><i style="--c:var(--ink)"></i>你</span>'
       : `<span class="who"><i style="--c:${esc(p.accent)}"></i>${esc(p.name)}</span>`);
     const el = document.createElement('div');
     el.className = 'chip glass';
-    el.innerHTML = `${who(k)}${head ? icon('i-target', 'head') : icon('i-burst')}${who(v)}`;
+    const wi = w && WEAPONS[w] ? icon(`i-w-${w}`, 'wpn') : icon('i-burst');
+    el.innerHTML = `${who(k)}${wi}${head ? icon('i-target', 'head') : ''}${who(v)}`;
     this.el.feed.prepend(el);
     animate(el, { opacity: [0, 1], y: [-12, 0], scale: [0.9, 1] }, spring(380, 26));
     setTimeout(() => {

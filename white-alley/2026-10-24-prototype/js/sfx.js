@@ -72,6 +72,53 @@ export class Sfx {
       case 'pickup': { const { node, g } = o(0.6, 25); if (g > 0.01) { this._tone(node, t, 0.05, 'triangle', 2400, 2300, 0.25); this._tone(node, t + 0.06, 0.06, 'triangle', 3100, 3000, 0.25); } break; }
       case 'step': { const { node } = o(0.12 * k); this._noise(node, t, 0.05, 'lowpass', 700, 250, 0.7, 0.5); break; }
       case 'empty': { const { node } = o(0.4); this._tone(node, t, 0.05, 'square', 220, 200, 0.1); break; }
+      // ---- 武器 ----
+      case 'boom': {   // 爆炸：低頻悶響＋寬頻碎裂，遠處只剩悶響
+        const { node, g } = o(1.2, 90);
+        if (g > 0.01) { this._tone(node, t, 0.55, 'sine', 95, 32, 1); this._noise(node, t, 0.7, 'lowpass', 3200, 160, 0.6, 0.9); this._noise(node, t + 0.02, 0.25, 'bandpass', 900, 300, 0.8, 0.5); }
+        break;
+      }
+      case 'shot': {   // 槍聲：清脆的爆裂＋尾音
+        const { node, g } = o(1, 80);
+        if (g > 0.01) { this._noise(node, t, 0.05, 'highpass', 3500, 1800, 0.7, 0.9); this._noise(node, t, 0.32, 'lowpass', 2400, 220, 0.6, 0.55); this._tone(node, t, 0.08, 'square', 180, 60, 0.25); }
+        break;
+      }
+      case 'swing': {  // 光劍揮砍：嗡聲往下滑＋風切
+        const { node, g } = o(0.7, 40);
+        if (g > 0.01) { this._tone(node, t, 0.24, 'sawtooth', 180, 95, 0.18); this._tone(node, t, 0.24, 'sine', 360, 190, 0.3); this._noise(node, t, 0.2, 'bandpass', 2600, 700, 1.6, 0.5); }
+        break;
+      }
+      case 'clash': {  // 擋下：金屬撞擊的幾個不和諧泛音
+        const { node, g } = o(0.8 * k, 55);
+        if (g > 0.01) { [1180, 1730, 2390].forEach((f) => this._tone(node, t, 0.35, 'triangle', f, f * 0.97, 0.18)); this._noise(node, t, 0.06, 'highpass', 5000, 3000, 0.7, 0.6); }
+        break;
+      }
+      case 'lunge': { const { node, g } = o(0.6, 35); if (g > 0.01) this._noise(node, t, 0.28, 'bandpass', 400, 2400, 1.2, 0.6); break; }
+      case 'meow': {   // 貓叫：鋸齒波經過兩個共振峰，音高先升後降
+        const { node, g } = o(0.45 * k, 30);
+        if (g > 0.01) {
+          const c = this.ctx, osc = c.createOscillator(), f1 = c.createBiquadFilter(), f2 = c.createBiquadFilter(), gg = c.createGain();
+          const base = 520 + Math.random() * 160;
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(base * 0.8, t); osc.frequency.linearRampToValueAtTime(base * 1.25, t + 0.12); osc.frequency.exponentialRampToValueAtTime(base * 0.7, t + 0.42);
+          f1.type = 'bandpass'; f1.Q.value = 6; f1.frequency.setValueAtTime(900, t); f1.frequency.linearRampToValueAtTime(1600, t + 0.15); f1.frequency.linearRampToValueAtTime(800, t + 0.42);
+          f2.type = 'bandpass'; f2.Q.value = 8; f2.frequency.value = 2900;
+          gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(0.9, t + 0.04); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+          osc.connect(f1); osc.connect(f2); f1.connect(gg); f2.connect(gg); gg.connect(node);
+          osc.start(t); osc.stop(t + 0.5);
+        }
+        break;
+      }
+      case 'bite': { const { node, g } = o(0.8, 40); if (g > 0.01) { this._noise(node, t, 0.06, 'bandpass', 1800, 900, 2, 0.7); this._noise(node, t + 0.08, 0.06, 'bandpass', 1500, 700, 2, 0.6); } break; }
+      case 'whirr': {  // 回力鏢：一陣一陣的風切
+        const { node, g } = o(0.5, 35);
+        if (g > 0.01) for (let i = 0; i < 4; i++) this._noise(node, t + i * 0.07, 0.07, 'bandpass', 1300 - i * 120, 900, 2.5, 0.45 - i * 0.07);
+        break;
+      }
+      case 'catch': { const { node } = o(0.5); this._noise(node, t, 0.05, 'lowpass', 1200, 400, 0.8, 0.5); this._tone(node, t, 0.06, 'triangle', 600, 500, 0.15); break; }
+      case 'reload': { const { node } = o(0.5); this._tone(node, t, 0.04, 'square', 900, 700, 0.12); this._noise(node, t + 0.05, 0.05, 'highpass', 2500, 1500, 0.8, 0.3); break; }
+      case 'reloaded': { const { node } = o(0.6); this._tone(node, t, 0.04, 'square', 700, 650, 0.14); this._tone(node, t + 0.09, 0.05, 'square', 1100, 1000, 0.14); break; }
+      case 'pin': { const { node, g } = o(0.4, 20); if (g > 0.01) this._tone(node, t, 0.05, 'triangle', 2600, 2000, 0.15); break; }
       default:
     }
   }

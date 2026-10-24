@@ -199,5 +199,12 @@ export class Input {
     this.elR.classList.toggle('full', active && c >= 1);
   }
 
-  setStones(n) { this.elR.classList.toggle('empty', n <= 0); }
+  // 右搖桿的圖示與「沒彈藥」提示跟著武器換
+  setWeapon(W) {
+    this.W = W;
+    this.elR.querySelector('.knob use').setAttribute('href', `#i-w-${W.key}`);
+    this.elR.querySelector('.need').textContent = { stone: '沒石頭・去石堆補', grenade: '沒手榴彈・去石堆補', rifle: '換彈中…', cat: '貓還沒回來・石堆也能補', boomerang: '等回力鏢飛回來', saber: '' }[W.key] || '';
+  }
+
+  setStones(n, reloading = false) { this.elR.classList.toggle('empty', this.W && this.W.kind === 'melee' ? false : n <= 0 || reloading); }
 }

@@ -41,6 +41,14 @@
   <symbol id="i-arc" viewBox="0 0 24 24"><path d="M4 18c2.5-8 9.5-11 16-4" stroke-dasharray="2.4 2.6"/><circle cx="20" cy="14" r="1.6"/></symbol>
   <symbol id="i-move" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/><path d="M12 1.8v2M12 20.2v2M1.8 12h2M20.2 12h2"/></symbol>
   <symbol id="i-swipe" viewBox="0 0 24 24"><path d="M4.5 12h15M8 8.5 4.5 12 8 15.5M16 8.5l3.5 3.5-3.5 3.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></symbol>
+  <!-- 武器 -->
+  <symbol id="i-w-stone" viewBox="0 0 24 24"><path d="M5.2 14.6c-.9-3.4 1.6-7.3 6-8.1 4.4-.8 8.3 1.4 8.6 5 .3 3.8-2.6 6.4-7 6.7-3.8.3-6.8-.8-7.6-3.6z"/><path d="M9 11.5c1-1.2 2.4-1.8 4-1.8" opacity=".55"/></symbol>
+  <symbol id="i-w-grenade" viewBox="0 0 24 24"><path d="M8.6 9.4h5.8M9.2 9.4a5.6 5.6 0 1 0 4.6 0"/><path d="M9.8 9.4V6.8h3.4v2.6M13.2 7.2l3.6 2.6"/><circle cx="16.6" cy="5.4" r="1.7"/><path d="M8.4 15h6.2M11.5 12v6" opacity=".5"/></symbol>
+  <symbol id="i-w-rifle" viewBox="0 0 24 24"><path d="M2.5 10.2h12.6l1.4-1.2h5v2.8h-5l-1.4 1.6H8.6l-1.5 5.1H4.3l1.4-5.1H2.5z"/><path d="M10.4 12.8l.6 2.6h1.8l-.4-2.6M9 7.6h4.6" /></symbol>
+  <symbol id="i-w-saber" viewBox="0 0 24 24"><path d="M9.2 14.8 19.6 4.4" stroke-width="2.6"/><path d="M4.6 19.4l3-3M6.2 14.6l3.2 3.2M5 17.4l1.6 1.6"/></symbol>
+  <symbol id="i-w-cat" viewBox="0 0 24 24"><path d="M5 10V4.6l4.2 3.3a8.6 8.6 0 0 1 5.6 0L19 4.6V10c.9 1.2 1.4 2.6 1.4 4.1 0 3.8-3.8 6.4-8.4 6.4s-8.4-2.6-8.4-6.4c0-1.5.5-2.9 1.4-4.1z"/><path d="M9.2 13.2v.6M14.8 13.2v.6M11 16.2h2l-1 1z"/></symbol>
+  <symbol id="i-w-boomerang" viewBox="0 0 24 24"><path d="M5 18.2 10.6 6.2 19.4 12.4" stroke-width="3.2"/><path d="M5 18.2 6.4 15.2M19.4 12.4l-2.7-1.9" stroke-width="3.2" opacity=".45"/></symbol>
 </svg>
 
 <div id="stage"></div>
@@ -78,7 +86,7 @@
       <p class="rule">先拿 <b>10 KO</b>，或 <b>5 分鐘</b>後 KO 最多的人獲勝</p>
     </div>
   </div>
-  <footer><a href="../../" style="color:inherit;pointer-events:auto">← 所有測試</a>・地圖資料 © OpenStreetMap contributors（ODbL）・原型 v0.5</footer>
+  <footer><a href="../../" style="color:inherit;pointer-events:auto">← 所有測試</a>・地圖資料 © OpenStreetMap contributors（ODbL）・原型 v0.6</footer>
 </section>
 
 <section id="pausePane" class="screen dim" hidden>
@@ -117,11 +125,11 @@
     <h2 class="serif">操作說明</h2>
     <div class="how-grid">
       <div class="how-c"><div class="how-ic"><svg class="i"><use href="#i-move"/></svg></div><b>左下拖曳</b><span>移動。手指放哪，搖桿就出現在哪</span></div>
-      <div class="how-c"><div class="how-ic ink"><svg class="i"><use href="#i-pebble"/></svg></div><b>右側搖桿：按住拖曳</b><span>蓄力並轉視角，手指移多少、畫面轉多少。<b>準心就是落點</b>，石頭會自動往上拋落到準心</span></div>
-      <div class="how-c"><div class="how-ic ink"><svg class="i"><use href="#i-arrow"/></svg></div><b>放開手指</b><span>丟出石頭。蓄越久丟得越快越平、越難躲；打頭兩倍傷害</span></div>
+      <div class="how-c"><div class="how-ic ink"><svg class="i"><use href="#i-pebble"/></svg></div><b>右側搖桿：按住拖曳</b><span>蓄力（步槍是端槍、光劍是舉劍）並轉視角，手指移多少、畫面轉多少。<b>準心就是落點</b>，會自動往上拋落到準心</span></div>
+      <div class="how-c"><div class="how-ic ink"><svg class="i"><use href="#i-arrow"/></svg></div><b>放開手指</b><span>出手。開始前選武器：石頭、手榴彈、步槍、光劍、馴獸師、回力鏢，各有長短</span></div>
       <div class="how-c"><div class="how-ic red"><svg class="i"><use href="#i-x"/></svg></div><b>拖到 ✕ 再放開</b><span>取消，不浪費石頭</span></div>
       <div class="how-c"><div class="how-ic"><svg class="i"><use href="#i-swipe"/></svg></div><b>右半邊空白處拖曳</b><span>只轉視角，不會丟</span></div>
-      <div class="how-c"><div class="how-ic"><svg class="i"><use href="#i-pebble"/></svg></div><b>走過石堆</b><span>補滿 6 顆；地上別人丟過的石頭也能撿</span></div>
+      <div class="how-c"><div class="how-ic"><svg class="i"><use href="#i-pebble"/></svg></div><b>走過石堆</b><span>石頭、手榴彈、貓都在這裡補；步槍自己換彈、回力鏢會飛回手上</span></div>
     </div>
     <p class="pc-note">電腦：WASD 移動・滑鼠轉視角・按住左鍵蓄力放開丟・右鍵取消</p>
     <div class="btns"><button class="btn-ink closeHow">知道了</button></div>
@@ -141,11 +149,25 @@
     </div>
     <div class="lb-room" hidden>
       <div class="lb-code"><span>房號</span><b id="lbCodeBig">----</b><button id="lbShare" class="glass btn-ghost"><svg class="i"><use href="#i-share"/></svg>分享</button></div>
+      <button id="lbWeapon" class="glass btn-ghost lb-weapon"></button>
       <ul id="lbPlayers"></ul>
       <p id="lbRule" class="lb-rule"></p>
       <div class="btns"><button id="lbStart" class="btn-ink"><svg class="i fill"><use href="#i-play"/></svg>開始</button><button id="lbLeave" class="glass btn-ghost">離開房間</button></div>
     </div>
     <p id="lbStatus" class="lb-status"></p>
+  </div>
+</section>
+
+<section id="weaponPane" class="screen dim" hidden>
+  <div class="glass panel weapons">
+    <div class="wp-head"><button id="wpBack" class="glass btn-round" aria-label="返回"><svg class="i"><use href="#i-back"/></svg></button><h2 class="serif">選武器</h2><span class="wp-sub">每種武器打法不同，強弱經過平衡</span></div>
+    <div class="wp-body">
+      <div id="wpGrid" class="wp-grid"></div>
+      <div class="wp-side">
+        <div id="wpDetail" class="wp-detail"></div>
+        <button id="wpGo" class="btn-go"><span class="lbl">出發</span><span class="ico"><svg class="i"><use href="#i-arrow"/></svg></span></button>
+      </div>
+    </div>
   </div>
 </section>
 

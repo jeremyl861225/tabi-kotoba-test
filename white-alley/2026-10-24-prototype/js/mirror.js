@@ -2,18 +2,25 @@
 // 其他玩家：快照存成時間軸，畫面落後 100 ms 內插；石頭：從最新快照用同一套彈道往前推；自己：本機預測（main.js）。
 import { CFG } from './config.js';
 import { SUB, advance } from './physics.js';
+import { PROJ_KIND, WEAPONS } from './weapons.js';
 
 const DELAY = 0.1;
 
 export class MirrorSim {
   constructor(map, roster, matchTime) {
     this.map = map;
-    this.players = roster.map((r) => ({
-      id: r.id, name: r.name, accent: r.accent, isBot: r.isBot,
-      x: 0, z: 0, px: 0, pz: 0, vx: 0, vz: 0, speed: 0, yaw: 0, pitch: 0, hp: CFG.HP, stones: CFG.START_STONES,
-      alive: true, aiming: false, charge: 0, kills: 0, deaths: 0, heads: 0, respawnAt: 0, shieldUntil: 0, killedBy: 0, throwAt: -99, spawnAt: 0,
-    }));
+    this.players = roster.map((r) => {
+      const W = WEAPONS[r.weapon] || WEAPONS.stone;
+      return {
+        id: r.id, name: r.name, accent: r.accent, isBot: r.isBot, weapon: W.key,
+        x: 0, z: 0, px: 0, pz: 0, vx: 0, vz: 0, speed: 0, yaw: 0, pitch: 0, hp: CFG.HP, stones: W.start,
+        speedMul: W.speedMul, aimMul: W.key === 'saber' ? 0.6 : CFG.AIM_SPEED_MUL,   // 本機預測移動要跟房主一樣快
+        alive: true, aiming: false, charge: 0, kills: 0, deaths: 0, heads: 0, respawnAt: 0, shieldUntil: 0, killedBy: 0, throwAt: -99, spawnAt: 0, reloadUntil: 0,
+      };
+    });
     this.stones = [];
+    this.cats = [];
+    this.catBase = [];
     this.loose = [];
     this.piles = map.piles.map((p, i) => ({ id: i, x: p.x, z: p.z, readyAt: 0 }));
     this.events = [];
@@ -38,17 +45,18 @@ export class MirrorSim {
     const ids = new Set(s.pl.map((a) => a[0]));
     this.players = this.players.filter((p) => ids.has(p.id));
     for (const a of s.pl) {
-      const [id, x, z, yaw, pitch, hp, stones, alive, aiming, charge, kills, deaths, heads, respawnAt, shieldUntil, killedBy, throwAt, speed, ack, spawnAt] = a;
+      const [id, x, z, yaw, pitch, hp, stones, alive, aiming, charge, kills, deaths, heads, respawnAt, shieldUntil, killedBy, throwAt, speed, ack, spawnAt, reloadUntil] = a;
       const p = this.byId(id);
       if (!p) continue;
       // 位置與「看得到的動作」（生死、舉手、出手）放進時間軸，跟著延遲 100 ms 的畫面一起播
       pos.set(id, { x, z, yaw, pitch, speed, alive: !!alive, aiming: !!aiming, charge, throwAt, spawnAt });
-      Object.assign(p, { hp, stones, kills, deaths, heads, respawnAt, shieldUntil, killedBy, spawnAt });
+      Object.assign(p, { hp, stones, kills, deaths, heads, respawnAt, shieldUntil, killedBy, spawnAt, reloadUntil: reloadUntil || 0 });
       if (id === meId) { mine = { x, z, yaw, alive: !!alive, ack, hp }; p.alive = !!alive; }
     }
     this.snaps.push({ t: s.ht, pos });
     if (this.snaps.length > 6) this.snaps.shift();
-    this.stoneBase = s.sn.map(([id, owner, x, y, z, vx, vy, vz, rest, active, age]) => ({ id, owner, x, y, z, vx, vy, vz, rest: !!rest, active: !!active, age: age || 0 }));
+    this.stoneBase = s.sn.map(([id, owner, x, y, z, vx, vy, vz, rest, active, age, kind]) => ({ id, owner, x, y, z, vx, vy, vz, rest: !!rest, active: !!active, age: age || 0, kind: PROJ_KIND[kind || 0] }));
+    this.catBase = (s.ct || []).map(([id, owner, x, z, yaw, speed]) => ({ id, owner, x, z, yaw, speed }));
     this.stoneT = s.ht;
     this.loose = s.lo.map(([id, x, z, count]) => ({ id, x, z, count }));
     s.pi.forEach((r, i) => { if (this.piles[i]) this.piles[i].readyAt = r; });
@@ -90,7 +98,9 @@ export class MirrorSim {
     const h = CFG.TICK / SUB, n = Math.floor(Math.max(0, dt) / h);
     this.stones = this.stoneBase.filter((s0) => s0.age + dt >= 0).map((s0) => {
       const s = { ...s0 };
-      if (!s.rest && dt < 0) {
+      if (s.kind === 'boom') {   // 回力鏢不吃重力、自己會轉彎：照快照的速度直線推一小段就好
+        if (s.active) { s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt; }
+      } else if (!s.rest && dt < 0) {
         s.x += s.vx * dt; s.y += s.vy * dt - 0.5 * CFG.G * dt * dt; s.z += s.vz * dt;
       } else if (!s.rest) {
         for (let i = 0; i < n; i++) {
@@ -100,6 +110,12 @@ export class MirrorSim {
       }
       s.lx = s.x; s.ly = s.y; s.lz = s.z;
       return s;
+    });
+    // 貓：照快照的速度與朝向推到同一個時間
+    this.cats = this.catBase.map((c0) => {
+      const vx = -Math.sin(c0.yaw) * c0.speed, vz = -Math.cos(c0.yaw) * c0.speed;
+      const x = c0.x + vx * dt, z = c0.z + vz * dt;
+      return { ...c0, x, z, px: x, pz: z };
     });
   }
 }
