@@ -42,6 +42,8 @@
   <symbol id="i-move" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/><path d="M12 1.8v2M12 20.2v2M1.8 12h2M20.2 12h2"/></symbol>
   <symbol id="i-swipe" viewBox="0 0 24 24"><path d="M4.5 12h15M8 8.5 4.5 12 8 15.5M16 8.5l3.5 3.5-3.5 3.5"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></symbol>
+  <symbol id="i-w-crystal" viewBox="0 0 24 24"><path d="M12 2.8 17.2 10 12 21.2 6.8 10z"/><path d="M6.8 10h10.4M12 2.8v18.4" opacity=".55"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-8 5.5-13.5 14-14-.5 8.5-6 14-14 14z"/><path d="M5 19 13 11"/></symbol>
   <!-- 武器 -->
   <symbol id="i-w-stone" viewBox="0 0 24 24"><path d="M5.2 14.6c-.9-3.4 1.6-7.3 6-8.1 4.4-.8 8.3 1.4 8.6 5 .3 3.8-2.6 6.4-7 6.7-3.8.3-6.8-.8-7.6-3.6z"/><path d="M9 11.5c1-1.2 2.4-1.8 4-1.8" opacity=".55"/></symbol>
   <symbol id="i-w-grenade" viewBox="0 0 24 24"><path d="M8.6 9.4h5.8M9.2 9.4a5.6 5.6 0 1 0 4.6 0"/><path d="M9.8 9.4V6.8h3.4v2.6M13.2 7.2l3.6 2.6"/><circle cx="16.6" cy="5.4" r="1.7"/><path d="M8.4 15h6.2M11.5 12v6" opacity=".5"/></symbol>
@@ -75,7 +77,11 @@
       </div>
       <div class="two">
         <div>
-          <div class="lbl-row"><svg class="i"><use href="#i-user"/></svg><span>對手</span></div>
+          <div class="lbl-row"><svg class="i"><use href="#i-w-crystal"/></svg><span>模式</span></div>
+          <div class="seg" data-k="mode"><i class="pill"></i><button data-v="team">水晶戰</button><button data-v="ffa">大亂鬥</button></div>
+        </div>
+        <div>
+          <div class="lbl-row"><svg class="i"><use href="#i-user"/></svg><span>電腦</span></div>
           <div class="seg" data-k="bots"><i class="pill"></i><button data-v="3">3</button><button data-v="5">5</button><button data-v="7">7</button></div>
         </div>
         <div>
@@ -86,7 +92,7 @@
       <p class="rule">先拿 <b>10 KO</b>，或 <b>5 分鐘</b>後 KO 最多的人獲勝</p>
     </div>
   </div>
-  <footer><a href="../../" style="color:inherit;pointer-events:auto">← 所有測試</a>・地圖資料 © OpenStreetMap contributors（ODbL）・原型 v0.7</footer>
+  <footer><a href="../../" style="color:inherit;pointer-events:auto">← 所有測試</a>・地圖資料 © OpenStreetMap contributors（ODbL）・原型 v0.8</footer>
 </section>
 
 <section id="pausePane" class="screen dim" hidden>
@@ -96,6 +102,7 @@
     <label class="row"><span><svg class="i"><use href="#i-arc"/></svg>拋物線預覽</span><input id="optArc" type="checkbox" class="switch"></label>
     <label class="row"><span><svg class="i"><use href="#i-target"/></svg>瞄準輔助</span><input id="optAssist" type="checkbox" class="switch"></label>
     <label class="row"><span><svg class="i"><use href="#i-sound"/></svg>音效</span><input id="optSound" type="checkbox" class="switch"></label>
+    <label class="row"><span><svg class="i"><use href="#i-leaf"/></svg>省電模式<small class="hint">每秒 30 格、解析度低一點，手機比較不燙</small></span><input id="optPower" type="checkbox" class="switch"></label>
     <div class="btns">
       <button id="resume" class="btn-ink"><svg class="i fill"><use href="#i-play"/></svg>繼續</button>
       <button id="restart" class="glass btn-ghost"><svg class="i"><use href="#i-redo"/></svg>重新開始</button>
@@ -129,6 +136,8 @@
       <div class="how-c"><div class="how-ic ink"><svg class="i"><use href="#i-arrow"/></svg></div><b>放開手指</b><span>出手。開始前選武器：石頭、手榴彈、步槍、光劍、馴獸師、回力鏢，各有長短</span></div>
       <div class="how-c"><div class="how-ic red"><svg class="i"><use href="#i-x"/></svg></div><b>拖到 ✕ 再放開</b><span>取消，不浪費石頭</span></div>
       <div class="how-c"><div class="how-ic"><svg class="i"><use href="#i-swipe"/></svg></div><b>右半邊空白處拖曳</b><span>只轉視角，不會丟</span></div>
+      <div class="how-c"><div class="how-ic ink"><svg class="i"><use href="#i-w-crystal"/></svg></div><b>水晶戰</b><span>分藍紅兩隊，各守一顆水晶；打破對方水晶就贏，6 分鐘到比水晶剩多少。隊友打不到你；小地圖會標出隊友、隊友看到的敵人和兩顆水晶</span></div>
+      <div class="how-c"><div class="how-ic"><svg class="i"><use href="#i-leaf"/></svg></div><b>省電模式</b><span>暫停選單裡切換。手機預設開：每秒 30 格、解析度低一點，比較不燙；關掉畫面比較順</span></div>
       <div class="how-c"><div class="how-ic"><svg class="i"><use href="#i-pebble"/></svg></div><b>彈藥自己會補</b><span>石頭、手榴彈、貓隔幾秒回來一發（左上格子下的藍線是進度）；步槍打完自動換彈、回力鏢會飛回手上。你會回血，電腦不會</span></div>
     </div>
     <p class="pc-note">電腦：WASD 移動・滑鼠轉視角・按住左鍵蓄力放開丟・右鍵取消</p>

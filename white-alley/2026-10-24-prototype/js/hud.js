@@ -1,5 +1,5 @@
 // HUD：血量（含受傷殘影）、石頭、比分與倒數、右上小地圖、受擊方向、擊倒訊息、敵人名牌、陣亡倒數、KO 橫幅。
-import { CFG } from './config.js';
+import { CFG, TEAMS } from './config.js';
 import { WEAPONS } from './weapons.js';
 import { animate, banner, bump, spring } from './ui.js';
 
@@ -8,20 +8,26 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const icon = (id, cls = '') => `<svg class="i ${cls}"><use href="#${id}"/></svg>`;
 
 export class Hud {
-  constructor(root, map, weapon = 'stone') {
+  constructor(root, map, weapon = 'stone', myTeam = -1) {
     this.root = root;
     this.map = map;
     this.W = WEAPONS[weapon] || WEAPONS.stone;
+    this.team = myTeam;   // ≥ 0：水晶戰（上方改成兩隊水晶血條，自己的隊伍永遠在左邊）
+    const T = myTeam >= 0, mineC = T ? TEAMS[myTeam].color : '', foeC = T ? TEAMS[1 - myTeam].color : '';
     root.innerHTML = `
       <button class="pause glass lens" aria-label="暫停" data-bezel="14" data-refract="6">${icon('i-pause')}</button>
       <div class="vitals glass lens" data-bezel="14" data-refract="7">
         <div class="hp"><div class="bar"><i class="ghost"></i><i class="fill"></i></div><em>100</em></div>
         <div class="ammo"></div><div class="rl" hidden><i></i><span>換彈</span></div>
       </div>
-      <div class="score glass lens" data-bezel="16" data-refract="7">
+      ${T ? `<div class="score teams glass lens" data-bezel="16" data-refract="7" style="--mine:${mineC};--foe:${foeC}">
+        <div class="side mine"><b class="tk">0</b><div class="cb"><i></i><em>100%</em></div></div>
+        <div class="meta"><span class="clock">6:00</span><span class="rank">你的 KO <u class="myko">0</u></span></div>
+        <div class="side foe"><div class="cb"><i></i><em>100%</em></div><b class="tk">0</b></div>
+      </div><div class="alert"></div>` : `<div class="score glass lens" data-bezel="16" data-refract="7">
         <div class="ko"><b>0</b><span>KO</span></div><i class="sep"></i>
         <div class="meta"><span class="rank"></span><span class="clock">5:00</span></div>
-      </div>
+      </div>`}
       <div class="minimap glass lens" data-bezel="12" data-refract="10"><canvas></canvas></div>
       <div class="feed"></div>
       <div class="cross"><i></i><u></u><b></b><b></b><b></b><b></b><span>太遠</span></div>
@@ -33,7 +39,8 @@ export class Hud {
       <div class="toast glass" hidden></div>`;
     this.el = {
       fill: $('.hp .fill', root), ghost: $('.hp .ghost', root), hpNum: $('.hp em', root), vitals: $('.vitals', root),
-      ammo: $('.ammo', root), ko: $('.ko b', root), rank: $('.rank', root), clock: $('.clock', root),
+      ammo: $('.ammo', root), ko: $('.ko b', root) || $('.myko', root), rank: $('.rank', root), clock: $('.clock', root),
+      alert: $('.alert', root), sides: [...root.querySelectorAll('.score.teams .side')],
       feed: $('.feed', root), hit: $('.hitmark', root), vig: $('.vig', root), labels: $('.labels', root),
       toast: $('.toast', root), pause: $('.pause', root), cross: $('.cross', root), banner: $('.banner', root),
       rl: $('.rl', root), crossTxt: $('.cross span', root),
@@ -114,6 +121,27 @@ export class Hud {
     g.addColorStop(0, 'rgba(47,95,208,0.22)'); g.addColorStop(1, 'rgba(47,95,208,0)');
     c.fillStyle = g;
     c.beginPath(); c.moveTo(R, R); c.arc(R, R, R, -Math.PI / 2 - fov, -Math.PI / 2 + fov); c.closePath(); c.fill();
+    // 水晶戰：兩顆水晶（菱形＋血量弧），超出範圍就在邊緣畫箭頭
+    if (this.team >= 0) for (const cr of sim.crystals) {
+      let [x, y] = to(cr.x, cr.z);
+      const dx = x - R, dy = y - R, dd = Math.hypot(dx, dy), lim = R - 12 * dpr, col = TEAMS[cr.team].color;
+      if (dd > lim) {
+        x = R + (dx / dd) * lim; y = R + (dy / dd) * lim;
+        const a = Math.atan2(dy, dx);
+        c.fillStyle = col;
+        c.beginPath(); c.moveTo(x + Math.cos(a) * 9 * dpr, y + Math.sin(a) * 9 * dpr);
+        c.lineTo(x + Math.cos(a + 2.4) * 6 * dpr, y + Math.sin(a + 2.4) * 6 * dpr);
+        c.lineTo(x + Math.cos(a - 2.4) * 6 * dpr, y + Math.sin(a - 2.4) * 6 * dpr); c.closePath(); c.fill();
+      } else {
+        const s = 6.5 * dpr, hit = sim.time - cr.lastHit < 0.6;
+        c.fillStyle = '#fff';
+        c.beginPath(); c.moveTo(x, y - s - 2 * dpr); c.lineTo(x + s * 0.8 + 2 * dpr, y); c.lineTo(x, y + s + 2 * dpr); c.lineTo(x - s * 0.8 - 2 * dpr, y); c.closePath(); c.fill();
+        c.fillStyle = hit && Math.sin(sim.time * 30) > 0 ? '#fff' : col;
+        c.beginPath(); c.moveTo(x, y - s); c.lineTo(x + s * 0.8, y); c.lineTo(x, y + s); c.lineTo(x - s * 0.8, y); c.closePath(); c.fill();
+        c.strokeStyle = col; c.lineWidth = 2 * dpr; c.lineCap = 'round';
+        c.beginPath(); c.arc(x, y, s + 4.5 * dpr, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, cr.hp / cr.max)); c.stroke();
+      }
+    }
     // 剛出手的人：在小地圖擴散一圈
     for (const pg of this.pings) {
       const a = 1 - (sim.time - pg.t) / 1.6;
@@ -123,13 +151,22 @@ export class Hud {
       c.beginPath(); c.arc(x, y, (4 + (1 - a) * 11) * dpr, 0, Math.PI * 2); c.stroke();
     }
     this.pings = this.pings.filter((pg) => sim.time - pg.t < 1.6);
-    // 看得到的敵人
+    // 看得到的人：大亂鬥都是紅點；水晶戰隊友用隊伍色箭頭（看得出面向）、敵人用敵隊色圓點
     for (const p of sim.players) {
       if (p === me || !p.alive || !visible.has(p.id)) continue;
       const [x, y] = to(p.x, p.z);
+      const mate = this.team >= 0 && p.team === me.team;
+      if (mate) {
+        const a = -p.yaw + view.yaw - Math.PI / 2, s = 5.5 * dpr;   // 隊友面向（螢幕座標）
+        c.fillStyle = '#fff';
+        c.beginPath(); c.arc(x, y, s + 1.5 * dpr, 0, Math.PI * 2); c.fill();
+        c.fillStyle = TEAMS[p.team].color;
+        c.beginPath(); c.moveTo(x + Math.cos(a) * s, y + Math.sin(a) * s); c.lineTo(x + Math.cos(a + 2.5) * s, y + Math.sin(a + 2.5) * s); c.lineTo(x + Math.cos(a - 2.5) * s, y + Math.sin(a - 2.5) * s); c.closePath(); c.fill();
+        continue;
+      }
       c.fillStyle = '#fff';
       c.beginPath(); c.arc(x, y, 5.6 * dpr, 0, Math.PI * 2); c.fill();
-      c.fillStyle = '#e03e30';
+      c.fillStyle = this.team >= 0 ? TEAMS[p.team].color : '#e03e30';
       c.beginPath(); c.arc(x, y, 4 * dpr, 0, Math.PI * 2); c.fill();
     }
     // 自己（永遠朝上）
@@ -148,7 +185,32 @@ export class Hud {
 
   ping(x, z, t) { this.pings.push({ x, z, t }); }
 
-  update(sim, me, view, visible, r, dt, aim = null) {
+  // 水晶戰上方：左邊自己隊、右邊敵隊；隊伍 KO、水晶血量（剛被打的那邊閃）
+  _teamScore(sim) {
+    [this.team, 1 - this.team].forEach((t, k) => {
+      const side = this.el.sides[k], c = sim.crystals[t];
+      if (!side || !c) return;
+      const pct = Math.max(0, c.hp / c.max);
+      side.querySelector('.cb i').style.transform = `scaleX(${pct.toFixed(3)})`;
+      const em = side.querySelector('em'), txt = `${Math.ceil(pct * 100)}%`;
+      if (em.textContent !== txt) em.textContent = txt;
+      side.classList.toggle('hit', sim.time - c.lastHit < 0.6);
+      side.classList.toggle('low', pct < 0.3);
+      const tk = side.querySelector('.tk'), n = String(sim.teamKills[t]);
+      if (tk.textContent !== n) { tk.textContent = n; bump(tk, 1.4); }
+    });
+  }
+
+  // 畫面中上方的大字提示（我方水晶被打、勝負）
+  alert(text, kind = 'warn') {
+    const el = this.el.alert;
+    if (!el) return;
+    el.className = `alert ${kind}`;
+    el.textContent = text;
+    animate(el, { opacity: [0, 1, 1, 0], y: [-8, 0, 0, -4] }, { duration: kind === 'warn' ? 2.2 : 3, times: [0, 0.12, 0.8, 1] });
+  }
+
+  update(sim, me, view, visible, r, dt, aim = null, seen = visible) {
     const e = this.el;
     // 血量：受傷時紅色殘影停一下再縮
     const hp = Math.max(0, me.hp);
@@ -188,15 +250,18 @@ export class Hud {
     if (reloading !== !e.rl.hidden) { e.rl.hidden = !reloading; e.ammo.hidden = reloading; }
     if (reloading) e.rl.style.setProperty('--p', Math.max(0, Math.min(1, 1 - (me.reloadUntil - sim.time) / W.reload)).toFixed(3));
     if (this._ko !== me.kills) { this._ko = me.kills; e.ko.textContent = me.kills; bump(e.ko, 1.6); }
-    const rank = sim.ranking().indexOf(me) + 1;
-    e.rank.textContent = `第 ${rank} / ${sim.players.length}`;
+    if (this.team >= 0) this._teamScore(sim);
+    else {
+      const rank = sim.ranking().indexOf(me) + 1;
+      e.rank.textContent = `第 ${rank} / ${sim.players.length}`;
+    }
     const left = Math.max(0, sim.matchTime - sim.time);
     e.clock.textContent = `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`;
     e.clock.classList.toggle('hurry', left < 30 && sim.state === 'play');
     // 準心＝落點：指到人變紅、太遠（丟不到）變灰並提示
     e.cross.classList.toggle('aim', me.aiming);
     const melee = W.kind === 'melee';
-    e.cross.classList.toggle('lock', !!(aim && (melee ? aim.inReach : aim.hit && aim.hit.player)));
+    e.cross.classList.toggle('lock', !!(aim && (melee ? aim.inReach : aim.hit && (aim.hit.player || aim.hit.foeCrystal))));
     const lunge = !!(melee && aim && aim.inLunge && !aim.inReach && me.aiming && me.charge * W.chargeT >= W.lungeT);
     const far = !!(!melee && aim && (me.aiming && aim.far || aim.boom && aim.far));
     e.cross.classList.toggle('far', far);
@@ -213,8 +278,10 @@ export class Hud {
     e.cross.style.opacity = me.alive && !reloading ? 1 : me.alive ? 0.35 : 0;
 
     this.lased = me.alive ? r.lasedFrom : null;
-    this.drawMini(sim, me, view, visible);
-    this._labels(sim, me, visible, r);
+    // 小地圖每秒 20 次就夠（省電時 12 次）；受擊方向只有在有東西要畫時才重畫整張全螢幕畫布
+    this.miniT = (this.miniT || 0) - dt;
+    if (this.miniT <= 0 || dt === 0) { this.miniT = this.power ? 1 / 12 : 1 / 20; this.drawMini(sim, me, view, visible); }
+    this._labels(sim, me, seen, r);
     this._damage(view, me, dt);
 
     // 陣亡倒數（圓環＋擊倒者）
@@ -245,8 +312,8 @@ export class Hud {
     const seen = new Set();
     for (const p of sim.players) {
       if (p === me || !p.alive || !visible.has(p.id)) continue;
-      const d = Math.hypot(p.x - me.x, p.z - me.z);
-      if (d > 38) continue;
+      const d = Math.hypot(p.x - me.x, p.z - me.z), mate = this.team >= 0 && p.team === me.team;
+      if (d > (mate ? 45 : 38)) continue;
       const s = r.toScreen(p.x, 2.08, p.z);
       if (!s.front) continue;
       seen.add(p.id);
@@ -257,12 +324,13 @@ export class Hud {
         el.innerHTML = `<span><i></i><b></b></span><em><u></u></em>`;
         el.querySelector('b').textContent = p.name;
         el.querySelector('span i').style.background = p.accent;
+        if (mate) { el.classList.add('mate'); el.style.setProperty('--tc', TEAMS[p.team].color); }
         this.el.labels.appendChild(el);
         this.labelEls.set(p.id, el);
       }
       el.querySelector('u').style.transform = `scaleX(${p.hp / CFG.HP})`;
       el.style.transform = `translate(${s.x}px, ${s.y}px) translate(-50%, -100%) scale(${Math.max(0.68, 1 - d / 60)})`;
-      el.style.opacity = d > 30 ? (38 - d) / 8 : 1;
+      el.style.opacity = mate ? (d > 37 ? (45 - d) / 8 : 1) : d > 30 ? (38 - d) / 8 : 1;
     }
     for (const [id, el] of this.labelEls) if (!seen.has(id)) { el.remove(); this.labelEls.delete(id); }
   }
@@ -274,6 +342,9 @@ export class Hud {
   }
 
   _damage(view, me, dt) {
+    const busy = this.dmgs.length || (this.lased && this.lased.length);
+    if (!busy && !this.dmgDirty) { this._vig(me, dt); return; }
+    this.dmgDirty = !!busy;   // 這一格有畫：下一格至少要再清一次
     const c = this.dmg.getContext('2d');
     const W = this.dmg.width, H = this.dmg.height, dpr = this.miniDpr;
     c.clearRect(0, 0, W, H);
@@ -293,6 +364,7 @@ export class Hud {
       c.beginPath(); c.arc(W / 2, H / 2, R + 12 * dpr, a0 - 0.2, a0 + 0.2); c.stroke();
     }
     this.dmgs = this.dmgs.filter((d) => d.a > 0);
+    if (this.dmgs.length) this.dmgDirty = true;
     // 被步槍雷射瞄著：那個方向一段一閃一閃的紅色虛線弧
     const pulse = 0.55 + 0.45 * Math.sin(performance.now() / 70);
     for (const s of this.lased || []) {
@@ -303,9 +375,14 @@ export class Hud {
       c.beginPath(); c.arc(W / 2, H / 2, R * 1.12, ang - 0.38, ang + 0.38); c.stroke();
       c.setLineDash([]);
     }
+    this._vig(me, dt);
+  }
+
+  _vig(me, dt) {
     const hp = me.hp / CFG.HP;
     this.flashVig = Math.max(0, (this.flashVig || 0) - dt * 2.2);
-    this.el.vig.style.opacity = me.alive ? Math.min(1, Math.max(0, 0.5 - hp) * 1.6 + this.flashVig) : 0;
+    const o = (me.alive ? Math.min(1, Math.max(0, 0.5 - hp) * 1.6 + this.flashVig) : 0).toFixed(2);
+    if (this._vigO !== o) { this._vigO = o; this.el.vig.style.opacity = o; }
   }
 
   // 上方中央的一行通知（某人離開等）

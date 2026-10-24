@@ -128,7 +128,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .mapcard.on::after { content: ""; position: absolute; top: 9px; right: 9px; width: 20px; height: 20px; border-radius: 50%;
   background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 12.5l3.5 3.5 7.5-8' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat;
   box-shadow: 0 0 0 2px oklch(1 0 0 / 0.9); }
-.two { display: grid; grid-template-columns: 1fr 1.35fr; gap: 12px; }
+.two { display: grid; grid-template-columns: 1.15fr 0.9fr 1.25fr; gap: 10px; }
 .two > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 /* 分段選擇：墨色膠囊滑過去（位置由 Motion 彈簧推動） */
 .seg { position: relative; display: flex; padding: 3px; border-radius: 999px; background: oklch(0.21 0.012 262 / 0.07); box-shadow: inset 0 1px 2px oklch(0.2 0.02 262 / 0.1); }
@@ -146,6 +146,13 @@ footer { position: absolute; bottom: calc(6px + var(--sb)); left: 0; right: 0; t
 .row { display: flex; justify-content: space-between; align-items: center; gap: 14px; min-height: 44px; font-size: 14px; font-weight: 550; border-top: 1px solid var(--line); }
 .row > span { display: flex; align-items: center; gap: 8px; }
 .row .i { color: var(--ink-2); }
+.row .hint { margin-left: 2px; font-size: 10.5px; font-weight: 500; color: var(--ink-3); }
+
+/* 遊戲中的玻璃：背後是每格都在變的 3D 畫面，毛玻璃模糊每格都要重算（手機發燙的大宗之一）。
+   一般只留輕模糊；省電模式整個拿掉，改用比較不透明的白 */
+#hud .glass, #touch .glass { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+body.power #hud .glass, body.power #touch .glass { -webkit-backdrop-filter: none; backdrop-filter: none; --tint: 0.82; }
+body.power .tag span { -webkit-backdrop-filter: none; backdrop-filter: none; background: oklch(1 0 0 / 0.9); }
 input[type=range] { -webkit-appearance: none; appearance: none; width: 52%; height: 28px; background: none; cursor: pointer; }
 input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--ink) var(--p, 50%), oklch(0.21 0.012 262 / 0.12) var(--p, 50%)); }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -9px; border-radius: 50%; background: #fff;
@@ -183,8 +190,8 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 #resTable .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 -1px 0 oklch(0 0 0 / 0.2); }
 #resTable tr.p1 td:first-child { color: var(--gold); }
 
-.how { width: min(760px, 100%); max-height: 100%; overflow: auto; }
-.how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.how { width: min(860px, 100%); max-height: 100%; overflow: auto; }
+.how-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .how-c { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border-radius: 16px; background: oklch(1 0 0 / 0.45); box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.6); }
 .how-c b { font-size: 13px; }
 .how-c span { font-size: 11.5px; color: var(--ink-2); line-height: 1.45; }
@@ -303,7 +310,7 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 .pause .i { stroke-width: 2.6; }
 .vitals { position: absolute; left: calc(64px + var(--sl)); top: calc(10px + var(--st)); --r: 18px; padding: 8px 12px 7px 11px; display: flex; flex-direction: column; gap: 5px; }
 .hp { display: flex; align-items: center; gap: 8px; }
-.hp .bar { position: relative; width: 168px; height: 10px; border-radius: 5px; background: oklch(0.21 0.012 262 / 0.1); overflow: hidden; box-shadow: inset 0 1px 2px oklch(0.2 0.02 262 / 0.15); }
+.hp .bar { position: relative; width: 150px; height: 10px; border-radius: 5px; background: oklch(0.21 0.012 262 / 0.1); overflow: hidden; box-shadow: inset 0 1px 2px oklch(0.2 0.02 262 / 0.15); }
 .hp .bar i { position: absolute; inset: 0; border-radius: inherit; transform-origin: left; }
 .hp .ghost { background: oklch(0.61 0.21 27 / 0.55); }
 .hp .fill { background: linear-gradient(180deg, oklch(0.38 0.015 262), var(--ink)); box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.25); }
@@ -333,6 +340,32 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 .score .clock { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .score .clock.hurry { color: var(--red); animation: blink 1s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0.45; } }
+
+/* 水晶戰的上方：自己隊（左）KO＋水晶血條｜時間｜敵隊（右） */
+.score.teams { gap: 9px; padding: 6px 12px; }
+.score.teams .side { display: flex; align-items: center; gap: 8px; }
+.score.teams .tk { font-size: 22px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; display: inline-block; min-width: 1.2em; text-align: center; }
+.score.teams .mine .tk { color: var(--mine); }
+.score.teams .foe .tk { color: var(--foe); }
+.score.teams .cb { position: relative; width: 70px; height: 14px; border-radius: 7px; background: oklch(0.21 0.012 262 / 0.1); overflow: hidden; box-shadow: inset 0 1px 2px oklch(0.2 0.02 262 / 0.15); }
+.score.teams .cb i { position: absolute; inset: 0; border-radius: inherit; transform-origin: left; transition: transform 0.25s var(--ease); }
+.score.teams .mine .cb i { background: linear-gradient(180deg, color-mix(in oklch, var(--mine) 75%, white), var(--mine)); }
+.score.teams .foe .cb i { background: linear-gradient(180deg, color-mix(in oklch, var(--foe) 75%, white), var(--foe)); transform-origin: right; }
+.score.teams .cb em { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: 10px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px oklch(0.2 0.02 262 / 0.5); font-variant-numeric: tabular-nums; }
+.score.teams .side.hit .cb { animation: crhit 0.3s steps(2) infinite; }
+.score.teams .side.low .cb em { color: #fff; }
+@keyframes crhit { 50% { box-shadow: 0 0 0 2px oklch(1 0 0 / 0.95), 0 0 12px var(--red); } }
+.score.teams .meta { align-items: center; }
+.score.teams .rank { font-size: 10px; }
+.score.teams .rank u { text-decoration: none; font-weight: 800; color: var(--ink); }
+.alert { position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content; top: calc(64px + var(--st)); padding: 6px 18px; border-radius: 999px; font-size: 15px; font-weight: 800; letter-spacing: 0.12em; opacity: 0; pointer-events: none;
+  color: #fff; background: var(--red); box-shadow: 0 8px 24px -8px oklch(0.61 0.21 27 / 0.7); }
+.alert.win { background: var(--ink); font-size: 26px; padding: 8px 28px; top: 26%; }
+.alert.lose { background: oklch(0.45 0.02 262); font-size: 26px; padding: 8px 28px; top: 26%; }
+.tag.mate span { box-shadow: inset 0 1px 0 oklch(1 0 0), 0 0 0 1.5px var(--tc), 0 2px 6px oklch(0.2 0.02 262 / 0.15); }
+.tag.mate em u { background: var(--tc); }
+@media (max-width: 860px) { .hp .bar { width: 118px; } .score.teams .cb { width: 58px; } }
+#resTable tr.tsep td { padding-top: 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; border-top: 0; }
 
 .minimap { position: absolute; right: calc(12px + var(--sr)); top: calc(10px + var(--st)); width: 136px; height: 136px; --r: 50%; padding: 5px; }
 .minimap canvas { display: block; width: 100%; height: 100%; border-radius: 50%; }

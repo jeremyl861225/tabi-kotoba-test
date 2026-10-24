@@ -210,3 +210,31 @@ export function scorchTexture() {
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
+
+// 水晶：白色石灰底座（一圈隊伍色）＋懸浮旋轉的八面水晶＋發亮的芯＋往天空的淡光柱＋地上的基地圈＋三片繞著轉的碎晶
+export function crystalModel(hex) {
+  const col = C(hex), g = new THREE.Group();
+  const base = new THREE.Mesh(merge([
+    [new THREE.CylinderGeometry(1.05, 1.18, 0.22, 28), [0, 0.11, 0], C(0xf1f0ec)],
+    [new THREE.CylinderGeometry(0.84, 0.94, 0.3, 28), [0, 0.37, 0], C(0xffffff)],
+    [new THREE.CylinderGeometry(0.62, 0.72, 0.16, 28), [0, 0.6, 0], C(0xe9e7e2)],
+    [new THREE.TorusGeometry(0.66, 0.035, 6, 32).rotateX(Math.PI / 2), [0, 0.68, 0], col],
+    [new THREE.TorusGeometry(1.12, 0.03, 6, 40).rotateX(Math.PI / 2), [0, 0.2, 0], col],
+  ]), vcMat());
+  base.castShadow = true; base.receiveShadow = true;
+  const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.56, 0).scale(1, 1.9, 1),
+    new THREE.MeshLambertMaterial({ color: col, emissive: col.clone().multiplyScalar(0.35), flatShading: true, transparent: true, opacity: 0.9 }));
+  gem.position.y = 1.75; gem.castShadow = true;
+  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.2, 0).scale(1, 1.9, 1), new THREE.MeshBasicMaterial({ color: col.clone().lerp(C(0xffffff), 0.65) }));
+  core.position.y = 1.75;
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.3, 40, 12, 1, true).translate(0, 20, 0),
+    new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+  beam.position.y = 2.4;
+  const ring = new THREE.Mesh(new THREE.RingGeometry(3.0, 3.22, 72).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.5, depthWrite: false }));
+  ring.position.y = 0.02;
+  const shardG = new THREE.OctahedronGeometry(0.1, 0).scale(1, 1.8, 1);
+  const shards = [0, 1, 2].map(() => { const m = new THREE.Mesh(shardG, gem.material); m.castShadow = true; return m; });
+  g.add(base, gem, core, beam, ring, ...shards);
+  return { g, gem, core, beam, ring, shards, flash: 0, col };
+}

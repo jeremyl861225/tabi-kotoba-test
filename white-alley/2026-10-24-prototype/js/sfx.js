@@ -118,6 +118,17 @@ export class Sfx {
       case 'catch': { const { node } = o(0.5); this._noise(node, t, 0.05, 'lowpass', 1200, 400, 0.8, 0.5); this._tone(node, t, 0.06, 'triangle', 600, 500, 0.15); break; }
       case 'reload': { const { node } = o(0.5); this._tone(node, t, 0.04, 'square', 900, 700, 0.12); this._noise(node, t + 0.05, 0.05, 'highpass', 2500, 1500, 0.8, 0.3); break; }
       case 'reloaded': { const { node } = o(0.6); this._tone(node, t, 0.04, 'square', 700, 650, 0.14); this._tone(node, t + 0.09, 0.05, 'square', 1100, 1000, 0.14); break; }
+      case 'crystal': {   // 打到水晶：清脆的玻璃聲（兩個泛音）
+        const { node, g } = o(0.55, 60);
+        if (g > 0.01) { const f = 1700 + Math.random() * 500; this._tone(node, t, 0.32, 'triangle', f, f * 0.98, 0.16); this._tone(node, t, 0.24, 'sine', f * 1.51, f * 1.49, 0.1); this._noise(node, t, 0.04, 'highpass', 6000, 4000, 0.7, 0.3); }
+        break;
+      }
+      case 'shatter': {   // 水晶碎掉：一串往下掉的玻璃聲＋碎裂噪音（全場都聽得到）
+        const { node } = o(1);
+        for (let i = 0; i < 9; i++) { const f = 2600 - i * 210 + Math.random() * 120; this._tone(node, t + i * 0.045, 0.5, 'triangle', f, f * 0.9, 0.13); }
+        this._noise(node, t, 0.9, 'highpass', 5000, 900, 0.6, 0.6); this._tone(node, t, 0.8, 'sine', 120, 40, 0.8);
+        break;
+      }
       case 'pin': { const { node, g } = o(0.4, 20); if (g > 0.01) this._tone(node, t, 0.05, 'triangle', 2600, 2000, 0.15); break; }
       default:
     }

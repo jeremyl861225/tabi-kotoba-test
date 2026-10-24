@@ -1,10 +1,10 @@
 // 畫面：白模城市、人物、石頭、拋物線預覽、第一人稱的手。只讀模擬狀態，不改它。
 import * as THREE from 'three';
-import { CFG } from './config.js';
+import { CFG, TEAMS } from './config.js';
 import { forward, raycast, simulateArc, throwOrigin } from './physics.js';
 import { buildCity } from './facade.js';
 import { WEAPONS, chargeSpeedW } from './weapons.js';
-import { CAT_COLS, RIFLE_MUZZLE, armGroup, bladeMeshes, boomGeo, catModel, catballGeo, grenadeGeo, hiltGeo, magGeo, merge as mergeColored, rifleGeo, scorchTexture, slashTexture, vcMat } from './arms.js';
+import { CAT_COLS, RIFLE_MUZZLE, armGroup, crystalModel, bladeMeshes, boomGeo, catModel, catballGeo, grenadeGeo, hiltGeo, magGeo, merge as mergeColored, rifleGeo, scorchTexture, slashTexture, vcMat } from './arms.js';
 
 const SKY = 0xeef0f2;
 const INK = 0x2d2f34;
@@ -12,10 +12,13 @@ const INK = 0x2d2f34;
 export class Renderer {
   constructor(parent, map) {
     this.map = map;
-    const r = (this.gl = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }));
+    // 手機不要求高效能 GPU 模式（省電、比較不燙）
+    const r = (this.gl = new THREE.WebGLRenderer({ antialias: true, powerPreference: matchMedia('(pointer: coarse)').matches ? 'default' : 'high-performance' }));
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     r.shadowMap.enabled = true;
     r.shadowMap.type = THREE.PCFShadowMap;
+    r.shadowMap.autoUpdate = false;   // 陰影不每格重算（見 frame 末尾），省下一整趟城市的繪製
+    this.shadowF = 0; this.shadowAt = { x: 1e9, z: 1e9 };
     r.outputColorSpace = THREE.SRGBColorSpace;
     r.toneMapping = THREE.NoToneMapping;
     r.autoClear = false;
@@ -50,16 +53,18 @@ export class Renderer {
     this.resize();
   }
 
-  // 畫質等級：0 最好。掉幀時由 main.js 往下調
-  setQuality(q) {
+  // 畫質等級：0 最好。掉幀時由 main.js 往下調。省電模式再壓：解析度最多 1.25 倍、陰影貼圖 1024、近處細節範圍縮小
+  setQuality(q, power = this.power) {
     const Q = [[2, 2048, 66], [1.6, 2048, 60], [1.3, 1024, 50], [1, 1024, 40]][Math.max(0, Math.min(3, q))];
-    this.quality = q;
-    this.gl.setPixelRatio(Math.min(window.devicePixelRatio || 1, Q[0]));
-    if (this.sun.shadow.mapSize.x !== Q[1]) {
-      this.sun.shadow.mapSize.set(Q[1], Q[1]);
+    this.quality = q; this.power = !!power;
+    this.gl.setPixelRatio(Math.min(window.devicePixelRatio || 1, Q[0], power ? 1.25 : 2));
+    const ms = power ? Math.min(1024, Q[1]) : Q[1];
+    if (this.sun.shadow.mapSize.x !== ms) {
+      this.sun.shadow.mapSize.set(ms, ms);
       if (this.sun.shadow.map) { this.sun.shadow.map.dispose(); this.sun.shadow.map = null; }
+      this.gl.shadowMap.needsUpdate = true;
     }
-    this.fineDist = Q[2];
+    this.fineDist = power ? Q[2] - 14 : Q[2];
     this.resize();
   }
 
@@ -518,8 +523,10 @@ export class Renderer {
     const half = (55 * Math.PI) / 180, slashG = new THREE.RingGeometry(0.45, 1.75, 30, 1, Math.PI / 2 - half, half * 2).rotateX(-Math.PI / 2), st = slashTexture();
     this.slashes = pool(6, () => new THREE.Mesh(slashG, new THREE.MeshBasicMaterial({ map: st, color: 0xffffff, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false })), false);
     this.sparkP = [];
-    this.sparkMesh = new THREE.InstancedMesh(new THREE.TetrahedronGeometry(0.028, 0), new THREE.MeshBasicMaterial({ color: 0xffc94a, fog: false }), 140);
+    this.sparkMesh = new THREE.InstancedMesh(new THREE.TetrahedronGeometry(0.028, 0), new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false }), 140);
     this.sparkMesh.count = 0; this.sparkMesh.frustumCulled = false;
+    this._sparkCol = new THREE.Color();
+    for (let i = 0; i < 140; i++) this.sparkMesh.setColorAt(i, this._sparkCol.setHex(0xffc94a));
     this.scene.add(this.sparkMesh);
     // 手榴彈落點的爆炸範圍圈
     this.blastMark = new THREE.Mesh(new THREE.RingGeometry(0.95, 1, 64), new THREE.MeshBasicMaterial({ color: 0xe0352b, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthTest: false, fog: false }));
@@ -579,12 +586,67 @@ export class Renderer {
     Object.assign(m.userData, { life: 0.22, yaw });
   }
 
-  sparks(x, y, z, n = 10, sp = 4) {
+  sparks(x, y, z, n = 10, sp = 4, color = 0xffc94a, life = 0.22, size = 1) {
     for (let i = 0; i < n; i++) {
       if (this.sparkP.length >= 140) this.sparkP.shift();
       const a = Math.random() * Math.PI * 2, u = Math.random() * 2 - 1, v = sp * (0.4 + Math.random() * 0.8), r = Math.sqrt(1 - u * u);
-      this.sparkP.push({ x, y, z, vx: Math.cos(a) * r * v, vy: u * v + 1.5, vz: Math.sin(a) * r * v, t: 0, life: 0.22 + Math.random() * 0.25 });
+      this.sparkP.push({ x, y, z, vx: Math.cos(a) * r * v, vy: u * v + 1.5, vz: Math.sin(a) * r * v, t: 0, life: life + Math.random() * 0.25, color, size });
     }
+  }
+
+  // ---------- 水晶戰 ----------
+  _crystals(sim, now, dt) {
+    const list = sim.crystals || [];
+    if (!list.length) return;
+    if (!this.crystalObjs) {
+      this.crystalObjs = list.map((c) => {
+        const m = crystalModel(TEAMS[c.team].hex);
+        m.g.position.set(c.x, 0, c.z);
+        this.scene.add(m.g);
+        return m;
+      });
+    }
+    list.forEach((c, i) => {
+      const m = this.crystalObjs[i], k = Math.max(0, c.hp / c.max), alive = c.hp > 0;
+      m.gem.visible = m.core.visible = alive;
+      m.shards.forEach((s) => (s.visible = alive));
+      if (!alive) { m.beam.material.opacity *= 0.9; m.ring.material.opacity = 0.2; return; }
+      const low = k < 0.3;
+      m.flash = Math.max(0, m.flash - dt * 6);
+      const bob = Math.sin(now * 1.6 + i) * 0.07;
+      m.gem.position.y = m.core.position.y = 1.75 + bob;
+      m.gem.rotation.y += dt * (0.5 + (1 - k) * 1.5);
+      m.core.rotation.y -= dt * 0.8;
+      // 越殘越暗、越抖；被打到時整顆閃白
+      const pulse = low ? 0.5 + 0.5 * Math.sin(now * 12) : 1;
+      m.gem.material.emissive.copy(m.col).multiplyScalar(0.18 + 0.22 * k * pulse).lerp(this._white ||= new THREE.Color(0xffffff), m.flash * 0.8);
+      m.gem.material.opacity = 0.62 + 0.3 * k;
+      m.gem.scale.setScalar(0.88 + 0.12 * k);
+      m.beam.material.opacity = (0.05 + 0.13 * k) * (low ? 0.6 + 0.4 * Math.sin(now * 9) : 1);
+      m.ring.material.opacity = now - c.lastHit < 1 ? 0.5 + 0.4 * Math.sin(now * 20) : 0.45;
+      m.shards.forEach((s, j) => {
+        const a = now * (0.9 + (1 - k) * 2) + (j * Math.PI * 2) / 3;
+        s.position.set(Math.cos(a) * 0.95, 1.6 + Math.sin(now * 2 + j) * 0.25 + bob, Math.sin(a) * 0.95);
+        s.rotation.set(a, a * 1.3, 0);
+      });
+    });
+  }
+
+  crystalHit(team, x, y, z) {
+    const m = this.crystalObjs && this.crystalObjs[team];
+    if (m) m.flash = 1;
+    this.sparks(x, y, z, 7, 3.5, TEAMS[team].hex, 0.35, 1.6);
+    this.flash(x, y, z, 0.25, 0xffffff, 0.08);
+  }
+
+  crystalBreak(team, x, z) {
+    const hex = TEAMS[team].hex;
+    this.flash(x, 1.8, z, 2.6, hex, 0.35);
+    this.flash(x, 1.8, z, 1.4, 0xffffff, 0.18);
+    this.sparks(x, 1.8, z, 60, 9, hex, 0.8, 2.6);
+    for (let i = 0; i < 8; i++) this.puff(x + (Math.random() - 0.5) * 2, 1 + Math.random() * 1.5, z + (Math.random() - 0.5) * 2, 0.7 + Math.random() * 0.5, 0xe9edf5, 1.2, 1.2);
+    const sk = this._next(this.shocks);
+    sk.position.set(x, 0.03, z); Object.assign(sk.userData, { life: 0.8, r: 7 });
   }
 
   _fxInit() {
@@ -786,6 +848,7 @@ export class Renderer {
     if (this.seaTex) this.seaTex.offset.set(now * 0.004, now * 0.011);
 
     this._lasers(sim, me, cam, now, opts.aim);
+    this._crystals(sim, now, dt);
 
     // 拋物線預覽（回力鏢畫去程的彎）
     this.arcHit = null;
@@ -800,7 +863,14 @@ export class Renderer {
         const v = A && A.v ? A.v : chargeSpeedW(AW, me.charge);
         const o = throwOrigin(ex, ez, A ? A.yaw : view.yaw);
         const f = A && A.pitch != null ? forward(A.yaw, A.pitch) : forward(view.yaw, view.pitch);
-        arc = simulateArc(this.map, o, { x: f.x * v, y: f.y * v, z: f.z * v }, { players: sim.players, ignoreId: me.id, every: 1 });
+        const foes = sim.mode === 'team' ? sim.players.filter((q) => q === me || q.team !== me.team) : sim.players;
+        arc = simulateArc(this.map, o, { x: f.x * v, y: f.y * v, z: f.z * v }, { players: foes, ignoreId: me.id, every: 1 });
+        // 預覽線碰到水晶就停在水晶上（模擬裡投射物也會撞到水晶）
+        for (let i = 1; i < arc.pts.length; i++) {
+          const q = arc.pts[i];
+          const c = (sim.crystals || []).find((k) => k.hp > 0 && Math.hypot(q.x - k.x, q.z - k.z) < CFG.CRYSTAL_R && q.y < CFG.CRYSTAL_TOP);
+          if (c) { arc.pts.length = i + 1; arc.hit = { type: c.team === me.team ? 'wall' : 'player', x: q.x, y: q.y, z: q.z, nx: 0, nz: 0 }; break; }
+        }
       }
       const pa = this.arcLine.geometry.attributes.position, la = this.arcLine.geometry.attributes.lineDistance;
       const n = Math.min(arc.pts.length, pa.count);
@@ -847,6 +917,11 @@ export class Renderer {
     this._animHand(me, now, dt, opts.intro ?? 1);
 
     const gl = this.gl;
+    // 陰影：一般每 2 格、省電每 3 格才重算一次；鏡頭（太陽跟著走）移動超過 1.5 m 也重算
+    const st = this.sun.target.position;
+    if (++this.shadowF % (this.power ? 3 : 2) === 0 || Math.hypot(st.x - this.shadowAt.x, st.z - this.shadowAt.z) > 1.5) {
+      gl.shadowMap.needsUpdate = true; this.shadowAt.x = st.x; this.shadowAt.z = st.z;
+    }
     gl.clear();
     gl.render(this.scene, cam);
     if (me.alive) {
@@ -872,7 +947,8 @@ export class Renderer {
       } else {
         const c = this.chars.get(p.id);
         const d = forward(p.yaw, p.pitch);
-        hit = raycast(this.map, p.x, CFG.EYE, p.z, d, sim.players, p.id, 70);
+        const foes = sim.mode === 'team' ? sim.players.filter((q) => q === p || q.team !== p.team) : sim.players;   // 隊友的雷射穿過自己人
+        hit = raycast(this.map, p.x, CFG.EYE, p.z, d, foes, p.id, 70);
         const gx = c ? c.g.position.x : p.x, gz = c ? c.g.position.z : p.z;
         o = { x: gx + d.x * 0.95 + Math.cos(p.yaw) * 0.15, y: 1.48 + d.y * 0.95, z: gz + d.z * 0.95 - Math.sin(p.yaw) * 0.15 };
       }
@@ -967,13 +1043,15 @@ export class Renderer {
       if (p.t > p.life) continue;
       p.vy -= 9.8 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
       if (p.y < 0.02) { p.y = 0.02; p.vy *= -0.3; }
-      const sz = 1 - p.t / p.life;
+      const sz = (1 - p.t / p.life) * (p.size || 1);
       this._q.setFromEuler(this._e.set(p.t * 20, p.t * 13, 0)); this._v3.set(p.x, p.y, p.z); this._s3.set(sz, sz, sz * 2.2);
+      this.sparkMesh.setColorAt(si, this._sparkCol.setHex(p.color || 0xffc94a));
       this.sparkMesh.setMatrixAt(si++, this._m4.compose(this._v3, this._q, this._s3));
     }
     this.sparkP = this.sparkP.filter((p) => p.t <= p.life);
     this.sparkMesh.count = si;
     this.sparkMesh.instanceMatrix.needsUpdate = true;
+    if (this.sparkMesh.instanceColor) this.sparkMesh.instanceColor.needsUpdate = true;
   }
 
   // 步槍：腰際 → 端槍移到畫面中下方；後座力、換彈（彈匣掉出來再插回去）、槍口火光
@@ -1171,6 +1249,8 @@ export class Renderer {
     for (const pool of [...Object.values(this.projPool), this.tracers, this.flashes, this.shocks, this.scorches, this.slashes]) for (const m of pool) { m.visible = false; m.userData.t = 9; }
     this.sparkP = []; this.sparkMesh.count = 0; this.laserDot.count = this.laserHalo.count = 0; this.laser.geometry.setDrawRange(0, 0);
     this.rifleB = null;
+    if (this.crystalObjs) for (const m of this.crystalObjs) { this.scene.remove(m.g); m.g.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
+    this.crystalObjs = null;
     this.deathCam = null; this.shake = 0;
   }
 
@@ -1194,6 +1274,7 @@ export class Renderer {
     this._lod(cam.position.x, cam.position.z);
     if (this.seaTex) this.seaTex.offset.set(t * 0.004, t * 0.011);
     if (!draw) return;
+    this.gl.shadowMap.needsUpdate = true;
     this.gl.clear();
     this.gl.render(this.scene, cam);
   }

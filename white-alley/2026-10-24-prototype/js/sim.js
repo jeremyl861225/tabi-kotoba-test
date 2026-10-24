@@ -3,7 +3,7 @@
 // aim 由 true 變 false 的那一 tick 出手（cancel 為 true 則不出手）。ty／tp／tv 是準心落點解（拋物線武器用）。
 // 本機搖桿、電腦、連線玩家都送同一種輸入。武器數值在 weapons.js。
 import { CFG } from './config.js';
-import { SUB, advance, forward, hitPart, raycast, throwOrigin } from './physics.js';
+import { SUB, advance, crystalRay, forward, hitPart, raycast, throwOrigin } from './physics.js';
 import { mulberry32 } from './map.js';
 import { PROJ_CODE, WEAPONS, chargeSpeedW } from './weapons.js';
 
@@ -27,7 +27,12 @@ export function movePlayer(map, p, inp, dt) {
 const facing = (yaw) => ({ x: -Math.sin(yaw), z: -Math.cos(yaw) });
 
 export class Sim {
-  constructor(map, { seed = 1, matchTime = CFG.MATCH_T, koLimit = CFG.KO_LIMIT } = {}) {
+  // mode：'ffa' 大亂鬥（先到 10 KO）／'team' 水晶戰（兩隊各守一顆水晶，打破就贏，時間到比水晶剩多少）
+  constructor(map, { seed = 1, mode = 'ffa', matchTime, koLimit, swap = false } = {}) {
+    this.mode = mode;
+    const team = mode === 'team';
+    matchTime ??= team ? CFG.TEAM_T : CFG.MATCH_T;
+    koLimit ??= team ? Infinity : CFG.KO_LIMIT;
     this.map = map;
     this.rng = mulberry32(seed);
     this.time = 0;
@@ -46,9 +51,23 @@ export class Sim {
     this._id = 1;
     this.stats = { throws: 0, hits: 0, heads: 0, kos: 0 };
     this.wstats = {};     // 每種武器的 KO／死亡／造成傷害（平衡用）
+    // swap：兩隊交換基地（每場隨機換邊，地形不對稱也不會永遠吃虧在同一隊）
+    this.bases = team ? (swap ? [map.bases[1], map.bases[0]] : map.bases) : [];
+    const hp = map.data.crystalHp || CFG.CRYSTAL_HP;   // 開闊、兩基地近的地圖水晶要硬一點（地圖檔可指定）
+    this.crystals = this.bases.map((b, i) => ({ team: i, x: b.x, z: b.z, hp, max: hp, lastHit: -99 }));
+    this.teamKills = [0, 0];
+    this.winnerTeam = -1;
   }
 
-  addPlayer({ name, accent, isBot = false, weapon = 'stone' }) {
+  // 同一邊的（自己或同隊）：不會互相傷害、投射物直接穿過
+  ally(aId, bId) {
+    if (aId === bId) return true;
+    if (this.mode !== 'team') return false;
+    const a = this.byId(aId), b = this.byId(bId);
+    return !!(a && b && a.team === b.team);
+  }
+
+  addPlayer({ name, accent, isBot = false, weapon = 'stone', team }) {
     const W = WEAPONS[weapon] || WEAPONS.stone;
     const p = {
       id: this._id++, name, accent, isBot, weapon: W.key,
@@ -58,8 +77,12 @@ export class Sim {
       alive: true, aiming: false, charge: 0, cdUntil: 0, aimLock: false,
       lastDmgAt: -99, lastAttacker: 0, kills: 0, deaths: 0, respawnAt: 0,
       shieldUntil: 0, killedBy: 0, throwAt: -99, heads: 0,
-      reloadUntil: 0, regenAt: 0, dashUntil: 0, dashX: 0, dashZ: 0, pendingSlash: false,
+      reloadUntil: 0, regenAt: 0, dashUntil: 0, dashX: 0, dashZ: 0, pendingSlash: false, crystalDmg: 0,
     };
+    if (this.mode === 'team') {   // 沒指定就補到人少的那隊
+      const n0 = this.players.filter((q) => q.team === 0).length, n1 = this.players.filter((q) => q.team === 1).length;
+      p.team = team === 0 || team === 1 ? team : n0 <= n1 ? 0 : 1;
+    }
     this.wstats[W.key] ||= { players: 0, kills: 0, deaths: 0, dmg: 0, shots: 0 };
     this.wstats[W.key].players++;
     this.players.push(p);
@@ -80,30 +103,37 @@ export class Sim {
     return {
       ht: r3(this.time), st: this.state === 'play' ? 0 : 1, mt: this.matchTime,   // ht：房主時間（t 留給訊息種類）
       pl: this.players.map((p) => [p.id, r2(p.x), r2(p.z), r3(p.yaw), r3(p.pitch), Math.round(p.hp * 10) / 10, p.stones, p.alive ? 1 : 0, p.aiming ? 1 : 0, r2(p.charge),
-        p.kills, p.deaths, p.heads, r2(p.respawnAt), r2(p.shieldUntil), p.killedBy || 0, r2(p.throwAt), r2(p.speed), acks[p.id] || 0, r2(p.spawnAt || 0), r2(p.reloadUntil || 0), r2(p.regenAt || 0)]),
+        p.kills, p.deaths, p.heads, r2(p.respawnAt), r2(p.shieldUntil), p.killedBy || 0, r2(p.throwAt), r2(p.speed), acks[p.id] || 0, r2(p.spawnAt || 0), r2(p.reloadUntil || 0), r2(p.regenAt || 0), p.crystalDmg || 0]),
       sn: this.stones.map((s) => [s.id, s.owner, r3(s.x), r3(s.y), r3(s.z), r2(s.vx), r2(s.vy), r2(s.vz), s.rest ? 1 : 0, s.active ? 1 : 0, r3(s.age), PROJ_CODE[s.kind] || 0]),
       ct: this.cats.map((c) => [c.id, c.owner, r2(c.x), r2(c.z), r3(c.yaw), r2(c.speed || 0)]),
       lo: this.loose.map((l) => [l.id, r2(l.x), r2(l.z), l.count]),
       pi: this.piles.map((pl) => r2(pl.readyAt)),
+      cr: this.crystals.map((c) => Math.round(c.hp)), tk: this.teamKills,
     };
   }
 
   respawn(p) {
     const W = WEAPONS[p.weapon];
-    const others = this.players.filter((q) => q !== p && q.alive);
-    const cand = this.map.spawns.map((s) => {
+    const team = this.mode === 'team';
+    // 水晶戰：在自己隊的基地旁出生，離敵人越遠越好
+    const others = this.players.filter((q) => q !== p && q.alive && !(team && q.team === p.team));
+    const spots = team ? this.bases[p.team].spawns : this.map.spawns;
+    const cand = spots.map((s) => {
       let d = 1e9;
       for (const q of others) d = Math.min(d, Math.hypot(q.x - s.x, q.z - s.z));
       return { s, d: d + this.rng() * 8 };
     }).sort((a, b) => b.d - a.d);
     const s = cand[Math.floor(this.rng() * Math.min(3, cand.length))].s;
     p.x = p.px = s.x; p.z = p.pz = s.z; p.vx = p.vz = 0;
-    // 面向最開闊的方向（不要一復活就對著牆）
+    // 面向最開闊的方向（不要一復活就對著牆）；水晶戰偏向敵方基地那邊
     let best = 0, bestLen = -1;
+    const eb = team ? this.bases[1 - p.team] : null;
+    const ea = eb ? Math.atan2(-(eb.x - s.x), -(eb.z - s.z)) : 0;
     for (let k = 0; k < 24; k++) {
       const a = (k / 24) * Math.PI * 2, dx = -Math.sin(a), dz = -Math.cos(a);
       let len = 0;
       while (len < 45 && this.map.heightAt(s.x + dx * len, s.z + dz * len) <= 0 && this.map.isReach(s.x + dx * len, s.z + dz * len)) len += 0.5;
+      if (eb) len += Math.cos(a - ea) * 12;
       if (len > bestLen) { bestLen = len; best = a; }
     }
     p.yaw = best;
@@ -148,7 +178,7 @@ export class Sim {
         p.vx = p.dashX; p.vz = p.dashZ;
         p.x += p.vx * dt; p.z += p.vz * dt;
         map.collide(p);
-        const near = this.players.some((q) => q !== p && q.alive && Math.hypot(q.x - p.x, q.z - p.z) < W.reach * 0.7 && this._inCone(p, q, W.cone));
+        const near = this.players.some((q) => q !== p && q.alive && !this.ally(p.id, q.id) && Math.hypot(q.x - p.x, q.z - p.z) < W.reach * 0.7 && this._inCone(p, q, W.cone));
         if (near || this.time >= p.dashUntil) { p.dashUntil = 0; p.pendingSlash = false; this._slash(p, W); p.vx *= 0.3; p.vz *= 0.3; }
       } else {
         movePlayer(map, p, inp, dt);
@@ -203,6 +233,8 @@ export class Sim {
         }
       }
     }
+    // 水晶（含底座）擋路：推到圓外
+    for (const c of this.crystals) for (const p of ps) if (p.alive) this._pushOut(p, c, CFG.CRYSTAL_R + CFG.R);
     for (const p of ps) p.speed = Math.hypot(p.x - p.px, p.z - p.pz) / dt;
 
     this._stepStones(dt);
@@ -259,10 +291,13 @@ export class Sim {
     const dir = forward(p.yaw + Math.cos(a) * r, p.pitch + Math.sin(a) * r);
     const f = facing(p.yaw);
     const x0 = p.x + f.x * 0.4 + Math.cos(p.yaw) * 0.18, y0 = CFG.EYE - 0.12, z0 = p.z + f.z * 0.4 - Math.sin(p.yaw) * 0.18;
-    let hit = raycast(this.map, p.x, CFG.EYE, p.z, dir, this.players, p.id, W.range);
-    // 貓擋在線上就打到貓
-    const cat = this._catOnRay(p.x, CFG.EYE, p.z, dir, hit.t);
+    const foes = this.mode === 'team' ? this.players.filter((q) => q === p || q.team !== p.team) : this.players;   // 子彈穿過隊友
+    let hit = raycast(this.map, p.x, CFG.EYE, p.z, dir, foes, p.id, W.range);
+    // 水晶或貓擋在線上就打到它們
+    const cr = this._crystalOnRay(p.x, CFG.EYE, p.z, dir, hit.t, p.team);
+    const cat = this._catOnRay(p.x, CFG.EYE, p.z, dir, cr ? cr.t : hit.t, p.id);
     if (cat) { this._catDown(cat, p.id); hit = { ...cat.hitPt, surf: 'cat' }; }
+    else if (cr) { hit = { x: cr.x, y: cr.y, z: cr.z, t: cr.t, surf: 'crystal' }; this.hitCrystal(cr.c, W.dmg, p.id, { ...hit, w: W.key }); }
     else if (hit.player) {
       const q = hit.player;
       if (this._guards(q, p.x, p.z)) {
@@ -295,15 +330,20 @@ export class Sim {
   _slash(p, W) {
     this.events.push({ type: 'slash', id: p.id, x: p.x, z: p.z, yaw: p.yaw });
     for (const q of this.players) {
-      if (q === p || !q.alive) continue;
+      if (q === p || !q.alive || this.ally(p.id, q.id)) continue;
       if (Math.hypot(q.x - p.x, q.z - p.z) > W.reach || !this._inCone(p, q, W.cone)) continue;
       if (!this.map.los(p.x, 1.2, p.z, q.x, 1.2, q.z)) continue;
       if (this._guards(q, p.x, p.z)) { this.events.push({ type: 'clash', id: q.id, by: p.id, x: (p.x + q.x) / 2, z: (p.z + q.z) / 2 }); continue; }
       this.damage(q, W.dmg, p.id, { head: false, x: q.x, y: 1.2, z: q.z, fromX: p.x, fromZ: p.z, w: W.key });
     }
     for (const c of this.cats) {
-      if (!c.alive || c.owner === p.id) continue;
+      if (!c.alive || this.ally(c.owner, p.id)) continue;
       if (Math.hypot(c.x - p.x, c.z - p.z) <= W.reach && this._inCone(p, c, W.cone)) this._catDown(c, p.id);
+    }
+    for (const c of this.crystals) {   // 敵方水晶：碰得到邊就砍得到
+      if (c.team === p.team) continue;
+      const d = Math.hypot(c.x - p.x, c.z - p.z);
+      if (d - CFG.CRYSTAL_R <= W.reach && (d < CFG.CRYSTAL_R + 0.4 || this._inCone(p, c, W.cone))) this.hitCrystal(c, W.dmg, p.id, { x: c.x, y: 1.4, z: c.z, w: W.key });
     }
   }
 
@@ -382,8 +422,20 @@ export class Sim {
 
   // 飛行物碰到人或貓：光劍擋 → 彈回；石頭 → 傷害；手榴彈 → 爆；貓 → 咬
   _projVsCreatures(s) {
+    // 水晶：敵方的扣血；自己隊的只擋住（回力鏢直接穿過自己隊的）
+    for (const c of this.crystals) {
+      if ((s.x - c.x) ** 2 + (s.z - c.z) ** 2 > (CFG.CRYSTAL_R + 0.08) ** 2 || s.y < 0.1 || s.y > CFG.CRYSTAL_TOP) continue;
+      const own = this.byId(s.owner), enemy = !own || own.team !== c.team;
+      if (s.kind === 'grenade') { this._explode(s.x, s.y, s.z, s.owner); s.alive = false; return; }
+      const w = s.kind === 'catball' ? 'cat' : 'stone';
+      if (enemy) this.hitCrystal(c, WEAPONS[w].dmg, s.owner, { x: s.x, y: s.y, z: s.z, w });
+      else this.events.push({ type: 'impact', surf: 'wall', x: s.x, y: s.y, z: s.z, sp: 6, active: true, owner: s.owner });
+      if (s.kind === 'catball' && !enemy) this._spawnCat(s.x, s.z, s.owner);   // 丟到自己的水晶：貓跳下來繼續追人
+      s.alive = false;
+      return;
+    }
     for (const q of this.players) {
-      if (!q.alive || q.id === s.owner) continue;
+      if (!q.alive || q.id === s.owner || this.ally(s.owner, q.id)) continue;
       const dx = s.x - q.x, dz = s.z - q.z;
       if (dx * dx + dz * dz < 1.0 && s.y > 0.2 && s.y < 2.1 && this._guards(q, s.x - s.vx * 0.05, s.z - s.vz * 0.05)) {
         this._deflect(s, q);
@@ -402,7 +454,7 @@ export class Sim {
       return;
     }
     for (const c of this.cats) {
-      if (!c.alive || c.owner === s.owner) continue;
+      if (!c.alive || this.ally(c.owner, s.owner)) continue;
       if ((s.x - c.x) ** 2 + (s.z - c.z) ** 2 < CAT_HIT * CAT_HIT && s.y < CAT_TOP) {
         this._catDown(c, s.owner);
         if (s.kind === 'grenade') { this._explode(s.x, s.y, s.z, s.owner); s.alive = false; } else if (s.kind !== 'boom') s.active = false;
@@ -436,7 +488,16 @@ export class Sim {
       const dmg = Math.round(W.dmg * k * (q.id === owner ? W.selfMul : 1));
       if (dmg >= 3) this.damage(q, dmg, owner, { head: false, x: q.x, y: 1.1, z: q.z, fromX: x, fromZ: z, w: 'grenade', splash: true });
     }
-    for (const c of this.cats) if (c.alive && Math.hypot(c.x - x, c.z - z) < W.radius) this._catDown(c, owner);
+    for (const c of this.cats) if (c.alive && !this.ally(c.owner, owner) && Math.hypot(c.x - x, c.z - z) < W.radius) this._catDown(c, owner);
+    const o = this.byId(owner);
+    for (const c of this.crystals) {
+      if (o && o.team === c.team) continue;
+      const d = Math.max(0, Math.hypot(c.x - x, c.z - z) - CFG.CRYSTAL_R);
+      if (d > W.radius) continue;
+      if (!this.map.los(x, y + 0.25, z, c.x, 1.4, c.z)) continue;
+      const k = d <= W.inner ? 1 : 1 - (d - W.inner) / (W.radius - W.inner);
+      this.hitCrystal(c, Math.round(W.dmg * k), owner, { x: c.x, y: 1.4, z: c.z, w: 'grenade' });
+    }
   }
 
   _stepBoom(s, dt) {
@@ -478,15 +539,23 @@ export class Sim {
     }
     // 打人（每一趟每個人只算一次）
     for (const q of this.players) {
-      if (!q.alive || q.id === s.owner || s.hits.has(q.id)) continue;
+      if (!q.alive || q.id === s.owner || s.hits.has(q.id) || this.ally(s.owner, q.id)) continue;
       if (this._guards(q, s.x - s.vx * 0.05, s.z - s.vz * 0.05) && Math.hypot(q.x - s.x, q.z - s.z) < 1.0) { s.hits.add(q.id); this._deflect(s, q); continue; }
       const part = hitPart(s.x, s.y, s.z, q) || (Math.hypot(q.x - s.x, q.z - s.z) < 0.6 && s.y < 1.9 ? 'body' : null);
       if (!part) continue;
       s.hits.add(q.id);
       this.damage(q, W.dmg, s.owner, { head: part === 'head', x: s.x, y: s.y, z: s.z, fromX: s.ox, fromZ: s.oz, w: W.key });
     }
+    // 敵方水晶：每一趟打一次，回力鏢繼續飛
+    for (const c of this.crystals) {
+      if (owner.team === c.team || s.hits.has(-1 - c.team)) continue;
+      if (Math.hypot(c.x - s.x, c.z - s.z) < CFG.CRYSTAL_R + 0.15 && s.y < CFG.CRYSTAL_TOP) {
+        s.hits.add(-1 - c.team);
+        this.hitCrystal(c, W.dmg, s.owner, { x: s.x, y: s.y, z: s.z, w: W.key });
+      }
+    }
     for (const c of this.cats) {
-      if (c.alive && c.owner !== s.owner && s.y < 1.0 && Math.hypot(c.x - s.x, c.z - s.z) < 0.5) this._catDown(c, s.owner);
+      if (c.alive && !this.ally(c.owner, s.owner) && s.y < 1.0 && Math.hypot(c.x - s.x, c.z - s.z) < 0.5) this._catDown(c, s.owner);
     }
   }
 
@@ -509,10 +578,10 @@ export class Sim {
     this.events.push({ type: 'catdown', x: c.x, z: c.z, owner: c.owner, by });
   }
 
-  _catOnRay(ox, oy, oz, d, maxT) {
+  _catOnRay(ox, oy, oz, d, maxT, shooter = 0) {
     let best = null, bt = maxT;
     for (const c of this.cats) {
-      if (!c.alive) continue;
+      if (!c.alive || (shooter && this.ally(c.owner, shooter))) continue;
       // 射線和貓（中心 0.3 m 高的小圓柱）最近的點
       const t = ((c.x - ox) * d.x + (0.3 - oy) * d.y + (c.z - oz) * d.z);
       if (t < 0 || t > bt) continue;
@@ -529,25 +598,36 @@ export class Sim {
       c.px = c.x; c.pz = c.z;
       c.life -= dt;
       if (c.life <= 0) { c.alive = false; this.events.push({ type: 'catdown', x: c.x, z: c.z, owner: c.owner, by: 0 }); continue; }
-      // 找目標：看得到的最近敵人（剛復活無敵的不咬）
-      let t = c.target ? this.byId(c.target) : null;
-      if (!t || !t.alive || this.time >= c.retarget) {
+      // 找目標：看得到的最近敵人（剛復活無敵的不咬）；水晶戰沒人可咬時去咬看得到的敵方水晶
+      let t = c.target > 0 ? this.byId(c.target) : c.target < 0 ? this.crystals[-1 - c.target] : null;
+      if (!t || t.alive === false || this.time >= c.retarget) {
         c.retarget = this.time + 0.3;
         let best = null, bd = W.catSight;
         for (const q of this.players) {
-          if (!q.alive || q.id === c.owner || this.time < q.shieldUntil) continue;
+          if (!q.alive || this.ally(q.id, c.owner) || this.time < q.shieldUntil) continue;
           const d = Math.hypot(q.x - c.x, q.z - c.z);
           if (d < bd && (d < 5 || this.map.los(c.x, 0.5, c.z, q.x, 1.0, q.z))) { bd = d; best = q; }
         }
-        if (best && (!t || best.id !== t.id)) { c.path = null; }
-        t = best; c.target = best ? best.id : 0;
+        let tid = best ? best.id : 0;
+        if (!best) {
+          const o = this.byId(c.owner);
+          for (const cr of this.crystals) {
+            if (!o || cr.team === o.team) continue;
+            const d = Math.hypot(cr.x - c.x, cr.z - c.z);
+            if (d < W.catSight && (d < 5 || this.map.los(c.x, 0.5, c.z, cr.x, 1.2, cr.z))) { best = cr; tid = -1 - cr.team; }
+          }
+        }
+        if (tid !== c.target) c.path = null;
+        t = best; c.target = tid;
       }
       let mx = 0, mz = 0, sp = W.catSpeed;
       if (t) {
         const d = Math.hypot(t.x - c.x, t.z - c.z);
-        if (d < 0.6) {
-          this.damage(t, W.dmg, c.owner, { head: false, x: t.x, y: 0.6, z: t.z, fromX: c.x, fromZ: c.z, w: 'cat' });
-          this.events.push({ type: 'bite', target: t.id, by: c.owner, x: t.x, z: t.z });
+        const isCr = c.target < 0;
+        if (d < (isCr ? CFG.CRYSTAL_R + CAT_R + 0.15 : 0.6)) {
+          if (isCr) this.hitCrystal(t, W.dmg, c.owner, { x: c.x, y: 0.6, z: c.z, w: 'cat' });
+          else this.damage(t, W.dmg, c.owner, { head: false, x: t.x, y: 0.6, z: t.z, fromX: c.x, fromZ: c.z, w: 'cat' });
+          this.events.push({ type: 'bite', target: isCr ? 0 : t.id, by: c.owner, x: isCr ? c.x : t.x, z: isCr ? c.z : t.z });
           c.alive = false;
           continue;
         }
@@ -574,6 +654,7 @@ export class Sim {
       c.vx += (mx * sp - c.vx) * k; c.vz += (mz * sp - c.vz) * k;
       c.x += c.vx * dt; c.z += c.vz * dt;
       this.map.collide(c, CAT_R);
+      for (const cr of this.crystals) this._pushOut(c, cr, CFG.CRYSTAL_R + CAT_R);
       c.speed = Math.hypot(c.x - c.px, c.z - c.pz) / dt;
       if (c.speed > 0.2) c.yaw = Math.atan2(-(c.x - c.px), -(c.z - c.pz));
     }
@@ -590,6 +671,7 @@ export class Sim {
   // 所有傷害都走這裡：無敵擋掉、扣血、事件、擊倒與計分
   damage(q, dmg, byId, info = {}) {
     if (!q.alive) return false;
+    if (byId !== q.id && this.ally(byId, q.id)) return false;   // 隊友打不到隊友（手榴彈炸到自己還是會扣）
     if (this.time < q.shieldUntil) {
       this.events.push({ type: 'block', target: q.id, by: byId, x: info.x ?? q.x, y: info.y ?? 1, z: info.z ?? q.z });
       return false;
@@ -604,11 +686,11 @@ export class Sim {
     this.events.push({ type: 'hit', target: q.id, by: byId, head: !!info.head, dmg, x: info.x ?? q.x, y: info.y ?? 1, z: info.z ?? q.z, fromX: info.fromX ?? q.x, fromZ: info.fromZ ?? q.z, w: info.w });
     if (q.hp <= 0) {
       q.hp = 0; q.alive = false; q.deaths++;
-      q.killedBy = byId; q.respawnAt = this.time + CFG.RESPAWN_T;
+      q.killedBy = byId; q.respawnAt = this.time + (this.mode === 'team' ? CFG.TEAM_RESPAWN_T : CFG.RESPAWN_T);
       q.aiming = false; q.charge = 0; q.dashUntil = 0; q.pendingSlash = false;
       q.stones = 0;
       this.wstats[q.weapon].deaths++;
-      if (shooter && shooter !== q) { shooter.kills++; this.wstats[shooter.weapon].kills++; }
+      if (shooter && shooter !== q) { shooter.kills++; this.wstats[shooter.weapon].kills++; if (this.mode === 'team') this.teamKills[shooter.team]++; }
       this.stats.kos++;
       this.events.push({ type: 'ko', victim: q.id, by: byId, head: !!info.head, w: info.w });
       if (shooter && shooter !== q && shooter.kills >= this.koLimit) this.end();
@@ -616,11 +698,47 @@ export class Sim {
     return true;
   }
 
-  end() {
+  // 水晶受傷：只會被敵隊打；各武器打水晶的倍率在 weapons.js（vsCrystal）
+  hitCrystal(c, dmg, byId, info = {}) {
+    if (this.state !== 'play' || c.hp <= 0) return;
+    const by = this.byId(byId);
+    if (by && by.team === c.team) return;
+    const W = WEAPONS[info.w];
+    const d = Math.max(1, Math.round(dmg * (W ? W.vsCrystal ?? 1 : 1)));
+    c.hp = Math.max(0, c.hp - d);
+    c.lastHit = this.time;
+    if (by) by.crystalDmg += d;
+    this.events.push({ type: 'crystal', team: c.team, hp: c.hp, dmg: d, by: byId, x: info.x ?? c.x, y: info.y ?? 1.4, z: info.z ?? c.z, w: info.w });
+    if (c.hp <= 0) {
+      this.events.push({ type: 'crystaldown', team: c.team, by: byId, x: c.x, z: c.z });
+      this.end(1 - c.team);
+    }
+  }
+
+  _pushOut(o, c, r) {
+    const dx = o.x - c.x, dz = o.z - c.z, d = Math.hypot(dx, dz);
+    if (d >= r) return;
+    const k = d > 1e-6 ? r / d : 0;
+    if (k) { o.x = c.x + dx * k; o.z = c.z + dz * k; } else o.x = c.x + r;
+    this.map.collide(o);
+  }
+
+  // 射線打到水晶的位置；自己隊的水晶子彈直接穿過
+  _crystalOnRay(ox, oy, oz, d, maxT, team) { return crystalRay(this.crystals, ox, oy, oz, d, maxT, team); }
+
+  // 結束：大亂鬥看 KO；水晶戰看誰的水晶被打破，時間到比水晶剩多少（再平手比隊伍 KO）
+  end(winnerTeam) {
     if (this.state === 'over') return;
     this.state = 'over';
     this.winner = this.ranking()[0];
-    this.events.push({ type: 'over', winner: this.winner.id });
+    if (this.mode === 'team') {
+      if (winnerTeam === undefined) {
+        const [a, b] = this.crystals.map((c) => c.hp / c.max);
+        winnerTeam = Math.abs(a - b) > 1e-6 ? (a > b ? 0 : 1) : this.teamKills[0] !== this.teamKills[1] ? (this.teamKills[0] > this.teamKills[1] ? 0 : 1) : -1;
+      }
+      this.winnerTeam = winnerTeam;
+    }
+    this.events.push({ type: 'over', winner: this.winner.id, team: this.winnerTeam });
   }
 
   ranking() {

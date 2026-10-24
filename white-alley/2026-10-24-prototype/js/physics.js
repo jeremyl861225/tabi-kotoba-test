@@ -105,6 +105,25 @@ export function raycast(map, ox, oy, oz, d, players = null, ignoreId = -1, maxD 
   return { x: ox + d.x * maxD, y: oy + d.y * maxD, z: oz + d.z * maxD, t: maxD, surf: 'air' };
 }
 
+// 射線打到水晶（直立圓柱，半徑 CRYSTAL_R、高到 CRYSTAL_TOP）的位置；skipTeam 那隊的水晶直接穿過
+export function crystalRay(crystals, ox, oy, oz, d, maxT, skipTeam = -1) {
+  let best = null;
+  const R = CFG.CRYSTAL_R, a = d.x * d.x + d.z * d.z;
+  if (a < 1e-9) return null;
+  for (const c of crystals || []) {
+    if (c.team === skipTeam || c.hp <= 0) continue;
+    const fx = ox - c.x, fz = oz - c.z;
+    const b = 2 * (fx * d.x + fz * d.z), cc = fx * fx + fz * fz - R * R, disc = b * b - 4 * a * cc;
+    if (disc < 0) continue;
+    const t = (-b - Math.sqrt(disc)) / (2 * a);
+    if (t < 0 || t > maxT || (best && t > best.t)) continue;
+    const y = oy + d.y * t;
+    if (y < 0.1 || y > CFG.CRYSTAL_TOP) continue;
+    best = { c, t, x: ox + d.x * t, y, z: oz + d.z * t };
+  }
+  return best;
+}
+
 // 準心就是落點：要讓石頭從手上出發、落在 P，該往哪個方向、多少仰角、多快丟。
 // 初速 = 蓄力給的速度與「剛好丟得到」的速度取大的（輕點也丟得到，蓄滿就丟得又平又快）；
 // 低弧被牆擋住就改高弧；超出最遠射程就用最遠的角度丟（far = true，會落在準心前面）。

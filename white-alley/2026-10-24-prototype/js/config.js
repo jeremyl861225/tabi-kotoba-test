@@ -24,7 +24,19 @@ export const CFG = {
 
   // 比賽
   MATCH_T: 300, KO_LIMIT: 10,
+
+  // 水晶戰：兩隊各守一顆水晶，被打破就輸；時間到比水晶剩多少
+  TEAM_T: 360,
+  TEAM_RESPAWN_T: 5,    // 水晶戰復活比較久：擊倒對手後才有推進的空檔
+  CRYSTAL_HP: 900,
+  CRYSTAL_R: 0.75,      // 水晶（含底座）的碰撞半徑
+  CRYSTAL_TOP: 2.6,     // 打得到的高度上限
 };
+
+export const TEAMS = [
+  { name: '藍隊', color: '#2f6fe8', hex: 0x2f6fe8 },
+  { name: '紅隊', color: '#e8452f', hex: 0xe8452f },
+];
 
 // 電腦的能力值。humanBias：挑目標時真人要多「遠」幾公尺才算（附近有別的電腦就先打電腦，不會全場圍攻你）。
 // 用 node tests/difficulty.mjs 量（手機玩家替身對各難度的 KO／倒下）。

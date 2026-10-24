@@ -1,11 +1,11 @@
 // 主迴圈與選單。
-import { ACCENTS, BOT_NAMES, CFG, DIFFICULTY, PLAYER_ACCENT } from './config.js';
+import { ACCENTS, BOT_NAMES, CFG, DIFFICULTY, PLAYER_ACCENT, TEAMS } from './config.js';
 import { GameMap, mulberry32 } from './map.js';
 import { Sim, movePlayer } from './sim.js';
 import { MirrorSim } from './mirror.js';
 import { P2P, genRoomCode, newId, normCode } from './net.js';
 import { RemoteInput } from './remote.js';
-import { aimSolve, forward, raycast } from './physics.js';
+import { aimSolve, crystalRay, forward, raycast } from './physics.js';
 import { WEAPONS, WEAPON_KEYS, chargeSpeedW } from './weapons.js';
 import { Bot } from './bot.js';
 import { Renderer } from './render.js';
@@ -18,7 +18,7 @@ import { animate, drawMapThumb, hudIn, menuIn, popIn, segSet, spring, stagger } 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const KEY = 'white-alley:settings';
-const DEFAULTS = { sens: 1, arc: true, sound: true, assist: true, map: 'mykonos', bots: 5, diff: 'normal', coached: false, weapon: 'stone' };
+const DEFAULTS = { sens: 1, arc: true, sound: true, assist: true, map: 'mykonos', bots: 5, diff: 'normal', coached: false, weapon: 'stone', mode: 'team', power: matchMedia('(pointer: coarse)').matches };
 const settings = (() => {
   try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch { return { ...DEFAULTS }; }
 })();
@@ -54,19 +54,25 @@ async function useMap(id) {
   if (!renderer || renderer.map !== map) {
     if (renderer) renderer.dispose();
     renderer = new Renderer(stage, map);
-    renderer.setQuality(perf.q);
+    renderer.setQuality(perf.q, settings.power);
   }
   return map;
 }
 
 // ---------- 選單 ----------
+const ruleText = () => (settings.mode === 'team'
+  ? `兩隊各守一顆水晶，<b>打破對方水晶</b>就贏；<b>6 分鐘</b>到比水晶剩多少・${(settings.bots + 1) / 2} 對 ${(settings.bots + 1) / 2}`
+  : '先拿 <b>10 KO</b>，或 <b>5 分鐘</b>後 KO 最多的人獲勝');
 function syncMenu(instant = false) {
   document.querySelectorAll('.seg').forEach((seg) => segSet(seg, settings[seg.dataset.k], instant));
+  $('#menu .rule').innerHTML = ruleText();
   document.querySelectorAll('.mapcard').forEach((c) => c.classList.toggle('on', c.dataset.v === settings.map));
   $('#sens').value = settings.sens;
   sliderFill($('#sens'));
   $('#optArc').checked = settings.arc;
   $('#optSound').checked = settings.sound;
+  $('#optPower').checked = settings.power;
+  document.body.classList.toggle('power', !!settings.power);
   $('#optAssist').checked = settings.assist;
 }
 function sliderFill(el) { el.style.setProperty('--p', `${((el.value - el.min) / (el.max - el.min)) * 100}%`); }
@@ -78,6 +84,8 @@ document.querySelectorAll('.seg').forEach((seg) => {
     const k = seg.dataset.k;
     settings[k] = k === 'bots' ? +b.dataset.v : b.dataset.v;
     save(); segSet(seg, settings[k]);
+    $('#menu .rule').innerHTML = ruleText();
+    if (L && L.role === 'host') lobbyBroadcast();
   });
 });
 document.querySelectorAll('.mapcard').forEach((card) => {
@@ -90,6 +98,12 @@ $('#sens').addEventListener('input', (e) => { settings.sens = +e.target.value; s
 $('#optArc').addEventListener('change', (e) => { settings.arc = e.target.checked; save(); });
 $('#optAssist').addEventListener('change', (e) => { settings.assist = e.target.checked; save(); });
 $('#optSound').addEventListener('change', (e) => { settings.sound = e.target.checked; sfx.on = settings.sound; save(); });
+$('#optPower').addEventListener('change', (e) => {
+  settings.power = e.target.checked; save();
+  document.body.classList.toggle('power', settings.power);
+  if (renderer) renderer.setQuality(perf.q, settings.power);
+  if (hud) hud.power = settings.power;
+});
 
 $('#go').addEventListener('click', () => openWeapons('solo'));
 $('#wpGo').addEventListener('click', () => weaponConfirm());
@@ -144,14 +158,17 @@ async function start() {
   const map = await useMap(settings.map);
   renderer.reset();
   const seed = (Date.now() & 0xfffff) + 1;
-  const sim = new Sim(map, { seed });
-  const me = sim.addPlayer({ name: '你', accent: PLAYER_ACCENT, weapon: settings.weapon });
   const rng = mulberry32(seed * 7);
+  const team = settings.mode === 'team';
+  // 水晶戰：你在藍隊，電腦一半一半；每場隨機決定哪一隊在哪個基地（地形不對稱也不會一直吃虧）
+  const sim = new Sim(map, { seed, mode: team ? 'team' : 'ffa', swap: rng() < 0.5 });
+  const me = sim.addPlayer({ name: '你', accent: team ? TEAMS[0].color : PLAYER_ACCENT, weapon: settings.weapon, team: 0 });
   const names = [...BOT_NAMES].sort(() => rng() - 0.5);
   const bag = botWeapons(rng, settings.bots);
   const bots = [];
   for (let i = 0; i < settings.bots; i++) {
-    const p = sim.addPlayer({ name: names[i], accent: ACCENTS[i % ACCENTS.length], isBot: true, weapon: bag[i] });
+    const t = team ? (i % 2 === 0 ? 1 : 0) : undefined;
+    const p = sim.addPlayer({ name: names[i], accent: team ? TEAMS[t].color : ACCENTS[i % ACCENTS.length], isBot: true, weapon: bag[i], team: t });
     bots.push(new Bot(sim, p, settings.diff, rng));
   }
   setupGame(map, sim, me, bots, 'solo');
@@ -205,13 +222,14 @@ function weaponConfirm() {
 
 function setupGame(map, sim, me, bots, mode, extra = {}) {
   if (hud) hud.root.innerHTML = '';
-  hud = new Hud($('#hud'), map, me.weapon);
+  hud = new Hud($('#hud'), map, me.weapon, sim.mode === 'team' ? me.team : -1);
+  hud.power = settings.power;
   input.setWeapon(WEAPONS[me.weapon]);
   renderer.setMyBlade(me.accent);
   hud.el.pause.addEventListener('click', () => pause(true));
   for (const el of hud.root.querySelectorAll('.pause, .vitals, .score, .minimap')) el.style.opacity = 0;
   $('#touch .stick.right').style.opacity = 0;
-  G = { map, sim, me, bots, mode, view: { yaw: me.yaw, pitch: 0 }, acc: 0, paused: false, visible: new Set(), visT: 0, stepD: 0, intro: 0, coach: false, ...extra };
+  G = { map, sim, me, bots, mode, view: { yaw: me.yaw, pitch: 0 }, acc: 0, paused: false, visible: new Set(), seen: new Set(), visT: 0, stepD: 0, intro: 0, coach: false, alertT: -9, ...extra };
   $('#restart').hidden = mode !== 'solo';
   renderer.introFrom(idleT);
   show(null);
@@ -244,11 +262,14 @@ function renderLobby(status) {
     ? [{ name: L.name, host: true, me: true }, ...L.peers]
     : (L.lobby ? L.lobby.players.map((p) => ({ ...p, me: p.id === L.net.id })) : [{ name: L.name, me: true }]);
   const wOf = (p) => (p.me ? settings.weapon : p.w || (L.role === 'host' ? (L.picks || {})[p.id] : null) || 'stone');
-  $('#lbPlayers').innerHTML = list.map((p) => `<li class="${p.me ? 'me' : ''}">${wIcon(wOf(p), 'wsm')}<span>${esc(p.name)}</span>${p.host ? '<em>房主</em>' : ''}${p.me ? '<em class="you">你</em>' : ''}</li>`).join('');
+  // 水晶戰：開局時真人照加入順序輪流分隊（房主藍隊），大廳先用隊伍色標出來
+  const lbMode = L.role === 'host' ? settings.mode : (L.lobby || {}).mode;
+  $('#lbPlayers').innerHTML = list.map((p, i) => `<li class="${p.me ? 'me' : ''}"${lbMode === 'team' ? ` style="box-shadow: inset 3px 0 0 ${TEAMS[i % 2].color}, inset 0 0 0 1px oklch(1 0 0 / 0.7)"` : ''}>${wIcon(wOf(p), 'wsm')}<span>${esc(p.name)}</span>${p.host ? '<em>房主</em>' : ''}${p.me ? '<em class="you">你</em>' : ''}</li>`).join('');
   $('#lbWeapon').innerHTML = `${wIcon(settings.weapon)}<span>武器：${WEAPONS[settings.weapon].name}</span><small>更換</small>`;
   const lb = L.role === 'host' ? settings : (L.lobby || {});
   const MAPN = { mykonos: '米克諾斯・迷城', yongkang: '台北・永康街' };
-  $('#lbRule').textContent = lb.map ? `${MAPN[lb.map] || lb.map}・電腦補到 ${Math.min(8, list.length + (lb.bots || 0))} 人・${(DIFFICULTY[lb.diff] || {}).label || ''}` : '';
+  const total = Math.min(8, list.length + (lb.bots || 0)), teamMode = lb.mode === 'team';
+  $('#lbRule').textContent = lb.map ? `${teamMode ? '水晶戰' : '大亂鬥'}・${MAPN[lb.map] || lb.map}・${teamMode ? `${Math.ceil(total / 2)} 對 ${Math.ceil(total / 2)}` : `電腦補到 ${total} 人`}・${(DIFFICULTY[lb.diff] || {}).label || ''}` : '';
   $('#lbStart').hidden = L.role !== 'host';
   if (status == null) {
     $('#lbStatus').textContent = L.role === 'host'
@@ -323,7 +344,7 @@ async function shareRoom() {
 function lobbyBroadcast() {
   if (!L || L.role !== 'host') return;
   const picks = L.picks || {};
-  L.net.broadcast({ t: 'lobby', players: [{ id: 'host', name: L.name, host: true, w: settings.weapon }, ...L.peers.map((p) => ({ ...p, w: picks[p.id] || 'stone' }))], map: settings.map, bots: settings.bots, diff: settings.diff });
+  L.net.broadcast({ t: 'lobby', players: [{ id: 'host', name: L.name, host: true, w: settings.weapon }, ...L.peers.map((p) => ({ ...p, w: picks[p.id] || 'stone' }))], map: settings.map, bots: settings.bots, diff: settings.diff, mode: settings.mode });
 }
 
 // 房主開局：自己＋連上的人＋電腦補人數
@@ -334,25 +355,37 @@ async function hostStart() {
   const map = await useMap(settings.map);
   renderer.reset();
   const seed = (Date.now() & 0xfffff) + 1;
-  const sim = new Sim(map, { seed });
+  const rng = mulberry32(seed * 7);
+  const team = settings.mode === 'team', swap = rng() < 0.5;
+  const sim = new Sim(map, { seed, mode: team ? 'team' : 'ffa', swap });
   L.net.accepting = false;
-  const me = sim.addPlayer({ name: L.name, accent: ACCENTS[0], weapon: settings.weapon });
+  // 水晶戰：真人輪流分到兩隊（房主藍隊），電腦補到兩隊一樣多
+  const tOf = (i) => (team ? i % 2 : undefined);
+  const acc = (i, t) => (team ? TEAMS[t].color : ACCENTS[i % ACCENTS.length]);
+  const me = sim.addPlayer({ name: L.name, accent: acc(0, 0), weapon: settings.weapon, team: tOf(0) });
   const remote = new Map();
   L.peers.forEach((p, i) => {
-    const pl = sim.addPlayer({ name: p.name, accent: ACCENTS[(i + 1) % ACCENTS.length], weapon: (L.picks || {})[p.id] || 'stone' });
+    const t = tOf(i + 1);
+    const pl = sim.addPlayer({ name: p.name, accent: acc(i + 1, t), weapon: (L.picks || {})[p.id] || 'stone', team: t });
     remote.set(p.id, { pid: pl.id, input: new RemoteInput() });
   });
-  const rng = mulberry32(seed * 7);
   const names = [...BOT_NAMES].sort(() => rng() - 0.5);
   const bots = [];
-  const nb = Math.max(0, Math.min(settings.bots, 8 - sim.players.length));
+  let nb = Math.max(0, Math.min(settings.bots, 8 - sim.players.length));
+  if (team) {   // 總人數湊成偶數，兩隊一樣多（最多 8 人）
+    let total = Math.max(settings.bots + 1, sim.players.length);
+    total = Math.min(8, total + (total % 2));
+    nb = Math.max(0, total - sim.players.length);
+  }
   const bag = botWeapons(rng, nb);
   for (let i = 0; i < nb; i++) {
-    const p = sim.addPlayer({ name: names[i], accent: ACCENTS[(sim.players.length) % ACCENTS.length], isBot: true, weapon: bag[i] });
+    const n0 = sim.players.filter((q) => q.team === 0).length, n1 = sim.players.filter((q) => q.team === 1).length;
+    const t = team ? (n0 <= n1 ? 0 : 1) : undefined;
+    const p = sim.addPlayer({ name: names[i], accent: acc(sim.players.length, t), isBot: true, weapon: bag[i], team: t });
     bots.push(new Bot(sim, p, settings.diff, rng));
   }
-  const roster = sim.players.map((p) => ({ id: p.id, name: p.name, accent: p.accent, isBot: p.isBot, weapon: p.weapon }));
-  for (const [pid, r] of remote) L.net.send(pid, { t: 'start', map: settings.map, roster, you: r.pid, mt: sim.matchTime });
+  const roster = sim.players.map((p) => ({ id: p.id, name: p.name, accent: p.accent, isBot: p.isBot, weapon: p.weapon, team: p.team }));
+  for (const [pid, r] of remote) L.net.send(pid, { t: 'start', map: settings.map, roster, you: r.pid, mt: sim.matchTime, mode: sim.mode, swap });
   sim.events.length = 0;
   setupGame(map, sim, me, bots, 'host', { remote, snapT: 0 });
   // 開局先送一張快照，客人才知道自己在哪
@@ -387,7 +420,7 @@ async function guestStart(m) {
   const map = await useMap(m.map);
   if (!L || L.net !== net) return;   // 載入期間房主走了
   renderer.reset();
-  const sim = new MirrorSim(map, m.roster, m.mt);
+  const sim = new MirrorSim(map, m.roster, m.mt, m.mode, m.swap);
   const me = sim.byId(m.you);
   setupGame(map, sim, me, [], 'guest', { seq: 0, hist: [], cdT: 0, pr: 0, cx: 0, ch: undefined, wasAim: false, needPos: true, ackFloor: 0, evq: [] });
 }
@@ -465,7 +498,14 @@ function guestTick(inp) {
     }
   }
   me.px = me.x; me.pz = me.z;
-  if (me.alive) { movePlayer(sim.map, me, inp, CFG.TICK); me.speed = Math.hypot(me.x - me.px, me.z - me.pz) / CFG.TICK; }
+  if (me.alive) {
+    movePlayer(sim.map, me, inp, CFG.TICK);
+    for (const c of sim.crystals) {   // 跟房主一樣被水晶擋住，預測才不會一直被拉回去
+      const dx = me.x - c.x, dz = me.z - c.z, d = Math.hypot(dx, dz), r = CFG.CRYSTAL_R + CFG.R;
+      if (d < r && d > 1e-6) { me.x = c.x + (dx / d) * r; me.z = c.z + (dz / d) * r; sim.map.collide(me); }
+    }
+    me.speed = Math.hypot(me.x - me.px, me.z - me.pz) / CFG.TICK;
+  }
   me.yaw = inp.yaw; me.pitch = inp.pitch;
   const s = ++G.seq;
   G.hist.push({ s, x: me.x, z: me.z });
@@ -494,6 +534,7 @@ function coach() {
   el.innerHTML = `
     <i class="ghostring" style="left:120px;top:${H - 110}px"></i>
     <div class="tip glass" style="left:186px;top:${H - 150}px"><b>左下：拖曳移動</b><span>手指放哪，搖桿就出現在哪</span></div>
+    ${G.sim.mode === 'team' ? `<div class="tip glass" style="left:0;right:0;margin:0 auto;width:max-content;top:64px"><b>打破<em style="font-style:normal;color:${TEAMS[1 - G.me.team].color}">${TEAMS[1 - G.me.team].name}</em>的水晶就贏</b><span>上方是兩隊水晶的血量；跟著天空的光柱走就找得到</span></div>` : ''}
     <div class="tip glass" style="right:${window.innerWidth - r.left + 18}px;top:${r.top - 6}px"><b>右邊：按住拖曳・放開出手</b><span>${{ rifle: '站穩按住越久越準；拖到 ✕ 再放開就不開槍', saber: '按住舉劍擋東西，放開揮砍；按久一點會衝刺' }[G.me.weapon] || '準心就是落點；拖到 ✕ 再放開就不丟'}</span></div>
     <p class="go">點一下開始</p>`;
   hud.root.appendChild(el);
@@ -523,6 +564,7 @@ function toMenu() {
 }
 
 function results() {
+  if (G.sim.mode === 'team') { teamResults(); return; }
   const { sim, me } = G;
   const rank = sim.ranking();
   const tie = rank.length > 1 && rank[0].kills === rank[1].kills && rank[0].deaths === rank[1].deaths && rank[0].heads === rank[1].heads;
@@ -537,6 +579,29 @@ function results() {
   document.exitPointerLock?.();
   $('#again').hidden = G.mode === 'guest';
   if (L && L.role === 'host') L.net.accepting = true;   // 結算時可以讓新朋友進房，下一場一起玩
+  $('#resWait').hidden = G.mode !== 'guest';
+  show('#results');
+  glass.add($('#results'));
+}
+
+// 水晶戰的結算：哪隊贏、怎麼贏的、兩隊名單（KO／倒下／打水晶）
+function teamResults() {
+  const { sim, me } = G;
+  const wt = sim.winnerTeam, mine = me.team;
+  const broke = sim.crystals.some((c) => c.hp <= 0);
+  const pct = (t) => Math.round((sim.crystals[t].hp / sim.crystals[t].max) * 100);
+  const win = wt === mine;
+  $('#resRank').textContent = broke ? (win ? '敵方水晶被擊破' : wt < 0 ? '' : '我方水晶被擊破') : `時間到・水晶剩 ${pct(mine)}% 對 ${pct(1 - mine)}%`;
+  $('#resTitle').textContent = wt < 0 ? '平手' : win ? '勝利！' : '落敗';
+  $('#resStats').innerHTML = [['KO', me.kills], ['倒下', me.deaths], ['打水晶', me.crystalDmg || 0]].map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join('');
+  const row = (p) => `<tr class="${p === me ? 'me' : ''}"><td><i class="dot" style="background:${TEAMS[p.team].color}"></i></td><td><span class="nm">${esc(p.name)}${p.weapon ? wIcon(p.weapon) : ''}</span></td><td>${p.kills}</td><td>${p.deaths}</td><td>${p.crystalDmg || 0}</td></tr>`;
+  const byTeam = (t) => sim.players.filter((p) => p.team === t).sort((a, b) => b.kills - a.kills || (b.crystalDmg || 0) - (a.crystalDmg || 0));
+  $('#resTable').innerHTML = `<tr><th></th><th>玩家</th><th>KO</th><th>倒下</th><th>打水晶</th></tr>`
+    + [mine, 1 - mine].map((t) => `<tr class="tsep"><td colspan="5" style="color:${TEAMS[t].color}">${TEAMS[t].name}${t === mine ? '（你）' : ''}・KO ${sim.teamKills[t]}・水晶 ${pct(t)}%</td></tr>` + byTeam(t).map(row).join('')).join('');
+  sfx.play(win ? 'win' : 'ko');
+  document.exitPointerLock?.();
+  $('#again').hidden = G.mode === 'guest';
+  if (L && L.role === 'host') L.net.accepting = true;
   $('#resWait').hidden = G.mode !== 'guest';
   show('#results');
   glass.add($('#results'));
@@ -610,6 +675,20 @@ function onEvents() {
       case 'bite':
         sfx.play('bite', e.x, e.z);
         break;
+      case 'crystal': {
+        renderer.crystalHit(e.team, e.x, e.y, e.z);
+        sfx.play('crystal', e.x, e.z);
+        if (e.by === me.id) { hud.hitMarker(false); haptic('hit'); }
+        // 自家水晶被打：提示（6 秒內只提示一次）
+        if (e.team === me.team && sim.time - G.alertT > 6) { G.alertT = sim.time; hud.alert('我方水晶遭到攻擊！'); haptic('hurt'); }
+        break;
+      }
+      case 'crystaldown':
+        renderer.crystalBreak(e.team, e.x, e.z);
+        sfx.play('shatter');
+        renderer.shake = Math.max(renderer.shake, Math.hypot(e.x - me.x, e.z - me.z) < 30 ? 1.6 : 0.6);
+        haptic('ko');
+        break;
       case 'catch':
         if (e.id === me.id) { sfx.play('catch'); haptic('pickup'); }
         break;
@@ -663,10 +742,12 @@ function onEvents() {
         if (G.mode === 'guest') sim.removePlayer(e.id);
         break;
       case 'over': {
-        input.setEnabled(false);   // 結算前這 0.9 秒的點按不要留到下一場
+        input.setEnabled(false);   // 結算前這段時間的點按不要留到下一場
         input.reset();
-        const g = G;
-        setTimeout(() => { if (G === g) results(); }, 900);
+        if (sim.mode === 'team' && e.team !== undefined) sim.winnerTeam = e.team;   // 客人的鏡像世界從事件得知
+        const g = G, broke = sim.mode === 'team' && sim.crystals.some((c) => c.hp <= 0);
+        if (sim.mode === 'team') hud.alert(sim.winnerTeam === me.team ? '勝利！' : sim.winnerTeam < 0 ? '平手' : '落敗', sim.winnerTeam === me.team ? 'win' : 'lose');
+        setTimeout(() => { if (G === g) results(); }, broke ? 2400 : 1200);   // 水晶碎掉要讓人看一下
         break;
       }
       default:
@@ -675,18 +756,27 @@ function onEvents() {
 }
 
 // 小地圖要畫的人：看得到（視線＋大致在前方）或很近
+// visible：小地圖上畫的人；seen：頭上有名牌的人。
+// 大亂鬥兩者一樣（自己看得到的）。水晶戰：隊友永遠在小地圖上、有名牌；敵人只要有任何隊友看得到就上小地圖（共享視野），名牌還是要自己看得到
 function updateVisible() {
-  const { sim, me, view, visible } = G;
-  visible.clear();
-  if (!me.alive) return;
+  const { sim, me, view, visible, seen } = G;
+  visible.clear(); seen.clear();
+  const team = sim.mode === 'team';
+  const sees = (a, p, cone) => {
+    const dx = p.x - a.x, dz = p.z - a.z, d = Math.hypot(dx, dz);
+    if (d > (cone ? 60 : 40)) return false;
+    if (cone) {
+      const fwd = (-dx * Math.sin(view.yaw) - dz * Math.cos(view.yaw)) / (d || 1);
+      if (d > 8 && fwd < Math.cos(62 * Math.PI / 180)) return false;
+    }
+    return sim.map.los(a.x, CFG.EYE, a.z, p.x, CFG.HEAD_Y, p.z) || sim.map.los(a.x, CFG.EYE, a.z, p.x, 1.0, p.z);
+  };
+  const mates = team ? sim.players.filter((q) => q !== me && q.alive && q.team === me.team) : [];
   for (const p of sim.players) {
     if (p === me || !p.alive) continue;
-    const dx = p.x - me.x, dz = p.z - me.z, d = Math.hypot(dx, dz);
-    if (d > 60) continue;
-    const fwd = (-dx * Math.sin(view.yaw) - dz * Math.cos(view.yaw)) / (d || 1);
-    if (d > 8 && fwd < Math.cos(62 * Math.PI / 180)) continue;
-    if (!sim.map.los(me.x, CFG.EYE, me.z, p.x, CFG.HEAD_Y, p.z) && !sim.map.los(me.x, CFG.EYE, me.z, p.x, 1.0, p.z)) continue;
-    visible.add(p.id);
+    if (team && p.team === me.team) { visible.add(p.id); if (Math.hypot(p.x - me.x, p.z - me.z) < 45) seen.add(p.id); continue; }
+    if (me.alive && sees(me, p, true)) { visible.add(p.id); seen.add(p.id); continue; }
+    if (mates.some((m) => sees(m, p, false))) visible.add(p.id);
   }
 }
 
@@ -695,9 +785,16 @@ function computeAim() {
   const { sim, me, view } = G;
   if (!me.alive) { G.aimSol = null; return; }
   const W = WEAPONS[me.weapon];
-  const hit = raycast(sim.map, me.x, CFG.EYE, me.z, forward(view.yaw, view.pitch), sim.players, me.id, 70);
+  // 水晶戰：準心穿過隊友（不會鎖定、瞄準輔助也不會在隊友身上變慢）
+  const foes = sim.mode === 'team' ? sim.players.filter((q) => q === me || q.team !== me.team) : sim.players;
+  const dir = forward(view.yaw, view.pitch);
+  let hit = raycast(sim.map, me.x, CFG.EYE, me.z, dir, foes, me.id, 70);
+  // 準心指著水晶：落點就是水晶表面（敵方的才算鎖定）
+  const cr = crystalRay(sim.crystals, me.x, CFG.EYE, me.z, dir, hit.t);
+  if (cr) hit = { x: cr.x, y: cr.y, z: cr.z, t: cr.t, surf: 'crystal', crystal: cr.c, foeCrystal: cr.c.team !== me.team };
   if (W.kind === 'melee') {   // 光劍：準心指著的人在揮砍距離內就提示
-    G.aimSol = { hit, inReach: !!(hit.player && hit.t <= W.reach + 0.3), inLunge: !!(hit.player && hit.t <= W.lungeDist + W.reach * 0.6) };
+    const tgt = hit.player || hit.foeCrystal;
+    G.aimSol = { hit, inReach: !!(tgt && hit.t <= W.reach + 0.3), inLunge: !!(hit.player && hit.t <= W.lungeDist + W.reach * 0.6) };
     return;
   }
   if (W.kind === 'hitscan') { G.aimSol = { hit }; return; }
@@ -709,7 +806,7 @@ function computeAim() {
     return;
   }
   if (!me.aiming) { G.aimSol = { hit }; return; }   // 沒在蓄力只要知道準心指著誰
-  const sol = aimSolve(sim.map, me.x, me.z, hit, chargeSpeedW(W, me.charge), sim.players, hit.player ? hit.player.id : -1, me.id, W.vMax);
+  const sol = aimSolve(sim.map, me.x, me.z, hit, chargeSpeedW(W, me.charge), foes, hit.player ? hit.player.id : -1, me.id, W.vMax);
   sol.hit = hit;
   G.aimSol = sol;
 }
@@ -757,6 +854,9 @@ function tickOnce(fr) {
 
 function loop(t) {
   requestAnimationFrame(loop);
+  // 省電：遊戲中每秒最多 30 格；選單背景每秒 20 格就夠（這一格不處理，時間留到下一格一起算）
+  const cap = !G || G.paused ? 48 : settings.power ? 30 : 0;
+  if (cap && last && t - last < cap - 3) return;
   const dt = Math.min(0.1, last ? (t - last) / 1000 : 0);
   last = t;
   if (!renderer) return;
@@ -764,8 +864,10 @@ function loop(t) {
   const { sim, me, view } = G;
   if (dt > 0) {
     perf.avg += (dt - perf.avg) * 0.05; perf.t += dt;
-    if (perf.t > 2.5 && perf.avg > 1 / 42 && perf.q < 3) { perf.q++; renderer.setQuality(perf.q); perf.t = 0; }
-    else if (perf.t > 8 && perf.avg < 1 / 58 && perf.q > 0) { perf.q--; renderer.setQuality(perf.q); perf.t = 0; }
+    // 自動畫質：平均每格比目標慢就降一級（省電模式目標是 30 fps）
+    const slow = settings.power ? 1 / 24 : 1 / 42, fast = settings.power ? 1 / 29 : 1 / 58;
+    if (perf.t > 2.5 && perf.avg > slow && perf.q < 3) { perf.q++; renderer.setQuality(perf.q, settings.power); perf.t = 0; }
+    else if (perf.t > 8 && perf.avg < fast && perf.q > 0) { perf.q--; renderer.setQuality(perf.q, settings.power); perf.t = 0; }
   }
   // 開場：鏡頭從空中俯衝到眼睛高度，這段時間世界不動
   if (G.intro < INTRO) {
@@ -809,7 +911,7 @@ function loop(t) {
   input.setStones(me.stones, (me.reloadUntil || 0) > sim.time);
   const still = frozen;
   renderer.frame(sim, me, view, still ? 1 : G.acc / CFG.TICK, still ? 0 : dt, { showArc: settings.arc, aim: G.aimSol });
-  hud.update(sim, me, view, G.visible, renderer, still ? 0 : dt, G.aimSol);
+  hud.update(sim, me, view, G.visible, renderer, still ? 0 : dt, G.aimSol, G.seen);
 }
 
 window.addEventListener('resize', () => { renderer && renderer.resize(); hud && hud.resize(); input.layout(); if (!G) syncMenu(true); });
@@ -831,7 +933,7 @@ window.__wa = {
       computeAim();
       input.setCharge(G.me.charge, G.me.aiming && G.me.alive);
       renderer.frame(G.sim, G.me, G.view, 1, 1 / 60, { showArc: settings.arc, aim: G.aimSol });
-      hud.update(G.sim, G.me, G.view, G.visible, renderer, 1 / 60, G.aimSol);
+      hud.update(G.sim, G.me, G.view, G.visible, renderer, 1 / 60, G.aimSol, G.seen);
     }
   },
   skipIntro() { if (G && G.intro < INTRO) { G.intro = INTRO; endIntro(); } },

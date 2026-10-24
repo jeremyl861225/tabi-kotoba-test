@@ -12,6 +12,26 @@ const yawTo = (dx, dz) => Math.atan2(-dx, -dz);
 // 每種武器想保持的距離 [太近就退, 太遠就追]
 const BAND = { stone: [7, 24], grenade: [8, 20], cat: [6, 16], rifle: [9, 30], boomerang: [5, 14], saber: [0, 1.8] };
 
+// 尋路排隊：同一 tick 最多 PATH_BUDGET 條，請求最久的先算（死掉或不再問的過 30 tick 就清掉）
+const PATH_BUDGET = 2;
+function pathTurn(sim, who) {
+  const q = (sim._pathQ ||= new Map());
+  if (!q.has(who)) q.set(who, sim.tick);
+  if (sim._pathT !== sim.tick) { sim._pathT = sim.tick; sim._pathN = 0; }
+  if (sim._pathN >= PATH_BUDGET) return false;
+  let oldest = null, ot = Infinity;
+  for (const [b, t] of q) {
+    if (t < sim.tick - 30) { q.delete(b); continue; }
+    if (t < ot) { ot = t; oldest = b; }
+  }
+  // 自己不是最老的：最老的這個 tick 還沒來問（可能排在後面），留一個名額給它
+  if (oldest !== who && sim._pathN >= PATH_BUDGET - 1) return false;
+  q.delete(who);
+  sim._pathN++;
+  sim._pathTick = sim.tick;   // 貓尋路看這個：電腦算過的 tick 貓就不算
+  return true;
+}
+
 export class Bot {
   constructor(sim, p, diffKey, rng) {
     this.sim = sim; this.p = p; this.rng = rng;
@@ -40,10 +60,20 @@ export class Bot {
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   }
 
-  // 現在的攻擊對象：人或追著我的貓
+  // 現在的攻擊對象：人、追著我的貓、或敵方水晶（水晶戰）
   tgtNow() {
     if (this.catTarget) { const c = this.sim.cats.find((k) => k.id === this.catTarget && k.alive); if (c) return c; }
-    return this.target ? this.sim.byId(this.target) : null;
+    if (this.target) return this.sim.byId(this.target);
+    return this.siege || null;
+  }
+
+  // 水晶戰的角色：每隊編號最小的電腦守家（隊伍三人以上才有），其他進攻
+  role() {
+    const { sim, p } = this;
+    const mates = sim.players.filter((q) => q.team === p.team);
+    if (mates.length < 3) return 'attack';
+    const bots = mates.filter((q) => q.isBot).sort((a, b) => a.id - b.id);
+    return bots[0] === p ? 'defend' : 'attack';
   }
 
   input(dt) {
@@ -156,9 +186,9 @@ export class Bot {
     const { p, sim } = this;
     const now = sim.time;
     const far = !this.pathGoal || Math.hypot(this.pathGoal.x - gx, this.pathGoal.z - gz) > 3;
-    // 每 tick 全場最多算一條路，避免多個電腦同時尋路卡畫面
-    if ((!this.path || far || now > this.repathAt) && sim._pathTick !== sim.tick) {
-      sim._pathTick = sim.tick;
+    // 每 tick 全場最多算兩條路（避免多個電腦同時尋路卡畫面），排隊等最久的先算——
+    // 以前是誰先問誰先拿，排在名單前面的電腦（剛好都同一隊）永遠先拿到路線，水晶戰兩隊勝率因此差很多
+    if ((!this.path || far || now > this.repathAt) && pathTurn(sim, this)) {
       this.path = sim.map.findPath(p.x, p.z, gx, gz, 40000);
       this.pi = 1; this.pathGoal = { x: gx, z: gz };
       this.repathAt = now + 2.5 + this.rng();
@@ -207,11 +237,18 @@ export class Bot {
 
     // ---- 看 ----
     let best = null, bestScore = Infinity;
+    const team = sim.mode === 'team';
+    // 水晶戰：進攻的只理會近的、或正在打自己的；守家的只理會靠近自家水晶的（不在中場遠距離互射）
+    const role = team ? this.role() : null, ownC = team ? sim.crystals[p.team] : null;
     for (const q of sim.players) {
-      if (q === p || !q.alive) continue;
+      if (q === p || !q.alive || (team && q.team === p.team)) continue;
       const dx = q.x - p.x, dz = q.z - p.z, dist = Math.hypot(dx, dz);
       if (dist > d.sight) continue;
       const hitMe = p.lastAttacker === q.id && now - p.lastDmgAt < 2;
+      if (team && !hitMe && q.id !== this.target) {
+        if (role === 'attack' && dist > 10) continue;
+        if (role === 'defend' && dist > 14 && Math.hypot(q.x - ownC.x, q.z - ownC.z) > 22) continue;
+      }
       const off = Math.abs(wrap(yawTo(dx, dz) - this.yaw));
       if (off > 75 * DEG && !hitMe && dist > 4) continue;
       if (!map.los(p.x, CFG.EYE, p.z, q.x, CFG.EYE, q.z)) continue;
@@ -250,12 +287,45 @@ export class Bot {
     }
     if (this.state === 'retreat' && (now > this.retreatUntil || p.hp > 75 || !this.cover)) this.state = '';
 
+    // 水晶戰：敵方水晶在射程內、看得到，而且附近沒有更急的敵人 → 打水晶
+    this.siege = null;
+    const ownCr = team ? sim.crystals[p.team] : null, foeCr = team ? sim.crystals[1 - p.team] : null;
+    if (foeCr) {
+      const dc = Math.hypot(foeCr.x - p.x, foeCr.z - p.z);
+      const busy = best && (Math.hypot(best.x - p.x, best.z - p.z) < 7 || p.lastAttacker === best.id && now - p.lastDmgAt < 1.5);
+      if (!busy && dc < BAND[W.key][1] + CFG.CRYSTAL_R + 1 && map.los(p.x, CFG.EYE, p.z, foeCr.x, 1.4, foeCr.z)) {
+        this.siege = foeCr;
+        if (best) { this.target = 0; best = null; }
+      }
+    }
     if (this.state === 'retreat' && this.cover) {
       // 繼續躲
-    } else if ((best || this.catTarget) && this.canAttack()) {
+    } else if ((best || this.catTarget || this.siege) && this.canAttack()) {
       this.state = 'fight';
     } else if (best || this.catTarget) {
       this.state = 'reload';   // 彈藥還在回補、步槍換彈、回力鏢在外面：先拉開距離
+    } else if (team) {
+      // 自家水晶剛被打、人又不遠：回防；守家的在水晶旁邊晃；進攻的往敵方水晶走（剛看到的敵人先追）
+      const alarm = now - ownCr.lastHit < 3 && Math.hypot(ownCr.x - p.x, ownCr.z - p.z) < 32;
+      if (alarm || this.role() === 'defend') {
+        this.state = 'guard';
+        if (alarm) { this.goal = { x: ownCr.x, z: ownCr.z }; this.lookAt = this.goal; }
+        else {
+          if (!this.wanderGoal || Math.hypot(this.wanderGoal.x - p.x, this.wanderGoal.z - p.z) < 1.5 || Math.hypot(this.wanderGoal.x - ownCr.x, this.wanderGoal.z - ownCr.z) > 9) {
+            const n = map.nearestReach(ownCr.x + (this.rng() - 0.5) * 12, ownCr.z + (this.rng() - 0.5) * 12, 10);
+            this.wanderGoal = n >= 0 ? map.navCenter(n) : { x: ownCr.x, z: ownCr.z };
+          }
+          this.goal = this.wanderGoal;
+          this.lookAt = { x: foeCr.x, z: foeCr.z };
+        }
+      } else if (recent && now - recent[1].t < 3) {
+        this.state = 'seek';
+        this.goal = { x: recent[1].x, z: recent[1].z }; this.lookAt = this.goal;
+        if (Math.hypot(this.goal.x - p.x, this.goal.z - p.z) < 1.5) this.mem.delete(recent[0]);
+      } else {
+        this.state = 'push';
+        this.goal = { x: foeCr.x, z: foeCr.z }; this.lookAt = null;
+      }
     } else if (recent) {
       this.state = 'seek';
       this.goal = { x: recent[1].x, z: recent[1].z };
@@ -289,10 +359,10 @@ export class Bot {
     // ---- 出手計畫 ----
     const tgt = this.tgtNow();
     if (this.state === 'fight' && tgt && !this.guarding) {
-      const isCat = !!this.catTarget;
-      const m = isCat ? null : this.mem.get(tgt.id);
-      const seenFor = isCat ? 9 : now - m.since;
-      const plan = this.planFor(tgt, isCat);
+      const isCat = !!this.catTarget, isCr = tgt === this.siege;
+      const m = isCat || isCr ? null : this.mem.get(tgt.id);
+      const seenFor = isCat || isCr ? 9 : m ? now - m.since : 0;
+      const plan = this.planFor(tgt, isCat, isCr);
       this.noShot = !plan;
       if (plan) {
         const keep = this.plan && this.plan.low === plan.low && this.plan.kind === plan.kind;
@@ -315,35 +385,37 @@ export class Bot {
   }
 
   // 依武器算出手計畫 { yaw, pitch, charge, kind, low?, ty? }；null＝現在打不到
-  planFor(tgt, isCat) {
+  planFor(tgt, isCat, isCr = false) {
     const { p, W, d, sim } = this;
-    const dist = Math.hypot(tgt.x - p.x, tgt.z - p.z);
+    const dist = Math.hypot(tgt.x - p.x, tgt.z - p.z) - (isCr ? CFG.CRYSTAL_R : 0);
     if (W.kind === 'arc') {
       const v = Math.max(W.vMin, Math.min(W.vMax, Math.sqrt(CFG.G * dist) * 1.05 + 2.5 + this.rng() * 2));
       const charge = (v - W.vMin) / (W.vMax - W.vMin);
       const keepTy = this.plan && this.plan.ty;
-      const ty = isCat ? 0.3 : keepTy || (W.key === 'grenade' ? 0.35 : W.key === 'cat' ? 0.5 : d.aimErr < 2 && this.rng() < 0.3 ? CFG.HEAD_Y : 1.15);
+      const ty = isCr ? 1.3 : isCat ? 0.3 : keepTy || (W.key === 'grenade' ? 0.35 : W.key === 'cat' ? 0.5 : d.aimErr < 2 && this.rng() < 0.3 ? CFG.HEAD_Y : 1.15);
       for (const low of [true, false]) {
         const sol = this.solve(tgt, v, low, ty);
         if (!sol) continue;
         const c = Math.cos(sol.pitch);
         const vel = { x: -Math.sin(sol.yaw) * c * v, y: Math.sin(sol.pitch) * v, z: -Math.cos(sol.yaw) * c * v };
-        const arc = simulateArc(sim.map, sol.o, vel, { players: isCat ? null : [tgt], maxT: sol.t + 0.6, every: 4 });
-        const ok = arc.hit && (arc.hit.type === 'player' || Math.hypot(arc.hit.x - tgt.x, arc.hit.z - tgt.z) < (W.key === 'grenade' ? 2.4 : 1.6));
+        const arc = simulateArc(sim.map, sol.o, vel, { players: isCat || isCr ? null : [tgt], maxT: sol.t + 0.6, every: isCr ? 1 : 4 });
+        // 水晶：弧線有沒有穿過水晶那根圓柱（預覽不知道水晶，會一路飛到後面落地）
+        const thru = isCr && arc.pts.some((q) => Math.hypot(q.x - tgt.x, q.z - tgt.z) < CFG.CRYSTAL_R && q.y < CFG.CRYSTAL_TOP);
+        const ok = thru || (arc.hit && (arc.hit.type === 'player' || Math.hypot(arc.hit.x - tgt.x, arc.hit.z - tgt.z) < (W.key === 'grenade' ? 2.4 : 1.6)));
         if (ok) return { yaw: sol.yaw, pitch: sol.pitch, charge, low, ty, kind: 'arc' };
       }
       return null;
     }
     if (W.kind === 'hitscan') {
       if (dist > W.range) return null;
-      const ty = isCat ? 0.3 : d.aimErr < 2 && this.rng() < 0.25 ? CFG.HEAD_Y : 1.15;
+      const ty = isCr ? 1.4 : isCat ? 0.3 : d.aimErr < 2 && this.rng() < 0.25 ? CFG.HEAD_Y : 1.15;
       const steady = { easy: 0.35, normal: 0.65, hard: 0.9 }[this.diffKey()] ?? 0.65;
       return { yaw: yawTo(tgt.x - p.x, tgt.z - p.z), pitch: Math.atan2(ty - CFG.EYE, dist), charge: steady, kind: 'hit' };
     }
     if (W.kind === 'melee') {
       const yaw = yawTo(tgt.x - p.x, tgt.z - p.z);
       if (dist <= W.reach * 0.85) return { yaw, pitch: 0, charge: 0, kind: 'slash' };
-      if (!isCat && dist >= 2.8 && dist <= W.lungeDist + W.reach * 0.5) return { yaw, pitch: 0, charge: W.lungeT / W.chargeT + 0.08, kind: 'lunge' };
+      if (!isCat && !isCr && dist >= 2.8 && dist <= W.lungeDist + W.reach * 0.5) return { yaw, pitch: 0, charge: W.lungeT / W.chargeT + 0.08, kind: 'lunge' };
       return null;
     }
     if (W.kind === 'boom') {
@@ -361,7 +433,7 @@ export class Bot {
     if ((this.dodge && sim.time < this.dodge.until) || this.guarding) return;
     // 被步槍的瞄準雷射照到：左右閃（光劍則轉過去舉劍擋）
     for (const q of sim.players) {
-      if (q === p || !q.alive || q.weapon !== 'rifle' || !q.aiming || q.charge < 0.15) continue;
+      if (q === p || !q.alive || q.weapon !== 'rifle' || !q.aiming || q.charge < 0.15 || sim.ally(q.id, p.id)) continue;
       const dx = p.x - q.x, dz = p.z - q.z, dist = Math.hypot(dx, dz);
       const off = Math.abs(wrap(yawTo(dx, dz) - q.yaw));
       if (off > Math.atan2(0.9, dist) + 0.02 || dist > 60) continue;
@@ -380,7 +452,7 @@ export class Bot {
       return;
     }
     for (const s of sim.stones) {
-      if (!s.active || s.owner === p.id || this.dodged.has(s.id)) continue;
+      if (!s.active || s.owner === p.id || this.dodged.has(s.id) || sim.ally(s.owner, p.id)) continue;
       const boom = s.kind === 'boom', g = boom ? 0 : CFG.G;
       const danger = s.kind === 'grenade' ? 2.6 : 1.1;
       let best = Infinity, bx = 0, bz = 0;

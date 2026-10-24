@@ -42,6 +42,7 @@ export class GameMap {
 
     this._buildNav();
     this._place(mulberry32(seed));
+    this._bases(mulberry32(seed + 1));
   }
 
   // 掃描線填多邊形，每格取最高的建物
@@ -313,6 +314,81 @@ export class GameMap {
     this.piles = pick(nPiles, this.spawns, 4);
   }
 }
+
+// ---------- 水晶戰的兩個基地 ----------
+// 沿可玩範圍的長邊，兩端附近各找一塊夠開闊的空地（四周 2 m 內都能走）放水晶，旁邊再挑 6 個出生點。
+// 純看地圖資料、固定亂數，房主與客人算出來的一樣。
+GameMap.prototype._bases = function (rng) {
+  const { nw, nh, reach, reachList } = this;
+  // 每格離最近的「走不到」有幾格（4 鄰距離轉換）
+  const dist = new Int16Array(nw * nh).fill(-1);
+  const q = new Int32Array(nw * nh);
+  let qh = 0, qt = 0;
+  for (let n = 0; n < nw * nh; n++) if (!reach[n]) { dist[n] = 0; q[qt++] = n; }
+  while (qh < qt) {
+    const c = q[qh++], ci = c % nw, cj = (c / nw) | 0;
+    for (const [di, dj] of DIR4) {
+      const ni = ci + di, nj = cj + dj;
+      if (ni < 0 || nj < 0 || ni >= nw || nj >= nh) continue;
+      const m = nj * nw + ni;
+      if (dist[m] < 0) { dist[m] = dist[c] + 1; q[qt++] = m; }
+    }
+  }
+  this.clear = dist;
+  const p = this.play, long = p.maxX - p.minX >= p.maxZ - p.minZ;
+  const along = (c) => (long ? c.x : c.z), across = (c) => (long ? c.z : c.x);
+  const mid = long ? (p.minZ + p.maxZ) / 2 : (p.minX + p.maxX) / 2;
+  // 不放在最邊緣：離長邊兩端各 14% 處（走路距離太長的話，進攻的人永遠走不到）
+  const lo = long ? p.minX : p.minZ, hi = long ? p.maxX : p.maxZ, aim = (sign) => (sign > 0 ? lo + (hi - lo) * 0.14 : hi - (hi - lo) * 0.14);
+  const pickEnd = (sign) => {
+    for (const need of [5, 4, 3]) {
+      let best = null, bs = Infinity;
+      for (const n of reachList) {
+        if (dist[n] < need) continue;
+        const c = this.navCenter(n);
+        const s = Math.abs(along(c) - aim(sign)) + 0.35 * Math.abs(across(c) - mid);
+        if (s < bs) { bs = s; best = c; }
+      }
+      if (best) return best;
+    }
+    return this.navCenter(reachList[0]);
+  };
+  // 地圖檔有預先挑好的位置（tools/pick_bases.mjs 用大量電腦對戰挑出兩邊勝率接近的一組）就用那組
+  const fixed = this.data.bases;
+  const A = fixed ? { x: fixed[0][0], z: fixed[0][1] } : pickEnd(1), B = fixed ? { x: fixed[1][0], z: fixed[1][1] } : pickEnd(-1);
+  this.setBases(A, B, rng);
+};
+
+GameMap.prototype.setBases = function (A, B, rng = mulberry32(8)) {
+  const { reachList } = this, dist = this.clear;
+  // 出生點在自家水晶「後面」10–24 m（比水晶離敵方更遠）：復活要跑一段才能回防，進攻方打到水晶時才有空檔
+  const spawnsNear = (b, foe) => {
+    const dFoe = (c) => Math.hypot(c.x - foe.x, c.z - foe.z), bF = dFoe(b);
+    let cand = [];
+    for (const [r0, r1, behind] of [[10, 24, true], [8, 26, false], [5, 30, false]]) {
+      cand = [];
+      for (const n of reachList) {
+        if (dist[n] < 2) continue;
+        const c = this.navCenter(n), d = Math.hypot(c.x - b.x, c.z - b.z);
+        if (d > r0 && d < r1 && (!behind || dFoe(c) > bF + 2)) cand.push(c);
+      }
+      if (cand.length >= 12) break;
+    }
+    const out = [];
+    while (out.length < 5 && cand.length) {
+      let bi = 0, bd = -1;
+      for (let i = 0; i < cand.length; i++) {
+        let d = 1e9;
+        for (const o of out) d = Math.min(d, (cand[i].x - o.x) ** 2 + (cand[i].z - o.z) ** 2);
+        if (!out.length) d = dFoe(cand[i]) + rng() * 0.01;
+        if (d > bd) { bd = d; bi = i; }
+      }
+      out.push(cand.splice(bi, 1)[0]);
+    }
+    return out.length ? out : [b];
+  };
+  this.bases = [[A, B], [B, A]].map(([b, foe]) => ({ x: b.x, z: b.z, spawns: spawnsNear(b, foe) }));
+};
 
 const DIR4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const DIR8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
