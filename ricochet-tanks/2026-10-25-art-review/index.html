@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>跳彈坦克：美術精緻化 v0 → v7</title>
+<meta name="theme-color" content="#2B2230">
+<style>
+  :root { --ink: #FFF4DF; --dim: rgb(255 244 223 / 0.65); --bg: #2B2230; --card: rgb(255 244 228 / 0.06); --accent: #2F7FF0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; -webkit-text-size-adjust: 100%; }
+  main { max-width: 760px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px 48px; }
+  a { color: #8FB8FF; }
+  .back { font-size: 14px; text-decoration: none; color: var(--dim); }
+  h1 { font-size: 24px; margin: 10px 0 4px; letter-spacing: 0.04em; }
+  .lead { color: var(--dim); margin: 0 0 16px; }
+  .play { display: block; text-align: center; padding: 14px; border-radius: 16px; background: linear-gradient(180deg, #4A93F7, var(--accent)); color: #FFF4DF; font-weight: 800; letter-spacing: 0.06em; text-decoration: none; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 8px 0 18px; }
+  th, td { padding: 7px 6px; border-bottom: 0.5px solid rgb(255 255 255 / 0.12); text-align: left; vertical-align: top; }
+  th { color: var(--dim); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  h2 { font-size: 17px; margin: 26px 0 6px; }
+  figure { margin: 0 0 18px; padding: 10px; border-radius: 16px; background: var(--card); }
+  figure img { width: 100%; display: block; border-radius: 10px; }
+  figcaption { font-size: 13px; color: var(--dim); margin-top: 8px; }
+  ul { padding-left: 20px; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<a class="back" href="../../">← 所有測試</a>
+<h1>跳彈坦克：美術精緻化 v0 → v7</h1>
+<p class="lead">依 <b>ios-game-art</b> skill：先寫 ART.md（標竿 Brawl Stars、Mini Motorways＋Wii Tanks 的材質色），定格鏡頭截圖，每輪由「沒看過程式碼的獨立審查」對標竿打分，再照最該修的 5 件事改。下面每張左邊是 v0、右邊是 v7（標竿截圖有版權，不放公開站）。</p>
+<a class="play" href="../2026-10-25-prototype/">▶︎ 直接試玩（手機橫放）</a>
+
+<h2>四輪獨立審查（以標竿為 9–10 分）</h2>
+<table>
+  <tr><th>輪次</th><th>平均</th><th>審查說差距最大的</th><th>這輪改了</th></tr>
+  <tr><td>v1</td><td class="n">5.8</td><td>焦點層次：坦克跟木塊一樣亮，最搶眼的是發射鈕和坑洞</td><td>坦克放大＋腳下色圈、multiply 投影、坑洞深度、擊毀與反彈特效、煙尾</td></tr>
+  <tr><td>v4</td><td class="n">6.2</td><td>主角存在感（坦克 21 pt）、打擊回饋太弱</td><td>場地放大（木框變薄、狀態卡搬到左側）、敵我色圈分開、白閃＋震屏</td></tr>
+  <tr><td>v5</td><td class="n">6.4</td><td>炮彈太小看不到、操作鈕比坦克搶眼、擊毀沒打擊感</td><td>搖桿頭閒置半透明、炮彈加大＋彈頭塗發射者顏色、擊毀特效重做、軟木塊變暗</td></tr>
+  <tr><td>v6</td><td class="n">6.0</td><td>（v6 自己引入「木塊旁凸出的陰影耳朵」）焦點放錯地方</td><td>修耳朵、瞄準虛線蓋在木塊上＋反彈點圈、炮彈發射者色光暈、火球白熱核心、履帶痕降噪 → v7</td></tr>
+</table>
+<p class="lead">已經進入平台期（審查之間落差約 ±0.4）。一直拉不近的是「坦克在畫面上的份量」：這個玩法要看全場算反彈，坦克上限約 22–26 pt。要再往上要換做法（例如場地格數變少、或改成立體模型），是美術方向的決定。</p>
+
+<h2>遊戲中（全景）</h2>
+<figure><img src="wide.jpg" alt="遊戲中全景 v0 與 v7"><figcaption>場地變大、狀態卡移到左側、每台坦克腳下有色圈（玩家是亮盤＋粗圈）、投影帶紫、炮彈有發射者色光暈。</figcaption></figure>
+<h2>瞄準虛線（v7）</h2>
+<figure><img src="aim.jpg" alt="瞄準虛線"><figcaption>虛線蓋在木塊上，反彈點畫空心圈；第一段實、反彈後淡。</figcaption></figure>
+<h2>戰役（第 10 關）</h2>
+<figure><img src="camp.jpg" alt="戰役 v0 與 v7"><figcaption>軟木塊比木塊暗、矮、圓，灰階下也分得出能打壞的。</figcaption></figure>
+<h2>坑洞地圖</h2>
+<figure><img src="pits.jpg" alt="坑洞 v0 與 v7"><figcaption>坑洞從「黑色地磚」變成看得到內壁、南緣有亮唇的洞。</figcaption></figure>
+<h2>局部放大</h2>
+<figure><img src="close.jpg" alt="局部放大 v0 與 v7"><figcaption>坦克描邊、受光邊、色圈；木框四邊木紋；連續煙尾。</figcaption></figure>
+<h2>擊毀瞬間</h2>
+<figure><img src="fx-4.jpg" alt="擊毀 v0 與 v7"><figcaption>被擊中那一格先變白 → 雲狀火球（白熱核心）→ 暖白衝擊波 → 碎片 → 煙；地板留下坦克色的 X。</figcaption></figure>
+<h2>標題／選彈種／結算</h2>
+<figure><img src="title.jpg" alt="標題"></figure>
+<figure><img src="select.jpg" alt="選彈種"></figure>
+<figure><img src="result.jpg" alt="結算"></figure>
+</main>
+</body>
+</html>
