@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>跳彈坦克：白色場地 v10</title>
+<meta name="theme-color" content="#2B2230">
+<style>
+  :root { --ink: #FFF4DF; --dim: rgb(255 244 223 / 0.65); --bg: #2B2230; --card: rgb(255 244 228 / 0.06); --accent: #3D7FEA; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; -webkit-text-size-adjust: 100%; }
+  main { max-width: 760px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px 48px; }
+  a { color: #8FB8FF; }
+  .back { font-size: 14px; text-decoration: none; color: var(--dim); }
+  h1 { font-size: 24px; margin: 10px 0 4px; letter-spacing: 0.04em; }
+  .lead { color: var(--dim); margin: 0 0 16px; }
+  .play { display: block; text-align: center; padding: 14px; border-radius: 16px; background: linear-gradient(180deg, #4A93F7, var(--accent)); color: #FFF4DF; font-weight: 800; letter-spacing: 0.06em; text-decoration: none; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 8px 0 18px; }
+  th, td { padding: 7px 6px; border-bottom: 0.5px solid rgb(255 255 255 / 0.12); text-align: left; vertical-align: top; }
+  th { color: var(--dim); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  h2 { font-size: 17px; margin: 26px 0 6px; }
+  figure { margin: 0 0 18px; padding: 10px; border-radius: 16px; background: var(--card); }
+  figure img { width: 100%; display: block; border-radius: 10px; }
+  figcaption { font-size: 13px; color: var(--dim); margin-top: 8px; }
+  ul { padding-left: 20px; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+<a class="back" href="../../">← 所有測試</a>
+<h1>跳彈坦克：白色場地＋粉彩坦克（v10）</h1>
+<p class="lead">照你的指示改：<b>白色場地</b>、<b>坦克用粉彩色系</b>、<b>分隊更明確</b>、<b>右搖桿放開就發射（沒有發射鈕）</b>。之後再讓兩位沒看過程式碼的審查各挑一次毛病、各修一輪。下面每張左邊是 v7（木盒），右邊是 v10（標竿截圖有版權，不放公開站）。</p>
+<a class="play" href="../2026-10-25-white/">▶ 試玩 v10（手機橫放）</a>
+
+<h2>改了什麼</h2>
+<table>
+  <tr><th>你說的</th><th>怎麼做</th></tr>
+  <tr><td>白色場地</td><td>淺暖灰地板＋最亮的白色方塊（頂面外緣一條細線，牆才讀得出來）、淡紫 45° 投影；坑洞是挖穿板子、看到底下的桌面</td></tr>
+  <tr><td>坦克粉彩色系</td><td>粉藍、粉紅、粉綠、粉紫、粉黃、粉青、粉橘…；深梅色描邊；炮彈深色彈身、煙尾是發射者的顏色</td></tr>
+  <tr><td>分隊再明確</td><td>隊色只畫在腳下的圈、小旗、瞄準虛線、HUD 圓點與右搖桿：<b>藍隊＝實線圈＋三角旗</b>、<b>紅隊＝虛線圈＋燕尾旗</b>（灰階、色盲也分得出）。2 對 2 時藍隊車身冷色（粉藍＋粉青）、紅隊暖色（粉紅＋粉橘）。戰役：你是藍隊、敵人全是紅隊。你自己的圈外多一圈白</td></tr>
+  <tr><td>右滾輪放掉即發射</td><td>拿掉發射鈕。右搖桿拖出去＝上膛（全亮、外圈發光）→ <b>放開發射</b>；拖回中心再放＝取消（變紅＋×）；輕點＝往目前方向發射。右搖桿頭平常就是隊色＋準星（一看就知道那支是開火），沒彈變深灰；剩幾發是上方的小點；前 3 局下方有「拖曳瞄準・放開發射」提示</td></tr>
+</table>
+
+<h2>審查分數（10 分＝跟標竿一樣好）</h2>
+<table>
+  <tr><th>版本</th><th>平均</th><th>審查說差最多的</th><th>下一版怎麼改</th></tr>
+  <tr><td>v8</td><td class="n">6.3</td><td>白對白：牆頂和地板幾乎一樣亮；右搖桿待機看不出能開火</td><td>地板降一階、方塊加外緣線；右搖桿頭隊色實心；旗子移到圈的 11 點鐘、旗形分隊 → v9</td></tr>
+  <tr><td>v9</td><td class="n">6.1</td><td>明度主次倒過來：坑洞和投影比坦克重；隊色圈太細、藍紅等明度</td><td>圈加粗、藍隊壓深、紅隊虛線圈；坑洞看到桌面；準星圖示；擊毀加力 → v10</td></tr>
+</table>
+<p class="lead">兩位審查都點名的是<b>坦克在畫面上太小</b>（約 23 pt，標竿主角約 2 倍大）。玩法需要看全場算反彈角，要再放大得把場地格數縮小（20×14 → 16×11，坦克約大 1.25 倍）。</p>
+
+<h2>2 對 2 分隊（v10）</h2>
+<figure><img src="team.jpg" alt="2 對 2 分隊 v10"><figcaption>藍隊實線圈＋三角旗、紅隊虛線圈＋燕尾旗；HUD 只剩兩個隊色圓點。</figcaption></figure>
+<h2>右搖桿上膛（v10）</h2>
+<figure><img src="armed.jpg" alt="右搖桿上膛 v10"><figcaption>拖出去：搖桿頭全亮、外圈發光、中心出現取消小圈；放開就發射。</figcaption></figure>
+<h2>全景</h2>
+<figure><img src="wide.jpg" alt="全景 v7 與 v10"><figcaption>大亂鬥：每台一個隊色（藍、紅、綠、金）。</figcaption></figure>
+<h2>戰役</h2>
+<figure><img src="camp.jpg" alt="戰役 v7 與 v10"><figcaption>你是藍隊（實線圈＋白外圈），敵人全是紅隊（虛線圈＋燕尾旗）；敵人的車身顏色代表車種。</figcaption></figure>
+<h2>瞄準虛線</h2>
+<figure><img src="aim.jpg" alt="瞄準 v7 與 v10"><figcaption>隊色點＋白描邊；打在方塊北面時，反彈記號畫在頂面北緣（不再像穿進牆裡）。</figcaption></figure>
+<h2>坑洞</h2>
+<figure><img src="pits.jpg" alt="坑洞 v7 與 v10"><figcaption>挖穿板子、看到底下的桌面斜紋——跟投影分得開。</figcaption></figure>
+<h2>局部放大</h2>
+<figure><img src="close.jpg" alt="局部放大 v7 與 v10"><figcaption>粉彩車身、深梅描邊、隊旗、玩家的白外圈。</figcaption></figure>
+<h2>擊毀</h2>
+<figure><img src="fx-4.jpg" alt="擊毀 v7 與 v10"><figcaption>火球、碎片、煙都加大加深（白地上要看得到）。</figcaption></figure>
+<h2>選單</h2>
+<figure><img src="title.jpg" alt="標題 v7 與 v10"></figure>
+<figure><img src="select.jpg" alt="選彈種 v7 與 v10"></figure>
+<figure><img src="result.jpg" alt="結算 v7 與 v10"></figure>
+</main>
+</body>
+</html>
