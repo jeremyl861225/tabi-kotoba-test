@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>跳彈坦克 v0.3</title>
+<meta name="theme-color" content="#EDEFF3">
+<style>
+  :root { --ink: #252B40; --ink-2: #4E5D87; --dim: #8790AB; --bg: #EDEFF3; --card: #fff; --line: rgb(78 93 135 / 0.16);
+    --yellow: #F8C21A; --mint: #1ADAAB; --cyan: #2BB2CB; --slate: #4E5D87; --plum: #5E3A5E; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.65 -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; -webkit-text-size-adjust: 100%; }
+  main { max-width: 760px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px 48px; }
+  a { color: #13849A; }
+  .back { font-size: 14px; text-decoration: none; color: var(--ink-2); }
+  h1 { font-size: 24px; margin: 10px 0 4px; letter-spacing: 0.04em; }
+  .lead { color: var(--ink-2); margin: 0 0 14px; }
+  .sw { display: flex; gap: 6px; margin: 10px 0 4px; }
+  .sw i { flex: 1; height: 26px; border-radius: 8px; }
+  .swl { display: flex; gap: 6px; font-size: 11px; color: var(--dim); margin-bottom: 14px; }
+  .swl span { flex: 1; text-align: center; }
+  .play { display: block; text-align: center; padding: 14px; border-radius: 16px; background: linear-gradient(180deg, #FFD95C, var(--yellow)); color: #3E2340; font-weight: 800; letter-spacing: 0.06em; text-decoration: none; margin: 14px 0 10px; box-shadow: 0 12px 26px -12px rgb(214 160 10 / 0.7); }
+  .box { background: var(--card); border-radius: 18px; padding: 12px 16px; box-shadow: 0 0 0 0.5px var(--line), 0 10px 26px -16px rgb(36 46 80 / 0.4); margin: 12px 0 20px; }
+  .box ol { margin: 6px 0; padding-left: 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 8px 0 18px; }
+  th, td { padding: 7px 6px; border-bottom: 0.5px solid var(--line); text-align: left; vertical-align: top; }
+  th { color: var(--dim); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  h2 { font-size: 17px; margin: 26px 0 6px; }
+  figure { margin: 0 0 18px; padding: 10px; border-radius: 16px; background: var(--card); box-shadow: 0 0 0 0.5px var(--line); }
+  figure img { width: 100%; display: block; border-radius: 10px; }
+  figcaption { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+<a class="back" href="../../">← 所有測試</a>
+<h1>跳彈坦克 v0.3</h1>
+<p class="lead">主題色換成你給的色票，底色維持白：</p>
+<div class="sw"><i style="background:#F8C21A"></i><i style="background:#1ADAAB"></i><i style="background:#2BB2CB"></i><i style="background:#4E5D87"></i><i style="background:#5E3A5E"></i></div>
+<div class="swl"><span>黃・主要按鈕、黃隊、頭目</span><span>薄荷・進度</span><span>青・選取、藍隊</span><span>石板藍・字與圖示</span><span>梅紫・精英、新發現</span></div>
+
+<a class="play" href="../app/">▶ 試玩／安裝（手機橫放）</a>
+<div class="box">
+  <b>裝到 iPhone（不用 Mac）</b>
+  <ol>
+    <li>用 <b>Safari</b> 打開上面的「試玩／安裝」</li>
+    <li>按下方的 <b>分享</b>（方框加向上箭頭）→ <b>加入主畫面</b> → 新增</li>
+    <li>主畫面出現「跳彈坦克」圖示，點開就是全螢幕，打橫玩</li>
+  </ol>
+  這個網址固定不變，之後的更新都會放在同一個地方，進度和圖鑑會保留。第一次打開要有網路（字型與程式從網路載入）。
+</div>
+
+<h2>這一版做了什麼</h2>
+<table>
+  <tr><th>你說的</th><th>怎麼做</th></tr>
+  <tr><td>兩個搖桿做成白色透明 liquid glass</td><td>白玻璃底盤（背景斜紋透出來）、左上高光弧、玻璃球搖桿頭；右搖桿外圍是<b>彈匣環</b>：每發一段，正在補的那段慢慢填滿</td></tr>
+  <tr><td>背景、介面以白色為主</td><td>白色桌面、白玻璃面板與按鈕；字和投影從石板藍調出來</td></tr>
+  <tr><td>分數板、介面更精緻</td><td>戰役：第幾關大字＋章節＋敵人迷你坦克（打掉的打斜線）＋愛心；對戰：每隊一列回合點</td></tr>
+  <tr><td>遊戲中可切換彈種</td><td>右搖桿上方的換彈鈕（標準、火箭、跳彈、散彈、爆裂），換的時候會短暫停火</td></tr>
+  <tr><td>跳彈路徑全部顯示</td><td>瞄準線畫完整條路徑，反彈點標 1、2、3，每 1.5 格一個箭頭，終點打 ×；會打到自己時變紅</td></tr>
+  <tr><td>彈藥回復跟飛行中的子彈無關</td><td>彈匣照時間補，不用等場上的子彈消失</td></tr>
+  <tr><td>坦克圖鑑</td><td>13 種坦克，遇到才收進來；卡框是稀有度（普通、稀有青、精英梅紫、頭目黃），有介紹、特點、數值、擊毀數</td></tr>
+  <tr><td>更多地圖與關卡（不模仿 Wii）</td><td>6 章 52 關：訓練場、軟木前線、冰原、傳送迷宮、草叢伏擊、炸藥工廠，4 個頭目關；對戰 12 張地圖</td></tr>
+  <tr><td>更多坦克造型</td><td>砲台、步兵、火箭、布雷、連射、狙擊、精英、幽靈、王牌、斥候、重甲、轟炸、指揮官，各自不同車體與炮塔</td></tr>
+  <tr><td>做成 iOS App</td><td>兩條路：①上面的「加入主畫面」（現在就能用）；② Xcode 原生 App（需要 Mac，程式碼要先上 GitHub）</td></tr>
+</table>
+
+<h2>審查分數（10 分＝跟標竿一樣好）</h2>
+<table>
+  <tr><th>版本</th><th>平均</th><th>審查說差最多的</th><th>下一版怎麼改</th></tr>
+  <tr><td>v9</td><td class="n">6.1</td><td>明度主次倒過來；隊色圈太細</td><td>v10：圈加粗、虛線分隊、坑洞看到桌面</td></tr>
+  <tr><td>v11</td><td class="n">6.5</td><td>傳送門只是地上的圈、炸藥桶跟紅隊撞色、彈匣點和裝填環分兩個東西、頭目不夠大、小螢幕章節頁被切</td><td>v12：傳送門立起來、炸藥桶改橘、分段彈匣環、頭目放大加金環、章節頁收成一屏</td></tr>
+  <tr><td>v13</td><td class="n">—</td><td colspan="2">換你給的色票（這一版還沒送審查）</td></tr>
+</table>
+
+<h2>標題</h2>
+<figure><img src="title.jpg" alt="標題 v10 與 v13"><figcaption>左 v10、右 v13：主要按鈕黃底、標題字的厚度是黃色。</figcaption></figure>
+<h2>戰役</h2>
+<figure><img src="camp.jpg" alt="戰役 v10 與 v13"><figcaption>分數板、白玻璃搖桿、彈匣環、換彈鈕；新遇到的坦克從下方彈出（收進圖鑑）。</figcaption></figure>
+<h2>2 對 2：藍隊（青）／黃隊</h2>
+<figure><img src="team.jpg" alt="2 對 2 v10 與 v13"><figcaption>藍隊實線圈＋三角旗、黃隊虛線圈＋燕尾旗；藍黃對比，色盲也分得開。</figcaption></figure>
+<h2>完整反彈路徑</h2>
+<figure><img src="portal.jpg" alt="傳送門與反彈路徑 v13"><figcaption>反彈點編號、箭頭、終點 ×；傳送門是立著的門框（青、梅紫兩對）。四隊大亂鬥：青、黃、梅紫、薄荷。</figcaption></figure>
+<h2>新地形</h2>
+<figure><img src="ice.jpg" alt="冰原"><figcaption>冰原：會滑。</figcaption></figure>
+<figure><img src="bush.jpg" alt="草叢"><figcaption>草叢：躲進去敵人看不到，開火或靠太近就現身。</figcaption></figure>
+<figure><img src="barrel.jpg" alt="炸藥桶"><figcaption>炸藥桶：打到會爆，還會引爆隔壁的桶。</figcaption></figure>
+<h2>頭目</h2>
+<figure><img src="boss.jpg" alt="頭目關"><figcaption>頭目放大、金色雙環、分段血條。</figcaption></figure>
+<h2>章節與圖鑑</h2>
+<figure><img src="chapters.jpg" alt="章節"><figcaption>6 章，每章有進度條；★ 是頭目關。</figcaption></figure>
+<figure><img src="dex.jpg" alt="圖鑑"><figcaption>卡框顏色是稀有度；NEW 是剛收到的。</figcaption></figure>
+<figure><img src="dexinfo.jpg" alt="圖鑑詳細"><figcaption>點卡片看介紹、特點、數值。</figcaption></figure>
+<h2>選彈、結算、同機雙人</h2>
+<figure><img src="select.jpg" alt="選彈"></figure>
+<figure><img src="result.jpg" alt="結算"></figure>
+<figure><img src="duo.jpg" alt="同機雙人"><figcaption>同機雙人：左右各一組搖桿，2P 是黃色。</figcaption></figure>
+</main>
+</body>
+</html>
