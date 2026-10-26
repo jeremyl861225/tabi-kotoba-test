@@ -9,7 +9,7 @@ import { wrap, lerp, angDiff } from './util.js';
 import { TANK_COLORS } from './render.js';
 
 const COLORS = ['p1', 'p2', 'p3', 'p4'];
-const SIM_EV = new Set(['fire', 'bounce', 'pop', 'clash', 'boom', 'die', 'mine', 'arm', 'cork', 'barrel', 'armor', 'swap', 'warp']);
+const SIM_EV = new Set(['fire', 'bounce', 'pop', 'clash', 'boom', 'die', 'mine', 'arm', 'cork', 'barrel', 'armor', 'warp']);
 const SNAP_EVERY = 2;          // 每 2 tick 一張快照（30 Hz）
 const INTERP = 0.1;            // 別人的坦克畫在 100 ms 前（兩張快照之間內插）
 const BT = BULLET_KEYS;
@@ -236,8 +236,8 @@ export class Online {
       if (m.t === 'in') {
         const p = this.lobby.find((x) => x.id === pid);
         if (!p) return;
-        const r = this.remote.get(p.slot) || { f: m.f, m: m.m, fUsed: m.f, mUsed: m.m, w: m.w || 0, wUsed: m.w || 0 };
-        if (m.s > (r.s || 0)) { r.s = m.s; r.mx = m.mx; r.my = m.my; r.aim = m.aim; r.f = Math.max(r.f, m.f); r.m = Math.max(r.m, m.m); if ((m.w || 0) > (r.w || 0)) { r.w = m.w; r.wk = m.wk; } r.at = performance.now(); }
+        const r = this.remote.get(p.slot) || { f: m.f, m: m.m, fUsed: m.f, mUsed: m.m };
+        if (m.s > (r.s || 0)) { r.s = m.s; r.mx = m.mx; r.my = m.my; r.aim = m.aim; r.f = Math.max(r.f, m.f); r.m = Math.max(r.m, m.m); r.at = performance.now(); }
         this.remote.set(p.slot, r);
       } else if (m.t === 'pick') {
         const p = this.lobby.find((x) => x.id === pid);
@@ -286,7 +286,6 @@ export class Online {
       if (r.aim != null) I.aim = r.aim;
       if (r.f > r.fUsed) { I.fire = true; r.fUsed = r.f; }
       if (r.m > r.mUsed) { I.mine = true; r.mUsed = r.m; }
-      if ((r.w || 0) > (r.wUsed || 0) && r.wk) { I.swap = r.wk; r.wUsed = r.w; }   // 換彈
     }
   }
 
@@ -336,7 +335,7 @@ export class Online {
     if (!me) return;
     this.mySlot = me.slot;
     this.active = true;
-    this.seq = 0; this.fireCum = 0; this.mineCum = 0; this.swapCum = 0; this.swapKey = null; this.hist = []; this.corr = { x: 0, y: 0 };
+    this.seq = 0; this.fireCum = 0; this.mineCum = 0; this.hist = []; this.corr = { x: 0, y: 0 };
     this.snaps = []; this.evq = [];
     G.scene = 'play';
     G.paused = false;
@@ -424,7 +423,6 @@ export class Online {
     const me = mir.tanks.find((t) => t.kind === 'player' && t.slot === this.mySlot);
     const p = pending.get(this.mySlot) || { mx: 0, my: 0, aim: null, fire: 0, mine: 0 };
     this.fireCum += p.fire || 0; this.mineCum += p.mine || 0;
-    if (p.swap) { this.swapCum++; this.swapKey = p.swap === 'next' && me ? BT[(BT.indexOf(me.bullet) + 1) % BT.length] : p.swap; p.swap = null; }
     p.fire = 0; p.mine = 0; p.fireLeft = 0; p.mineLeft = 0;
     const playing = this.view && (this.view.phase === 'play');
     if (me && me.alive) {
@@ -435,7 +433,7 @@ export class Online {
       this.corr.x -= this.corr.x * k; this.corr.y -= this.corr.y * k;
     }
     this.seq++;
-    this.send({ t: 'in', s: this.seq, mx: r3(p.mx), my: r3(p.my), aim: me && me.aimWant != null ? r3(me.aimWant) : null, f: this.fireCum, m: this.mineCum, w: this.swapCum, wk: this.swapKey }, false);
+    this.send({ t: 'in', s: this.seq, mx: r3(p.mx), my: r3(p.my), aim: me && me.aimWant != null ? r3(me.aimWant) : null, f: this.fireCum, m: this.mineCum }, false);
     if (me) { this.hist.push({ s: this.seq, x: me.x, y: me.y }); if (this.hist.length > 240) this.hist.shift(); }
 
     // 別人：在 100 ms 前的兩張快照之間內插

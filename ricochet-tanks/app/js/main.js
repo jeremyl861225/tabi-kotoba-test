@@ -73,11 +73,6 @@ const act = {
   },
   startCampaign: (o) => startGame({ mode: 'campaign', level: o.level || 0, lives: o.lives || 3, players: [{ slot: 0, name: '1P', color: 'p1', bullet: o.bullet }] }, 'solo'),
   startVersus: (o) => startGame({ mode: 'versus', arena: o.arena, rule: o.rule, cpu: o.cpu, skill: o.skill, rounds: o.rounds, players: [{ slot: 0, name: '你', color: 'p1', bullet: o.bullet }] }, 'solo'),
-  startDuo: (o) => {
-    const players = [{ slot: 0, name: '1P', color: 'p1', bullet: o.bullets[0] }, { slot: 1, name: '2P', color: 'p2', bullet: o.bullets[1] }];
-    if (o.mode === 'coop') startGame({ mode: 'campaign', level: 0, players }, 'duo');
-    else startGame({ mode: 'versus', arena: o.arena, rule: 'ffa', cpu: o.cpu, skill: o.skill, rounds: o.rounds, players }, 'duo');
-  },
   openOnline: () => G.net.open(),
   resume: () => togglePause(false),
   restart: () => { if (G.startOpts) startGame(G.startOpts.opts, G.startOpts.layout); },
@@ -131,7 +126,6 @@ function startGame(opts, layout = 'solo', local = opts.players.map((p) => p.slot
   hud.setLayout(layout);
   hud.show(true);
   renderer.labels.clear();
-  if (layout === 'duo') { renderer.labels.set('slot0', '1P'); renderer.labels.set('slot1', '2P'); }
   if ((Q.has('auto') || SHOT === 'play') && !Q.has('manual')) for (const s of G.local) G.auto.set(s, null);
 }
 
@@ -160,7 +154,6 @@ function applyInputs(first) {
     if (p.aim != null) I.aim = p.aim;
     if (first && p.fire) I.fire = true;
     if (first && p.mine) I.mine = true;
-    if (p.swap) { I.swap = p.swap; p.swap = null; }
   }
 }
 
@@ -214,7 +207,6 @@ function handleEvents(simEv, gameEv) {
       case 'arm': sfx.play('arm', e.x); break;
       case 'armor': sfx.play('armor', e.x); if (mine(e.id)) haptic('die'); else if (mine(e.by)) haptic('fire'); break;
       case 'warp': sfx.play('warp', e.x); break;
-      case 'swap': if (mine(e.id)) sfx.play('swap'); break;
       default:
     }
   }
@@ -298,7 +290,7 @@ function frame(now) {
   // 按鍵次數先累積，等真的跑到 tick 才用掉（畫面比 60 Hz 快時，有的畫格不會跑 tick）
   for (const [slot, p] of polled) {
     const old = G.pending.get(slot);
-    G.pending.set(slot, { ...p, fire: p.fire + (old ? old.fireLeft || 0 : 0), mine: p.mine + (old ? old.mineLeft || 0 : 0), swap: p.swap || (old && old.swap) || null });
+    G.pending.set(slot, { ...p, fire: p.fire + (old ? old.fireLeft || 0 : 0), mine: p.mine + (old ? old.mineLeft || 0 : 0) });
   }
   const guest = G.net && G.net.role === 'guest';
   if (guest) G.net.guestFrame(dt, G.pending);
@@ -325,7 +317,7 @@ function draw(dt) {
     const me = state.tanks.find((t) => t.kind === 'player' && t.slot === slot);
     if (me) {
       const sim = guest() ? null : G.game.sim;
-      // 彈匣與裝填進度在瞄準搖桿上方；彈種在右側的換彈鈕
+      // 彈匣與裝填進度在瞄準搖桿上方；目前的彈種在搖桿上方的小牌子
       for (const s of G.local) {
         const t = state.tanks.find((x) => x.kind === 'player' && x.slot === s);
         if (!t) continue;
@@ -346,6 +338,9 @@ function relayout() {
   renderer.resize({ maxDpr: +(Q.get('dpr') || 3) });
   input.layout(renderer.field);
   document.documentElement.style.setProperty('--side-w', `${renderer.field.x}px`);   // HUD 狀態卡的寬度上限（場地左邊的暗區）
+  // 瀏海機種：場地左邊的空白扣掉安全區只剩約 80 pt，分數板收掉章節標籤（不然會疊到地雷鈕或壓到場地）
+  const sl = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sl')) || 0;
+  document.documentElement.classList.toggle('tight-hud', renderer.field.x - sl - 32 < 112);
 }
 window.addEventListener('resize', relayout);
 window.addEventListener('orientationchange', () => setTimeout(relayout, 250));

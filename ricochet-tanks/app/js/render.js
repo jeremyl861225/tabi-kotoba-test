@@ -15,7 +15,7 @@ const SHADOW = 'rgba(138, 150, 200, 0.5)';   // v5：投影偏冷（審查：投
 const P = {
   // v8：白色場地（使用者指定）
   // v9（審查：牆頂和地板只差 ΔL* 2，牆讀不出來）：地板降一階到暖淺灰，方塊頂面維持最亮的白
-  floor: '#E9E4DB', seam: 'rgba(190, 180, 166, 0.6)', edge: 'rgba(90, 100, 140, 0.3)',
+  floor: '#E4DED3', seam: 'rgba(190, 180, 166, 0.6)', edge: 'rgba(90, 100, 140, 0.3)',
   top: '#FBF8F3', topHi: '#FFFEFB', side: '#D5CDC2', sideLo: '#C9C1B6',
   corkTop: '#EED8C4', corkPit: '#D9C0A8', corkHi: '#F9ECDF', corkSide: '#D6BCA4',
   // v10：坑洞＝把板子挖穿、看得到底下的桌面（淡紫洞底跟投影同色，被讀成「沒有主人的影子」）
@@ -23,7 +23,7 @@ const P = {
   rimTop: '#F7F4EE', rimHi: '#FFFEFB', rimIn: '#CEC7BE', rimOut: '#B8AFA5',
   table: '#ECEEF2', hatch: '#E2E6ED',   // v11：白色桌面（淡淡的斜紋）；v12 降一階，白玻璃搖桿才浮得出來；v13 由淡紫改淡石板藍
   ice: '#DDEBF5', iceHi: 'rgba(255, 255, 255, 0.85)', iceLine: 'rgba(140, 180, 215, 0.55)',
-  bush0: '#7FBF86', bush1: '#9ED39C', bush2: '#C3E7B8', bushLine: '#5E9E6A',
+  bush0: '#8AC391', bush1: '#A5D6A2', bush2: '#C8E8BD', bushLine: '#5E9E6A',
   portalA: '#2BB2CB', portalB: '#5E3A5E',   // v13：色票青／梅紫（黃留給黃隊）
   barrel: '#F4A35E', barrelTop: '#F9C89C', barrelLine: '#B26A2C', hazard: '#F6D25E',   // v12：橘色（跟隊伍色分開）
   tread: '#3F4660', cleat: '#5F6680',
@@ -33,9 +33,9 @@ const P = {
 };
 // 坦克車身：粉色系（v8）。玩家 p1–p4、對戰電腦 cpuA–C、隊伍配色用 aqua／peach／mint／lav、戰役車種用車種名
 export const TANK_COLORS = {
-  p1: '#8DC4F0', p2: '#F7D774', p3: '#C9A2CB', p4: '#8FE3C6',   // v13：大亂鬥車身跟著隊色（青、黃、梅紫、薄荷）的粉彩
-  aqua: '#86D3D3', peach: '#F6B892', mint: '#8FD6AE', lav: '#B8A2EC', peri: '#A9B2F4', ice: '#B9D7F7',
-  brown: '#D6B59A', ash: '#BDB7C9', teal: '#86D3D3', yellow: '#F2D27E', pink: '#F4A6BF', green: '#B9D46E', violet: '#B8A2EC', white: '#F2EFF7', black: '#5E5574',
+  p1: '#8DC4F0', p2: '#F0C95E', p3: '#C9A2CB', p4: '#8FE3C6',   // v13：大亂鬥車身跟著隊色（青、黃、梅紫、薄荷）的粉彩
+  aqua: '#86D3D3', peach: '#F0A97E', mint: '#8FD6AE', lav: '#B8A2EC', peri: '#A9B2F4', ice: '#B9D7F7',
+  brown: '#D6B59A', ash: '#BDB7C9', teal: '#86D3D3', yellow: '#EBC566', pink: '#F4A6BF', green: '#B9D46E', violet: '#B8A2EC', white: '#F2EFF7', black: '#5E5574',
   scout: '#94DCC3', heavy: '#AEB6C6', bomber: '#E3A8DF', commander: '#8E7FC4',
   cpuA: '#B8A2EC', cpuB: '#86D3D3', cpuC: '#F6B892',
 };
@@ -393,7 +393,8 @@ export class Renderer {
     for (const l of leaves) { g.fillStyle = P.bush1; g.beginPath(); g.arc(l.x - 0.03, l.y - 0.02, l.r * 0.82, 0, 6.28); g.fill(); }
     for (const l of leaves) { g.fillStyle = P.bush2; g.beginPath(); g.arc(l.x - 0.07, l.y - 0.07, l.r * 0.38, 0, 6.28); g.fill(); }
     g.strokeStyle = P.bushLine; g.lineWidth = 0.022; g.lineCap = 'round';   // 葉脈
-    leaves.forEach((l, k) => { if (k % 3) return; g.beginPath(); g.moveTo(l.x - l.r * 0.3, l.y + l.r * 0.2); g.lineTo(l.x + l.r * 0.15, l.y - l.r * 0.25); g.stroke(); });   // 葉脈只畫三分之一（太密像花椰菜）
+    // v14（審查：每片葉子都帶同一條白斜線、像同一張貼圖）：葉脈只畫約八分之一，角度與長度各不同
+    leaves.forEach((l, k) => { if (rng() > 0.14) return; const an = -0.9 + rng() * 1.8, ln = l.r * (0.35 + rng() * 0.4); g.beginPath(); g.moveTo(l.x - Math.cos(an) * ln * 0.5, l.y - Math.sin(an) * ln * 0.5 + l.r * 0.1); g.lineTo(l.x + Math.cos(an) * ln * 0.5, l.y + Math.sin(an) * ln * 0.5 + l.r * 0.1); g.stroke(); void k; });
   }
 
   // 這台坦克在畫面上看不看得到（草叢）：自己隊的一定看得到；敵人躲在草裡、最近沒開火、沒有我方靠近就看不到
@@ -414,16 +415,18 @@ export class Renderer {
   // 炸藥桶（列的方塊層）：圓桶、上蓋、一圈黃色警示帶
   drawBarrelTile(g, x, y) {
     const h = 0.4, cx = x + 0.5, top = y + 0.5 - h;
+    // v14（審查：十六個桶一模一樣）：依格子位置決定高光位置、警示帶斜紋相位、蓋上有沒有火焰標記
+    const hs = (((x * 73856093) ^ (y * 19349663)) >>> 0) % 997 / 997;
     g.fillStyle = P.barrelLine; rr(g, x + 0.12, top, 0.76, h + 0.42, 0.18); g.fill();
     g.fillStyle = P.barrel; rr(g, x + 0.15, top + 0.02, 0.7, h + 0.36, 0.16); g.fill();
-    g.fillStyle = 'rgba(255, 255, 255, 0.28)'; g.fillRect(x + 0.22, top + 0.2, 0.08, h + 0.12);
+    g.fillStyle = 'rgba(255, 255, 255, 0.28)'; g.fillRect(x + 0.2 + hs * 0.1, top + 0.2 + hs * 0.05, 0.08, h + 0.1 - hs * 0.05);
     g.fillStyle = P.hazard; g.fillRect(x + 0.15, y + 0.62, 0.7, 0.09);
-    g.fillStyle = P.barrelLine; for (let k = 0; k < 4; k++) g.fillRect(x + 0.2 + k * 0.17, y + 0.62, 0.06, 0.09);
+    g.fillStyle = P.barrelLine; for (let k = 0; k < 4; k++) g.fillRect(x + 0.17 + hs * 0.05 + k * 0.17, y + 0.62, 0.06, 0.09);
     g.fillStyle = P.barrelLine; g.beginPath(); g.ellipse(cx, top + 0.08, 0.36, 0.3, 0, 0, 6.28); g.fill();
     g.fillStyle = P.barrelTop; g.beginPath(); g.ellipse(cx, top + 0.06, 0.32, 0.26, 0, 0, 6.28); g.fill();
     g.strokeStyle = 'rgba(180, 84, 74, 0.5)'; g.lineWidth = 0.025; g.beginPath(); g.ellipse(cx, top + 0.06, 0.22, 0.17, 0, 0, 6.28); g.stroke();
-    // 火焰標記
-    g.fillStyle = P.barrelLine; g.beginPath(); g.moveTo(cx, top - 0.07); g.quadraticCurveTo(cx + 0.11, top + 0.05, cx + 0.04, top + 0.14); g.quadraticCurveTo(cx + 0.01, top + 0.07, cx - 0.02, top + 0.06); g.quadraticCurveTo(cx - 0.1, top + 0.12, cx - 0.05, top + 0.15); g.quadraticCurveTo(cx - 0.12, top + 0.04, cx, top - 0.07); g.fill();
+    // 火焰標記（約三分之二的桶有，其他是素蓋）
+    if (hs > 0.33) { g.fillStyle = P.barrelLine; g.beginPath(); g.moveTo(cx, top - 0.07); g.quadraticCurveTo(cx + 0.11, top + 0.05, cx + 0.04, top + 0.14); g.quadraticCurveTo(cx + 0.01, top + 0.07, cx - 0.02, top + 0.06); g.quadraticCurveTo(cx - 0.1, top + 0.12, cx - 0.05, top + 0.15); g.quadraticCurveTo(cx - 0.12, top + 0.04, cx, top - 0.07); g.fill(); }
   }
 
   // 坑洞：看得到北內壁（地板木頭切面、往下變暗）、外緣一圈斜面、南緣受光亮線；相鄰的連成一片（v3）
@@ -629,6 +632,17 @@ export class Renderer {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.drawImage(this.frontCv, 0, this.frontY);
     g.setTransform(d * v.S, 0, 0, d * v.S, d * v.ox, d * v.oy);
+    // v14（審查：黃旗被旁邊的方塊頂面蓋住、只剩 10 px）：隊旗最後畫、不被方塊擋；旁邊有方塊的坦克，隊色圈的輪廓也再描一次
+    if (this.showRings) {
+      for (const t of state.tanks) {
+        if (!t.alive || hide.has(t.id) || (t.ghost && this.ghostVis(t) <= 0.01)) continue;
+        g.save();
+        if (!t.ghost && this.nearBlock(state.grid, t)) this.drawRing(g, t, true);
+        g.globalAlpha = t.ghost ? this.ghostVis(t) : 1;
+        this.drawPennant(g, t);
+        g.restore();
+      }
+    }
 
     // 瞄準虛線（v7：最後才畫，木塊擋不住；原本反彈點常被木塊頂面蓋掉）
     if (opts.aims && this.aimGuide) for (const a of opts.aims) this.drawAim(g, a);
@@ -709,16 +723,30 @@ export class Renderer {
     else { rr(g, -0.47, -0.38, 0.94, 0.76, 0.16); g.fill(); }
     g.restore();
     if (!this.showRings || t.ghost) return;
-    // 腳下的隊伍色圈（v8：分隊要一眼看出來）：隊伍色粗圈＋淡底盤；真人玩家多一道暖白內圈
+    this.drawRing(g, t, false);
+  }
+
+  // 腳下的隊伍色圈（v8：分隊要一眼看出來）：隊伍色粗圈＋淡底盤；真人玩家多一道暖白內圈
+  // xray（v14）：圈被方塊的前緣蓋住時，最後再描一次輪廓（半透明、不填底），隊色不會消失在牆後
+  drawRing(g, t, xray) {
     const C = teamColorOf(t);
     const R = 0.6 * TANK_K * Math.max(1, SHAPES[shapeOf(t)].k);
-    g.globalAlpha = 0.22; g.fillStyle = C;
-    g.beginPath(); g.ellipse(t.x, t.y + 0.02, R, R * 0.93, 0, 0, 6.28); g.fill();
+    const dash = t.teamColor === 'B';
+    if (!xray) {
+      g.globalAlpha = 0.22; g.fillStyle = C;
+      g.beginPath(); g.ellipse(t.x, t.y + 0.02, R, R * 0.93, 0, 0, 6.28); g.fill();
+    }
     // v10：圈加粗到 0.11 格；黃隊（B）是 6 段虛線圈（灰階、色盲也分得出兩隊）
-    g.globalAlpha = 0.95; g.strokeStyle = C; g.lineWidth = 0.11;
-    if (t.teamColor === 'B') { const c = 6.28 * R * 0.965; g.setLineDash([c / 6 * 0.78, c / 6 * 0.22]); g.lineCap = 'butt'; }
+    // v14（審查：黃、薄荷在淺地板上明度比只有 1.3–1.4:1，灰階下消失）：圈底下先墊一道同色相的深色外緣；黃圈再粗一點、虛線段拉長
+    const w = dash ? 0.135 : 0.11;
+    g.lineCap = 'butt';
+    if (dash) { const c = 6.28 * R * 0.965; g.setLineDash([c / 6 * 0.84, c / 6 * 0.16]); }
+    g.globalAlpha = xray ? 0.6 : 0.88; g.strokeStyle = shade(C, 0.5); g.lineWidth = w + 0.075;
+    g.beginPath(); g.ellipse(t.x, t.y + 0.02, R, R * 0.93, -1.2, 0, 6.28); g.stroke();
+    g.globalAlpha = xray ? 0.75 : 0.95; g.strokeStyle = C; g.lineWidth = w;
     g.beginPath(); g.ellipse(t.x, t.y + 0.02, R, R * 0.93, -1.2, 0, 6.28); g.stroke();
     g.setLineDash([]);
+    if (xray) { g.globalAlpha = 1; return; }
     if ((t.maxHp || 1) >= 3) {
       // 頭目：隊色虛線圈外再一圈金色雙線
       const R2 = R + 0.1;
@@ -759,6 +787,15 @@ export class Renderer {
     g.fillRect(px - (k === 'B' || k === 'C' ? fw * 0.86 : fw * 0.5), top + 0.03, k === 'B' || k === 'C' ? fw * 0.8 : fw * 0.45, 0.035);
   }
 
+  nearBlock(grid, t) {
+    const x0 = Math.floor(t.x - 1.2), x1 = Math.floor(t.x + 1.2), y0 = Math.floor(t.y - 1.2), y1 = Math.floor(t.y + 1.7);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      if (x < 0 || y < 0 || x >= COLS || y >= ROWS) continue;
+      if (blockH(grid[y * COLS + x]) > 0) return true;
+    }
+    return false;
+  }
+
   ghostVis(t) {
     const since = this.time - (this.recoil.get(t.id) ?? -9);
     return since < 0.6 ? 0.42 * (1 - since / 0.6) : 0;
@@ -777,7 +814,6 @@ export class Renderer {
     g.globalAlpha = alpha;
     drawTankArt(g, t, T, { K: TANK_K, lift, rec });   // v11：造型依車種（tankart.js）
     g.restore();
-    if (this.showRings) { g.save(); g.globalAlpha = alpha; this.drawPennant(g, t); g.restore(); }
     void dt;
   }
 
@@ -1119,7 +1155,7 @@ export class Renderer {
       if (!t.alive) continue;
       const txt = t.kind === 'player' ? this.labels.get(`slot${t.slot}`) : null;
       if (!txt || (this.hiddenIds && this.hiddenIds.has(t.id))) continue;
-      const x = v.ox + t.x * v.S, y = v.oy + (t.y - 0.95) * v.S;
+      const x = v.ox + t.x * v.S, y = v.oy + (t.y + 1.05) * v.S;   // v14：名牌改到車下（原本在車上方、蓋住旗桿與旗）
       const w = g.measureText(txt).width + v.S * 0.5, h = v.S * 0.62;
       g.fillStyle = teamColorOf(t); g.globalAlpha = 0.92;
       rr(g, x - w / 2, y - h / 2, w, h, h / 2); g.fill();
@@ -1188,9 +1224,6 @@ export class Renderer {
         const c = this.lastGrid && this.lastGrid.links ? this.portalColor(this.lastGrid, Math.floor(e.y) * COLS + Math.floor(e.x)) : P.portalA;
         const [r, gg, b] = hex(c);
         this.fx.push({ kind: 'ring', x: e.x, y: y0, r0: 0.1, r: e.shell ? 0.45 : 0.8, w: 0.07, age: 0, life: 0.3, c: `rgba(${r}, ${gg}, ${b}, 1)` });
-      } else if (e.k === 'swap') {
-        const t = state && state.tanks && state.tanks.find((x) => x.id === e.id);
-        if (t) this.fx.push({ kind: 'ring', x: t.x, y: t.y - TANK_LIFT, r0: 0.3, r: 0.75, w: 0.06, age: 0, life: 0.25, c: teamColorOf(t) });
       }
     }
     void state;

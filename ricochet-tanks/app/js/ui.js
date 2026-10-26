@@ -1,10 +1,11 @@
-// 選單畫面：標題、戰役、對戰電腦、同機雙人、連線、暫停、結算。
+// 選單畫面：標題、戰役、對戰電腦、連線、暫停、結算。
 // 彈種卡與地圖縮圖用遊戲本身的畫法（Renderer 的方法）畫，風格一致。
 import { BULLETS, BULLET_KEYS, SKILL, TYPES, TYPE_KEYS, COLS, ROWS } from './config.js';
 import { ARENAS, CAMPAIGN, parseMap, TILE } from './maps.js';
 import * as MAPS from './maps.js';
 import { Renderer, TANK_COLORS, TEAM_COLORS, tankTones } from './render.js';
 import { makeRng } from './util.js';
+import { bulletSvg } from './icons.js';
 
 const M = () => window.Motion;
 const icon = (id) => `<svg class="i"><use href="#i-${id}"/></svg>`;
@@ -24,68 +25,6 @@ function enter(root) {
 // 小畫家：借 Renderer 的方法畫坦克與炮彈
 const painter = Object.assign(Object.create(Renderer.prototype), { time: 0, recoil: new Map(), rng: makeRng(3), parts: [], fx: [] });
 
-function drawAmmoCard(cv, key, color = 'p1') {
-  const dpr = Math.max(2, window.devicePixelRatio || 1);
-  const w = cv.clientWidth || 120, h = cv.clientHeight || 92;
-  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
-  const g = cv.getContext('2d');
-  const S = h / 4.2;
-  g.setTransform(dpr * S, 0, 0, dpr * S, 0, 0);
-  const Wt = w / S, Ht = 4.2;
-  // v8 白色場地：白地板＋淡接縫，上方一道白色牆（側面淺灰）
-  g.fillStyle = '#E9E4DB'; g.fillRect(0, 0, Wt, Ht);
-  g.fillStyle = 'rgba(190, 180, 166, 0.6)';
-  for (let x = 2; x < Wt; x += 2) g.fillRect(x - 0.01, 0, 0.02, Ht);
-  for (let y = 2; y < Ht; y += 2) g.fillRect(0, y - 0.01, Wt, 0.02);
-  g.fillStyle = '#D9D2C8'; g.fillRect(0, 0, Wt, 0.32);
-  g.fillStyle = '#FBF8F3'; g.fillRect(0, 0, Wt, 0.22);
-  const B = BULLETS[key];
-  const t = { x: 0.9, y: 2.6, body: 0, turret: -0.55, color, bullet: key, odo: 0, moving: 0, id: -1 };
-  // 瞄準點線跟遊戲裡一樣用隊色（1P 藍、2P 紅）
-  const dotC = color === 'p1' ? TEAM_COLORS.A : color === 'p2' ? TEAM_COLORS.B : tankTones(color).line;
-  // 路徑（點線）
-  const pts = [];
-  const ang = { standard: -0.55, rocket: -0.08, ricochet: -0.62, scatter: -0.2, blast: -0.3 }[key];
-  t.turret = ang;
-  if (key === 'scatter') {
-    for (const da of [-B.spread, 0, B.spread]) pts.push([{ x: 1.4, y: 2.6 + Math.tan(ang) * 0.5 }, { x: 1.4 + Math.cos(ang + da) * 2.2, y: 2.6 + Math.sin(ang + da) * 2.2 }]);
-  } else {
-    // 在上下牆（y=0.32、y=4.2）之間反彈
-    let x = 0.9 + Math.cos(ang) * 0.6, y = 2.6 + Math.sin(ang) * 0.6, vx = Math.cos(ang), vy = Math.sin(ang);
-    const line = [{ x, y }];
-    let bounces = 0;
-    for (let i = 0; i < 600; i++) {
-      x += vx * 0.02; y += vy * 0.02;
-      if (y < 0.45 || y > Ht - 0.12) { vy = -vy; bounces++; line.push({ x, y }); if (bounces > B.bounce) break; }
-      if (x > Wt - (key === 'blast' ? 0.75 : 0.2)) { line.push({ x, y }); break; }   // 爆裂彈的爆炸不要被卡片邊緣切掉
-    }
-    if (line.length === 1 || line[line.length - 1].x !== x) line.push({ x, y });
-    pts.push(line);
-  }
-  for (const line of pts) {
-    g.fillStyle = dotC; g.globalAlpha = 0.7;
-    for (let i = 0; i < line.length - 1; i++) {
-      const a = line[i], b = line[i + 1], L = Math.hypot(b.x - a.x, b.y - a.y);
-      for (let s = 0; s < L; s += 0.24) { g.beginPath(); g.arc(a.x + (b.x - a.x) * s / L, a.y + (b.y - a.y) * s / L, 0.05, 0, 6.28); g.fill(); }
-    }
-    g.globalAlpha = 1;
-  }
-  if (key === 'blast') {
-    const e = pts[0][pts[0].length - 1];
-    g.fillStyle = 'rgba(240, 114, 60, 0.85)'; g.beginPath(); g.arc(e.x, e.y + 0.1, 0.55, 0, 6.28); g.fill();
-    g.fillStyle = '#FFB347'; g.beginPath(); g.arc(e.x - 0.06, e.y + 0.04, 0.38, 0, 6.28); g.fill();
-    g.fillStyle = '#FFE48A'; g.beginPath(); g.arc(e.x - 0.1, e.y, 0.18, 0, 6.28); g.fill();
-  }
-  painter.drawTankShadow.call({ ...painter, showRings: false, ghostVis: () => 1 }, g, t);
-  painter.drawTank(g, t, 0);
-  // 炮彈示意
-  const line = pts[0];
-  const mid = line[Math.min(1, line.length - 1)];
-  const a0 = line[0];
-  const b = { x: (a0.x + mid.x) / 2 + 0.3, y: (a0.y + mid.y) / 2 + 0.22, vx: mid.x - a0.x, vy: mid.y - a0.y, r: B.r, type: key };
-  const L = Math.hypot(b.vx, b.vy) || 1; b.vx /= L; b.vy /= L;
-  if (key !== 'blast') painter.drawShell(g, b, 0);
-}
 
 export function drawMapThumb(cv, def) {
   const dpr = Math.max(2, window.devicePixelRatio || 1);
@@ -184,7 +123,6 @@ export class UI {
     this.act = act;
     this.state = {
       versus: { arena: 'cross', rule: 'ffa', cpu: 2, skill: 'normal', rounds: 3, bullet: 'standard' },
-      duo: { mode: 'versus', arena: 'cross', cpu: 0, skill: 'normal', rounds: 3, bullets: ['standard', 'ricochet'] },
       campaign: { bullet: 'standard', from: 0, lives: 3, chapter: 0 },
     };
   }
@@ -212,7 +150,6 @@ export class UI {
         <div class="menu">
           <button class="mbtn glass primary" data-go="campaign" data-in><span class="ic">${icon('flag')}</span><span><b>戰役</b><small>${best > 0 ? `${CAMPAIGN.length} 關・最高到第 ${best + 1} 關` : `${chapterList().length} 章 ${CAMPAIGN.length} 關・冰原、傳送門、草叢、炸藥桶`}</small></span></button>
           <button class="mbtn glass sheen" data-go="versus" data-in><span class="ic">${icon('cpu')}</span><span><b>對戰電腦</b><small>選地圖、規則、1–3 台電腦</small></span></button>
-          <button class="mbtn glass sheen" data-go="duo" data-in><span class="ic">${icon('users')}</span><span><b>同機雙人</b><small>一台裝置、左右各一人（也可接手把）</small></span></button>
           <button class="mbtn glass sheen" data-go="online" data-in><span class="ic">${icon('wifi')}</span><span><b>連線對戰</b><small>開房間、用房號找朋友</small></span></button>
           <div class="small-row" data-in>
             <button class="mbtn glass" data-go="dex"><span class="ic">${icon('book')}</span><span><b>坦克圖鑑</b></span><span class="dexprog" style="margin-left:auto">${this.dexCount()}/${TYPE_KEYS.length}</span></button>
@@ -224,7 +161,6 @@ export class UI {
       const go = b.dataset.go;
       if (go === 'campaign') this.campaign({ best });
       else if (go === 'versus') this.versus();
-      else if (go === 'duo') this.duo();
       else if (go === 'online') this.act.openOnline();
       else if (go === 'settings') this.settings(() => this.title({ best }));
       else if (go === 'dex') this.dex(() => this.title({ best }));
@@ -249,11 +185,11 @@ export class UI {
     }));
   }
 
-  ammoCards(cur, color = 'p1', name = 'bullet') {
-    return `<div class="ammo" data-ammo="${name}">${BULLET_KEYS.map((k) => {
+  ammoCards(cur) {
+    return `<div class="ammo" data-ammo="bullet">${BULLET_KEYS.map((k) => {
       const B = BULLETS[k];
       const bar = (lab, v, max) => `<em>${lab}</em><span><i style="width:${(v / max) * 100}%"></i></span>`;
-      return `<button class="card glass ${k === cur ? 'on' : ''}" data-k="${k}" data-in><canvas data-ammo-cv="${k}" data-color="${color}"></canvas><b>${B.name}</b><small>${B.desc}</small>
+      return `<button class="card glass ${k === cur ? 'on' : ''}" data-k="${k}" data-in><div class="aicon">${bulletSvg(k, 'big')}</div><b>${B.name}</b><small>${B.desc}</small>
         <div class="bars">${bar('速度', B.stats.speed, 3)}${bar('反彈', B.stats.bounce, 3)}${bar('彈數', B.stats.count, 3)}</div></button>`;
     }).join('')}</div>`;
   }
@@ -262,13 +198,10 @@ export class UI {
       wrap.addEventListener('click', (e) => {
         const c = e.target.closest('.card'); if (!c) return;
         wrap.querySelectorAll('.card').forEach((x) => x.classList.toggle('on', x === c));
-        const name = wrap.dataset.ammo;
-        if (/^b\d$/.test(name)) obj.bullets[+name.slice(1)] = c.dataset.k;   // 同機雙人：b0、b1
-        else obj[key] = c.dataset.k;
+        obj[key] = c.dataset.k;
         this.act.select();
       });
     });
-    requestAnimationFrame(() => el.querySelectorAll('[data-ammo-cv]').forEach((cv) => drawAmmoCard(cv, cv.dataset.ammoCv, cv.dataset.color)));
   }
 
   dexCount() { const d = this.act.dex ? this.act.dex() : { seen: {} }; return Object.keys(d.seen || {}).length; }
@@ -319,7 +252,7 @@ export class UI {
     const el = this.mount(`<div class="panel glass">
       ${this.head(`第 ${s.from + 1} 關：起始彈種`)}
       ${this.ammoCards(s.bullet)}
-      <div class="foot" data-in><span class="note">遊戲中隨時可以換彈：右搖桿上方的按鈕（鍵盤 Q 或 1–5）。</span><button class="go" data-start>${icon('play')}出發</button></div>
+      <div class="foot" data-in><span class="note">彈種開局選好、遊戲中不能換。</span><button class="go" data-start>${icon('play')}出發</button></div>
     </div>`, 'dim');
     this.wireBack(el, () => this.campaign({ best }, 1));
     this.wireAmmo(el, s);
@@ -405,44 +338,6 @@ export class UI {
     this.wireBack(el, () => this.versus(1));
     this.wireAmmo(el, s);
     el.querySelector('[data-start]').addEventListener('click', () => this.act.startVersus({ ...s, cpu: s.rule === 'team' ? 3 : s.cpu }));
-  }
-
-  // ---- 同機雙人 ----
-  duo(step = 1) {
-    const s = this.state.duo;
-    if (step === 1) {
-      const el = this.mount(`<div class="panel glass">
-        ${this.head('同機雙人')}
-        <div data-in>${this.seg('mode', [['versus', '互相對戰'], ['coop', '合作戰役']], s.mode)}</div>
-        <div data-vs>
-          <div class="maps" style="margin-top:12px" data-in>${ARENAS.map((a) => `<button class="mapcard glass ${a.id === s.arena ? 'on' : ''}" data-map="${a.id}"><canvas data-thumb="${a.id}"></canvas><b>${a.name}</b></button>`).join('')}</div>
-          <div class="row" style="margin-top:12px" data-in>
-            ${this.seg('cpu', [[0, '不加電腦'], [1, '+1 台'], [2, '+2 台']], s.cpu)}
-            ${this.seg('rounds', [[3, '先贏 3'], [5, '先贏 5'], [7, '先贏 7']], s.rounds)}
-          </div>
-        </div>
-        <div class="foot" data-in><span class="note">1P 用左邊、2P 用右邊；接上手把會自動對應。</span><button class="go" data-next>下一步</button></div>
-      </div>`, 'dim');
-      const sync = () => { el.querySelector('[data-vs]').hidden = s.mode !== 'versus'; };
-      sync();
-      this.wireBack(el, () => this.title({ best: this.act.best() }));
-      this.wireSegs(el, s, sync);
-      el.querySelectorAll('[data-map]').forEach((b) => b.addEventListener('click', () => { s.arena = b.dataset.map; el.querySelectorAll('[data-map]').forEach((x) => x.classList.toggle('on', x === b)); }));
-      requestAnimationFrame(() => el.querySelectorAll('[data-thumb]').forEach((cv) => drawMapThumb(cv, ARENAS.find((a) => a.id === cv.dataset.thumb))));
-      el.querySelector('[data-next]').addEventListener('click', () => this.duo(2));
-      return;
-    }
-    const el = this.mount(`<div class="panel glass duo-pick">
-      ${this.head('各自選彈種')}
-      <div class="who" data-in><i class="tankdot" style="background:${TANK_COLORS.p1}"></i>1P</div>
-      ${this.ammoCards(s.bullets[0], 'p1', 'b0')}
-      <div class="who" style="margin-top:12px" data-in><i class="tankdot" style="background:${TANK_COLORS.p2}"></i>2P</div>
-      ${this.ammoCards(s.bullets[1], 'p2', 'b1')}
-      <div class="foot" data-in><button class="go" data-start>${icon('play')}開始</button></div>
-    </div>`, 'dim');
-    this.wireBack(el, () => this.duo(1));
-    this.wireAmmo(el, s);
-    el.querySelector('[data-start]').addEventListener('click', () => this.act.startDuo({ ...s }));
   }
 
   // ---- 設定 ----

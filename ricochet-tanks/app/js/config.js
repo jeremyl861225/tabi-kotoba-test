@@ -122,4 +122,3 @@ export const TERRAIN = {
   bushSee: 1.8,       // 敵人靠這麼近才看得到草叢裡的坦克
   bushReveal: 0.9,    // 在草叢裡開火後現身多久
 };
-export const SWAP_DELAY = 0.35;   // 換彈後多久才能開火

@@ -70,7 +70,6 @@ export class Sfx {
       case 'arm': { const o = this.out(x, 0.6); for (let i = 0; i < 3; i++) this.tone(o, t + i * 0.1, 0.05, 'square', 1320, 1300, 0.12); break; }
       case 'armor': { const o = this.out(x, 0.8); this.tone(o, t, 0.22, 'triangle', 1700, 1500, 0.3); this.tone(o, t, 0.25, 'square', 420, 380, 0.08); this.noiseHit(o, t, 0.08, 'highpass', 5000, 3000, 0.8, 0.35); break; }
       case 'warp': { const o = this.out(x, 0.5); this.tone(o, t, 0.22, 'sine', 300, 1400, 0.22); this.tone(o, t + 0.05, 0.2, 'triangle', 600, 1800, 0.08); break; }
-      case 'swap': { const o = this.out(null, 0.4); this.tone(o, t, 0.04, 'square', 700, 700, 0.1); this.tone(o, t + 0.06, 0.05, 'square', 1050, 1050, 0.1); break; }
       case 'found': { const o = this.out(null, 0.5); [784, 988, 1319].forEach((f, i) => this.tone(o, t + i * 0.08, 0.2, 'triangle', f, f, 0.24)); break; }
       case 'empty': { const o = this.out(x, 0.4); this.tone(o, t, 0.05, 'square', 200, 180, 0.1); break; }
       case 'go': { const o = this.out(null, 0.6); this.tone(o, t, 0.12, 'triangle', 660, 660, 0.3); this.tone(o, t + 0.13, 0.22, 'triangle', 990, 990, 0.32); break; }

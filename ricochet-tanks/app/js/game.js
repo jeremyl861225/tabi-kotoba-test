@@ -37,7 +37,7 @@ export class Game {
     this.over = false;
     this.attempt = 0;            // 同一關第幾次（亂數種子要跟著變，不然重來會一模一樣）
     this.simEvents = [];         // 這段時間模擬發生的事（畫面、音效、連線來拿）
-    for (const p of this.players) this.inputs.set(p.slot, { mx: 0, my: 0, aim: null, fire: false, mine: false, swap: null });
+    for (const p of this.players) this.inputs.set(p.slot, { mx: 0, my: 0, aim: null, fire: false, mine: false });
     this.begin();
   }
 
@@ -158,8 +158,7 @@ export class Game {
       if (I.aim != null) t.input.aim = I.aim;
       if (I.fire) t.input.fire = true;
       if (I.mine) t.input.mine = true;
-      if (I.swap) t.input.swap = I.swap;
-      I.fire = false; I.mine = false; I.swap = null;
+      I.fire = false; I.mine = false;
     }
     if (this.phase !== 'intro') for (const b of this.bots) b.update(TICK);
     sim.step();

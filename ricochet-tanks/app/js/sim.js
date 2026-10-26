@@ -1,7 +1,7 @@
 // 模擬（60 Hz、純邏輯，node 也能跑）：坦克移動與碰撞、炮彈反彈、炮彈互撞、地雷、爆炸、
 // 彈藥裝填、換彈、裝甲、地形（冰面、傳送門、草叢、炸藥桶）。
 // 畫面、音效、連線都只讀這裡的狀態與 events，不改它。
-import { COLS, ROWS, TICK, TANK, MINE, BULLETS, BULLET_KEYS, TYPES, TERRAIN, SWAP_DELAY } from './config.js';
+import { COLS, ROWS, TICK, TANK, MINE, BULLETS, BULLET_KEYS, TYPES, TERRAIN } from './config.js';
 import { TILE, walkable, withLinks } from './maps.js';
 import { clamp, angDiff, turnToward, wrap, makeRng } from './util.js';
 
@@ -190,19 +190,6 @@ export class Sim {
   activeMines(t) { let n = 0; for (const m of this.mines) if (m.owner === t.id) n++; return n; }
   canFire(t) { return t.alive && !this.lock.fire && t.cdLeft <= 0 && t.ammo >= 1; }
 
-  // 遊戲中換彈（只有真人）：彈匣照比例換算、換完 0.35 秒才能開火
-  switchBullet(t, key) {
-    if (key === 'next') key = BULLET_KEYS[(BULLET_KEYS.indexOf(t.bullet) + 1) % BULLET_KEYS.length];
-    if (!t.alive || t.type || !BULLETS[key] || key === t.bullet) return false;
-    const B = BULLETS[key], old = t.maxShots;
-    t.bullet = key; t.maxShots = B.max; t.cd = B.cd; t.bulletSpeed = B.speed; t.reload = B.reload;
-    t.ammo = Math.min(B.max, Math.floor((t.ammo / old) * B.max + 1e-6));
-    t.reloadLeft = t.reload;
-    t.cdLeft = Math.max(t.cdLeft, SWAP_DELAY);
-    this.emit('swap', { id: t.id, bullet: key });
-    return true;
-  }
-
   // 草叢：躲在草裡、最近沒開火、viewerTeam 的坦克也沒靠近 → 看不到
   hidden(t, viewerTeam) {
     if (tileAt(this.grid, t.x, t.y) !== TILE.BUSH || this.t < t.revealUntil || t.team === viewerTeam) return false;
@@ -326,7 +313,6 @@ export class Sim {
       // 裝填：照時間一發一發補回來，跟場上的炮彈無關
       if (t.ammo < t.maxShots) { t.reloadLeft -= dt; if (t.reloadLeft <= 0) { t.ammo++; t.reloadLeft += t.reload; } }
       else t.reloadLeft = t.reload;
-      if (I.swap) { this.switchBullet(t, I.swap); I.swap = null; }
       if (I.fire) this.fire(t);
       if (I.mine) this.layMine(t);
       I.fire = false; I.mine = false;

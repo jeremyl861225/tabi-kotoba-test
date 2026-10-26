@@ -37,8 +37,8 @@ export class Hud {
 
   show(on) { this.top.hidden = !on; if (!on) { this.hideBanner(true); this.foundEl.hidden = true; } }
 
-  // 單人：分數板在左側（直排）；雙人：場地上方置中（左右兩側被兩個人的搖桿佔了）
-  setLayout(kind) { this.root.classList.toggle('duo', kind === 'duo'); }
+  // 分數板在左側（直排）
+  setLayout() {}
 
   // view：game.view() 或客人收到的摘要；tanks：全部坦克
   update(view, me, tanks) {
@@ -47,12 +47,10 @@ export class Hud {
     if (view.mode === 'campaign') {
       const ch = chapterOf(view.level);
       const foes = tanks.filter((t) => t.team === 1);
-      const lives = Array.from({ length: Math.max(view.lives, 0) }, () => heart).join('');
-      html = `<div class="ttl"><span>第</span><b>${view.level + 1}</b><span>關</span></div>
-        ${ch ? `<div class="chap">${esc(ch.short || ch.name)}</div>` : ''}
+      html = `<div class="row1"><div class="ttl"><span>第</span><b>${view.level + 1}</b><span>關</span></div>${ch ? `<div class="chap">${esc(ch.short || ch.name)}</div>` : ''}</div>
         <div class="sep"></div>
-        <div class="foes">${foes.map((t) => { const T = tankTones(t.color); return `<span class="ft ${t.alive ? '' : 'dead'}">${tankGlyph(T.base, T.line)}</span>`; }).join('')}</div>
-        <span class="lives">${lives}</span>`;
+        <div class="row2"><div class="foes">${foes.map((t) => { const T = tankTones(t.color); return `<span class="ft ${t.alive ? '' : 'dead'}">${tankGlyph(T.base, T.line)}</span>`; }).join('')}</div>
+        <span class="lives">${heart}<b>${Math.max(view.lives, 0)}</b></span></div>`;
     } else if (view.mode === 'versus') {
       const teams = new Map();
       for (const t of tanks) if (!teams.has(t.team)) teams.set(t.team, t);
@@ -106,11 +104,11 @@ export class Hud {
       if (i >= types.length) { el.hidden = true; return; }
       const k = types[i], T = TYPES[k];
       el.querySelector('b').textContent = T.name;
-      el.querySelector('span').textContent = T.traits.join('・');
+      el.querySelector('span').textContent = T.traits.slice(0, 2).join('・');
       el.hidden = false;
       paint(el.querySelector('canvas'), k);
       const M = motion();
-      if (M) M.animate(el, { opacity: [0, 1], transform: ['translate(-50%, 16px)', 'translate(-50%, 0)'] }, { type: 'spring', stiffness: 420, damping: 28 });
+      if (M) M.animate(el, { opacity: [0, 1], transform: ['translateY(-12px)', 'translateY(0)'] }, { type: 'spring', stiffness: 420, damping: 28 });
       clearTimeout(this.foundT);
       this.foundT = setTimeout(() => show(i + 1), 2200);
     };

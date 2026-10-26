@@ -1,10 +1,8 @@
 // 操作：左搖桿開車、右搖桿瞄準——放開就發射（v8：沒有發射鈕）。
 // 右搖桿：拖出去＝轉炮塔、放開＝發射；拖回中心再放＝取消（炮塔停在剛剛的方向）；輕點＝往目前方向發射。地雷鈕。
-// 換彈鈕：點一下換下一種彈（右搖桿上方）。
-// 電腦：WASD 開車、滑鼠指哪炮塔轉哪、左鍵／空白鍵發射、右鍵／E 放地雷、Q／Tab 換彈、1–5 直接選彈種。
-// 手把：Y 換彈。
+// 彈種開局就選好、遊戲中不能換（v14）：右搖桿上方只是一個顯示目前彈種的小牌子。
+// 電腦：WASD／方向鍵開車、滑鼠指哪炮塔轉哪、左鍵／空白鍵發射、右鍵／E 放地雷。
 // 手把（Gamepad API）：左類比開車、右類比轉炮塔、RT／RB／A 發射、LT／LB／B 地雷、Start 暫停。
-// 同機雙人：1P 用左側、2P 用右側（各自一組搖桿與按鈕）。
 const KNOB = 44;          // 搖桿可推的距離（CSS px）
 const DEAD = 0.16;
 const AIM_DEAD = 12;      // 右搖桿推超過這麼多才轉炮塔（px）
@@ -21,7 +19,7 @@ const ICON = {
   move: '<svg class="i" viewBox="0 0 24 24"><path d="M12 4.5l-2 2.2h4zM12 19.5l-2-2.2h4zM4.5 12l2.2-2v4zM19.5 12l-2.2-2v4z" class="f"/></svg>',
 };
 
-import { BULLET_KEYS, BULLETS } from './config.js';
+import { BULLETS } from './config.js';
 import { bulletSvg } from './icons.js';
 
 const RING_R = 61;   // 彈匣環的半徑（SVG 座標，底盤 116 + 10）
@@ -56,7 +54,7 @@ export class Input {
     root.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
-  // kind：'solo'（1 人）／'duo'（同機 2 人）／'none'（只看，例如客人在大廳）
+  // kind：'solo'（1 人）／'none'（只看，例如客人在大廳）
   setLayout(kind, slots = [0]) {
     this.kind = kind;
     this.mouse = null;   // 換局時忘掉上一局滑鼠停的位置（不然新的一局炮塔會自己轉過去）
@@ -72,15 +70,15 @@ export class Input {
         <div class="stick aim full" aria-label="瞄準，放開發射"><div class="base glass"><i class="cz">${ICON.cancel}</i></div>
           <svg class="ring" viewBox="0 0 126 126"><g class="segs"></g><path class="part" d=""/></svg>
           <div class="knob">${ICON.fire}${ICON.cancel}</div><span class="pips"></span><span class="hint" hidden>拖曳瞄準・放開發射</span></div>
-        <button class="btn-swap glass" aria-label="換彈種">${bulletSvg('standard')}<span class="sw"><svg class="i"><use href="#i-swap"/></svg></span><span class="lbl"></span><span class="cap"></span></button>
+        <div class="wpn glass" aria-label="目前彈種">${bulletSvg('standard')}<span class="lbl"></span></div>
         <button class="btn-mine glass" aria-label="地雷">${ICON.mine}<span class="badge"></span></button>`;
       this.root.appendChild(el);
       const p = {
         slot, el,
         move: { el: el.querySelector('.move'), id: null, ox: 0, oy: 0, home: { x: 0, y: 0 } },
         aim: { el: el.querySelector('.aim'), id: null, c: { x: 0, y: 0 }, far: 0, armed: false },
-        mineEl: el.querySelector('.btn-mine'), swapEl: el.querySelector('.btn-swap'),
-        state: { mx: 0, my: 0, aim: null, fire: 0, mine: 0, swap: null },
+        mineEl: el.querySelector('.btn-mine'), wpnEl: el.querySelector('.wpn'),
+        state: { mx: 0, my: 0, aim: null, fire: 0, mine: 0 },
       };
       this.pads.set(slot, p);
     }
@@ -105,35 +103,21 @@ export class Input {
     const Lw = field.x, Rw = W - field.x - field.w;
     const put = (el, x, y) => { el.style.left = `${x}px`; el.style.top = `${y}px`; };
     for (const p of this.pads.values()) {
-      let mv, am, mi, sw;
-      if (this.kind === 'solo') {
-        const lx = Math.max(sl + 74 * big, Lw / 2), rx = W - Math.max(sr + 74 * big, Rw / 2);
-        mv = { x: lx, y: H - sb - 86 * big };
-        am = { x: rx, y: H - sb - 86 * big };
-        // 地雷鈕對齊開車搖桿、換彈鈕對齊瞄準搖桿（同一條垂直軸，左右對稱）
-        mi = { x: lx, y: mv.y - 108 * big };
-        sw = { x: rx, y: am.y - 108 * big };
-      } else {
-        // 雙人：各自一側，上面瞄準、下面開車、地雷與換彈在中間
-        const left = p.slot === 0;
-        const cx = left ? Math.max(sl + 70 * big, Lw / 2) : W - Math.max(sr + 70 * big, Rw / 2);
-        const dir = left ? 1 : -1;
-        am = { x: cx, y: Math.max(114 * big, H * 0.29) };
-        mv = { x: cx, y: H - sb - 82 * big };
-        const mid = (am.y + mv.y) / 2 + 14 * big;
-        mi = { x: cx - dir * 30 * big, y: mid };
-        sw = { x: cx + dir * 30 * big, y: mid };
-      }
-      p.el.classList.toggle('duo', this.kind === 'duo');
+      const lx = Math.max(sl + 74 * big, Lw / 2), rx = W - Math.max(sr + 74 * big, Rw / 2);
+      // v14：搖桿抬高 10 pt（審查：提示膠囊離畫面底只剩 7 pt、橫向手機的 Home 指示條會吃掉）
+      const mv = { x: lx, y: H - sb - 96 * big };
+      const am = { x: rx, y: H - sb - 96 * big };
+      // 地雷鈕在開車搖桿正上方、目前彈種的小牌子在瞄準搖桿正上方（同一條垂直軸，左右對稱）；
+      // 離搖桿 94 pt：分數板（左上，瀏海機種最高約 100 pt）剛好留得下
+      const mi = { x: lx, y: mv.y - 94 * big };
+      const wp = { x: rx, y: am.y - 94 * big };
       p.move.home = mv;
       put(p.move.el, mv.x, mv.y);
       put(p.aim.el, am.x, am.y);
       p.aim.c = am;
       put(p.mineEl, mi.x, mi.y);
-      put(p.swapEl, sw.x, sw.y);
-      p.zone = this.kind === 'solo'
-        ? { x0: 0, x1: W * 0.42, y0: H * 0.3, y1: H }
-        : (p.slot === 0 ? { x0: 0, x1: W * 0.3, y0: H * 0.55, y1: H } : { x0: W * 0.7, x1: W, y0: H * 0.55, y1: H });
+      put(p.wpnEl, wp.x, wp.y);
+      p.zone = { x0: 0, x1: W * 0.42, y0: H * 0.3, y1: H };
     }
   }
 
@@ -154,10 +138,9 @@ export class Input {
     const x = e.clientX, y = e.clientY;
     const hit = (el, r) => { const b = el.getBoundingClientRect(); return Math.hypot(x - (b.left + b.width / 2), y - (b.top + b.height / 2)) < r; };
     const k = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pad-k')) || 1;
-    // 地雷鈕、換彈鈕
+    // 地雷鈕
     for (const p of this.pads.values()) {
       if (hit(p.mineEl, 34 * k)) { e.preventDefault(); this.press(p, 'mine'); return; }
-      if (hit(p.swapEl, 34 * k)) { e.preventDefault(); this.swap(p, 'next'); return; }
     }
     // 右搖桿（固定位置）
     for (const p of this.pads.values()) {
@@ -184,13 +167,6 @@ export class Input {
         return;
       }
     }
-  }
-
-  swap(p, key) {
-    p.state.swap = key;
-    const el = p.swapEl;
-    el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit');
-    this.haptic('tick');
   }
 
   press(p, what) {
@@ -283,9 +259,6 @@ export class Input {
       const p = this.primary();
       if (e.code === 'Space' || e.code === 'KeyJ') { if (p) p.state.fire++; e.preventDefault(); }
       if (e.code === 'KeyE' || e.code === 'ShiftLeft' || e.code === 'KeyK') { if (p) p.state.mine++; }
-      if (e.code === 'KeyQ' || e.code === 'Tab') { if (p) this.swap(p, 'next'); e.preventDefault(); }
-      const n = /^Digit([1-5])$/.exec(e.code);
-      if (n && p) this.swap(p, BULLET_KEYS[+n[1] - 1]);
       if (e.code === 'Escape' || e.code === 'KeyP') this.onPause();
     } else this.keys.delete(e.code);
   }
@@ -298,29 +271,22 @@ export class Input {
     const out = new Map();
     const k = this.keys;
     const first = this.primary();
-    let idx = 0;
     for (const p of this.pads.values()) {
       const s = p.state;
       let mx = s.mx, my = s.my;
-      const second = idx++ === 1;
       if (p === first) {
-        if (k.has('KeyW') || (this.kind === 'solo' && k.has('ArrowUp'))) my -= 1;
-        if (k.has('KeyS') || (this.kind === 'solo' && k.has('ArrowDown'))) my += 1;
-        if (k.has('KeyA') || (this.kind === 'solo' && k.has('ArrowLeft'))) mx -= 1;
-        if (k.has('KeyD') || (this.kind === 'solo' && k.has('ArrowRight'))) mx += 1;
+        if (k.has('KeyW') || k.has('ArrowUp')) my -= 1;
+        if (k.has('KeyS') || k.has('ArrowDown')) my += 1;
+        if (k.has('KeyA') || k.has('ArrowLeft')) mx -= 1;
+        if (k.has('KeyD') || k.has('ArrowRight')) mx += 1;
         if (this.mouse && this.enabled) { const a = this.aimAngleAt(p.slot, this.mouse.x, this.mouse.y); if (a != null) s.aim = a; }
         s.fire += this.mouseFire; this.mouseFire = 0;
-      } else if (second && this.kind === 'duo') {
-        if (k.has('ArrowUp')) my -= 1;
-        if (k.has('ArrowDown')) my += 1;
-        if (k.has('ArrowLeft')) mx -= 1;
-        if (k.has('ArrowRight')) mx += 1;
       }
       const m = Math.hypot(mx, my);
       if (m > 1) { mx /= m; my /= m; }
       if (m < DEAD) { mx = 0; my = 0; }
-      out.set(p.slot, { mx, my, aim: s.aim, fire: s.fire, mine: s.mine, swap: s.swap });
-      s.fire = 0; s.mine = 0; s.swap = null;
+      out.set(p.slot, { mx, my, aim: s.aim, fire: s.fire, mine: s.mine });
+      s.fire = 0; s.mine = 0;
     }
     this.pollGamepads(out);
     return out;
@@ -341,12 +307,11 @@ export class Input {
       if (Math.hypot(lx, ly) > 0.2) { o.mx = lx; o.my = ly; }
       const rx = ax(2), ry = ax(3);
       if (Math.hypot(rx, ry) > 0.35) { o.aim = Math.atan2(ry, rx); this.pads.get(slot).state.aim = o.aim; }
-      const fire = b(7) || b(5) || b(0), mine = b(6) || b(4) || b(1), start = b(9), sw = b(3);
+      const fire = b(7) || b(5) || b(0), mine = b(6) || b(4) || b(1), start = b(9);
       if (fire && !prev.fire) o.fire++;
       if (mine && !prev.mine) o.mine++;
-      if (sw && !prev.sw) o.swap = 'next';
       if (start && !prev.start) this.onPause();
-      this.gpPrev.set(g.index, { fire, mine, start, sw });
+      this.gpPrev.set(g.index, { fire, mine, start });
     });
   }
 
@@ -395,20 +360,14 @@ export class Input {
     }
   }
 
-  // 換彈鈕顯示目前的彈種；換了之後旁邊跳出彈種名字 0.9 秒
+  // 瞄準搖桿上方的小牌子：目前的彈種（圖＋名字），遊戲中不能換
   setBullet(slot, key) {
     const p = this.pads.get(slot);
     if (!p || p.bulletKey === key) return;
-    const first = p.bulletKey == null;
     p.bulletKey = key;
-    const el = p.swapEl;
+    const el = p.wpnEl;
     el.querySelector('svg.b').outerHTML = bulletSvg(key);
-    el.querySelector('.cap').textContent = BULLETS[key].name;
     el.querySelector('.lbl').textContent = BULLETS[key].name;
-    if (first) return;
-    el.classList.add('show');
-    clearTimeout(p.capT);
-    p.capT = setTimeout(() => el.classList.remove('show'), 900);
   }
 
   setMines(slot, n) {

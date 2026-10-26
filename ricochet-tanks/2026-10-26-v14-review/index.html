@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>跳彈坦克 v0.4</title>
+<meta name="theme-color" content="#EDEFF3">
+<style>
+  :root { --ink: #252B40; --ink-2: #4E5D87; --dim: #8790AB; --bg: #EDEFF3; --card: #fff; --line: rgb(78 93 135 / 0.16);
+    --yellow: #F8C21A; --mint: #1ADAAB; --cyan: #2BB2CB; --slate: #4E5D87; --plum: #5E3A5E; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.65 -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; -webkit-text-size-adjust: 100%; }
+  main { max-width: 760px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px 48px; }
+  a { color: #13849A; }
+  .back { font-size: 14px; text-decoration: none; color: var(--ink-2); }
+  h1 { font-size: 24px; margin: 10px 0 4px; letter-spacing: 0.04em; }
+  .lead { color: var(--ink-2); margin: 0 0 14px; }
+  .sw { display: flex; gap: 6px; margin: 10px 0 4px; }
+  .sw i { flex: 1; height: 26px; border-radius: 8px; }
+  .swl { display: flex; gap: 6px; font-size: 11px; color: var(--dim); margin-bottom: 14px; }
+  .swl span { flex: 1; text-align: center; }
+  .play { display: block; text-align: center; padding: 14px; border-radius: 16px; background: linear-gradient(180deg, #FFD95C, var(--yellow)); color: #3E2340; font-weight: 800; letter-spacing: 0.06em; text-decoration: none; margin: 14px 0 10px; box-shadow: 0 12px 26px -12px rgb(214 160 10 / 0.7); }
+  .box { background: var(--card); border-radius: 18px; padding: 12px 16px; box-shadow: 0 0 0 0.5px var(--line), 0 10px 26px -16px rgb(36 46 80 / 0.4); margin: 12px 0 20px; }
+  .box ol { margin: 6px 0; padding-left: 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 8px 0 18px; }
+  th, td { padding: 7px 6px; border-bottom: 0.5px solid var(--line); text-align: left; vertical-align: top; }
+  th { color: var(--dim); font-weight: 600; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  h2 { font-size: 17px; margin: 26px 0 6px; }
+  figure { margin: 0 0 18px; padding: 10px; border-radius: 16px; background: var(--card); box-shadow: 0 0 0 0.5px var(--line); }
+  figure img { width: 100%; display: block; border-radius: 10px; }
+  figcaption { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+<a class="back" href="../../">← 所有測試</a>
+<h1>跳彈坦克 v0.4</h1>
+<p class="lead">這一版照你的三個指示改：彈種遊戲中不能換、彈種圖示重畫、取消同機雙人；地雷鈕與分數板不再被擋。另外做了第八、九輪獨立審查的修正。</p>
+
+<a class="play" href="../app/">▶ 試玩／安裝（手機橫放）</a>
+<div class="box">
+  <b>裝到 iPhone（不用 Mac）</b>
+  <ol>
+    <li>用 <b>Safari</b> 打開上面的「試玩／安裝」</li>
+    <li>按下方的 <b>分享</b>（方框加向上箭頭）→ <b>加入主畫面</b> → 新增</li>
+    <li>主畫面出現「跳彈坦克」圖示，點開就是全螢幕，打橫玩</li>
+  </ol>
+  網址固定不變（<code>…/ricochet-tanks/app/</code>），進度和圖鑑會保留。已經裝過的人重新整理一次就是新版；如果還是舊的，把主畫面圖示刪掉再加一次。
+</div>
+
+<h2>你這次說的</h2>
+<table>
+  <tr><th>你說的</th><th>怎麼做</th></tr>
+  <tr><td>放地雷的按鈕被擋住、血量也會擋住畫面</td><td>原因是瀏海機種的左側安全區把分數板推進場地、蓋到地雷鈕。分數板縮成兩列，命數改成「♥ 3」；寬度不超出場地外框（離外框 ≥ 12 pt）；左邊空白太窄時自動收掉章節標籤。下方 notch 那張是模擬 iPhone 橫放（左右安全區 59 pt）的畫面。</td></tr>
+  <tr><td>遊戲中不能換武器</td><td>換彈鈕、鍵盤 Q／Tab／1–5、手把 Y、連線的換彈全部拿掉。右搖桿上方只剩一張顯示目前彈種的小牌子（不能點）。彈種在開局選好。</td></tr>
+  <tr><td>武器小圖示重新設計</td><td>標準＝一顆大尖頭彈＋直線；火箭＝黃尾翼＋火焰；跳彈＝大「Z」折線加牆；散彈＝一點發三顆大彈；爆裂＝炸彈＋爆風圈。選彈卡與遊戲中的小牌子用同一組。</td></tr>
+  <tr><td>取消同機雙人</td><td>標題入口、選單、雙人版面都拿掉了（連線對戰的 2 人合作戰役還在）。</td></tr>
+</table>
+
+<h2>審查（10 分＝跟標竿一樣好）</h2>
+<table>
+  <tr><th>輪</th><th>平均</th><th>審查說最該修的</th><th>怎麼處理</th></tr>
+  <tr><td>第八輪（v13）</td><td class="n">6.6</td><td>坦克灰階下跟地板同明度；黃／薄荷隊圈太弱；黃旗被方塊擋；UI 蓋住場地；桶和草叢像複製貼上</td><td>隊圈加深色外緣、旗最後畫不被擋、新發現卡搬到右側、桶與草叢加變化</td></tr>
+  <tr><td>第九輪（v14）</td><td class="n">6.7</td><td>瀏海版面貼邊；小牌子貼搖桿環；標準彈圖示太輕；隊圈仍偏弱</td><td>外框留 12 pt、牌子縮矮、圖示再重畫、圈外緣再加深</td></tr>
+</table>
+<p>還沒做：擊毀特效缺「變暖白」過場、標題示範對打被標題字蓋住。審查認為差距最大的是<b>坦克太小</b>（約 23 pt）：要改的話是把場地 20×14 縮成 16×11，52 關加 12 張地圖都要重排，等你決定。</p>
+
+<h2>彈種（新圖示）</h2>
+<figure><img src="select.jpg" alt="選彈"><figcaption>左 v13、右 v14。</figcaption></figure>
+<h2>HUD 版面</h2>
+<figure><img src="hud.jpg" alt="第 52 關的 HUD"><figcaption>第 52 關（頭目關）：分數板與地雷鈕、右上新發現卡、右搖桿上方的彈種小牌子。</figcaption></figure>
+<figure><img src="notch.jpg" alt="瀏海機種"><figcaption>模擬 iPhone 橫放（左右安全區 59 pt、下 21 pt）：元件都在安全區內，不碰場地。</figcaption></figure>
+<h2>標題、戰役、2 對 2</h2>
+<figure><img src="title.jpg" alt="標題"><figcaption>左 v13、右 v14：示範對打的遮罩放淡。</figcaption></figure>
+<figure><img src="camp.jpg" alt="戰役"></figure>
+<figure><img src="team.jpg" alt="2 對 2"><figcaption>隊圈外緣加深（看黃隊的虛線圈）。</figcaption></figure>
+<figure><img src="wide.jpg" alt="對戰全景"></figure>
+<h2>地形與頭目</h2>
+<figure><img src="barrel.jpg" alt="炸藥桶"><figcaption>桶的高光、警示帶、火焰標記各不相同。</figcaption></figure>
+<figure><img src="bush.jpg" alt="草叢"><figcaption>葉脈減少、角度隨機。</figcaption></figure>
+<figure><img src="ice.jpg" alt="冰原"></figure>
+<figure><img src="pits.jpg" alt="坑洞"><figcaption>坦克靠牆時，隊圈被方塊擋住的部分會再描一次輪廓。</figcaption></figure>
+<figure><img src="portal.jpg" alt="傳送門"></figure>
+<figure><img src="boss.jpg" alt="頭目"></figure>
+<h2>章節、圖鑑、結算</h2>
+<figure><img src="chapters.jpg" alt="章節"></figure>
+<figure><img src="dex.jpg" alt="圖鑑"></figure>
+<figure><img src="dexinfo.jpg" alt="圖鑑詳細"></figure>
+<figure><img src="result.jpg" alt="結算"></figure>
+</main>
+</body>
+</html>
