@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>可商用配樂候選</title>
+<meta name="theme-color" content="#EDEFF3">
+<style>
+  :root { --ink: #252B40; --ink-2: #4E5D87; --dim: #8790AB; --bg: #EDEFF3; --card: #fff; --line: rgb(78 93 135 / 0.16);
+    --yellow: #F8C21A; --cyan: #2BB2CB; --plum: #5E3A5E; --mint: #0E9F7C; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.65 -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; -webkit-text-size-adjust: 100%; }
+  main { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px calc(env(safe-area-inset-bottom, 0px) + 48px); }
+  a { color: #13849A; }
+  .back { font-size: 14px; text-decoration: none; color: var(--ink-2); }
+  h1 { font-size: 24px; margin: 10px 0 4px; letter-spacing: 0.04em; }
+  .lead { color: var(--ink-2); margin: 0 0 12px; }
+  h2 { font-size: 18px; margin: 28px 0 10px; display: flex; align-items: baseline; gap: 8px; }
+  h2 small { font-size: 13px; color: var(--dim); font-weight: 500; }
+  .track { --ac: var(--yellow); --acd: #9A7408; background: var(--card); border-radius: 18px; padding: 12px 14px 10px; margin: 0 0 12px;
+    box-shadow: 0 0 0 0.5px var(--line), 0 10px 26px -16px rgb(36 46 80 / 0.4); border-left: 5px solid var(--ac); }
+  .track[data-slot="battle"] { --ac: var(--cyan); --acd: #13849A; }
+  .track[data-slot="boss"] { --ac: var(--plum); --acd: var(--plum); }
+  .head { display: flex; align-items: center; gap: 12px; }
+  .btn { flex: none; width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--ac); color: #fff; cursor: pointer;
+    display: grid; place-items: center; box-shadow: 0 8px 18px -10px var(--acd); -webkit-tap-highlight-color: transparent; }
+  .track:not([data-slot="boss"]) .btn { color: var(--ink); }
+  .btn:active { transform: scale(0.95); }
+  .btn svg { width: 22px; height: 22px; }
+  .btn .pause, .track.on .btn .play { display: none; }
+  .track.on .btn .pause { display: block; }
+  .tt { min-width: 0; flex: 1; }
+  .tt b { display: block; font-size: 17.5px; line-height: 1.3; }
+  .tt b em { font-style: normal; color: var(--acd); margin-right: 6px; }
+  .tt span { display: block; color: var(--dim); font-size: 13px; }
+  .lic { white-space: nowrap; flex: none; align-self: flex-start; font: 700 11.5px/1 -apple-system, sans-serif; padding: 5px 8px; border-radius: 999px; letter-spacing: 0.03em; }
+  .lic.cc0 { background: #E2F6EF; color: #0B7A5F; }
+  .lic.by { background: #FFF2CC; color: #8A6400; }
+  .bar { position: relative; height: 24px; margin: 8px 0 0; cursor: pointer; touch-action: none; }
+  .bar::before { content: ""; position: absolute; left: 0; right: 0; top: 10px; height: 4px; border-radius: 2px; background: rgb(78 93 135 / 0.14); }
+  .bar i { position: absolute; left: 0; top: 10px; height: 4px; border-radius: 2px; background: var(--ac); width: 0; }
+  .bar i::after { content: ""; position: absolute; right: -7px; top: -5px; width: 14px; height: 14px; border-radius: 50%; background: var(--ac); box-shadow: 0 0 0 3px #fff, 0 1px 4px rgb(0 0 0 / 0.25); }
+  .time { display: flex; justify-content: space-between; color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; margin-top: -2px; }
+  .desc { margin: 6px 0 0; font-size: 14px; color: var(--ink-2); }
+  .desc a { font-size: 13px; white-space: nowrap; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 8px 0 14px; }
+  th, td { padding: 7px 6px; border-bottom: 0.5px solid var(--line); text-align: left; vertical-align: top; }
+  th { color: var(--dim); font-weight: 600; }
+  .note { font-size: 13.5px; color: var(--ink-2); }
+</style>
+</head>
+<body>
+<main>
+<a class="back" href="../../">← 所有測試</a>
+<h1>可商用配樂候選</h1>
+<p class="lead">全部都是可以放進要上架、要賺錢的 App 的曲子。每一首都有來源連結可以查授權。這裡的音量已經調成一樣大，方便比較。按圓鈕播放；按另一首時前一首會自動停。</p>
+
+<table>
+  <tr><th>標籤</th><th>意思</th><th>要做的事</th></tr>
+  <tr><td><span class="lic cc0">CC0</span></td><td>作者放棄版權（公眾領域）</td><td>不用做任何事，連署名都不用（我們還是會在製作群寫上）</td></tr>
+  <tr><td><span class="lic by">CC BY 4.0</span></td><td>可商用，條件是要署名</td><td>在 App 的「製作群」頁寫曲名、作者、授權（作者官網建議的做法）</td></tr>
+</table>
+
+<div id="list"></div>
+
+<h2>選好之後告訴我</h2>
+<p class="note">每一類挑一首，例如「標題 2、對戰 5、頭目 8」。三首可以混用不同作者。如果都不喜歡，說一下想要的方向，我再找一輪，例如「要真的樂器、不要電子音」「要更像進行曲」「要更可愛」。</p>
+<p class="note">選定後我會：換掉遊戲裡的合成配樂，改播這些音檔；處理循環接點，讓音樂接回開頭時不會頓一下；在設定裡加「製作群」頁寫上作者與授權；在專案裡留一份授權紀錄，上架被問到時拿得出來。</p>
+<p class="note">我沒辦法自己聽，是照作者的描述、標籤和授權挑的。Kevin MacLeod 的曲子很多 YouTube 影片用過，有些人會覺得耳熟。</p>
+</main>
+<script>
+  const TRACKS = [
+    { slot: 'title', file: 'clappy', name: 'Happy Clappy Loop', by: 'OwlishMedia', lic: 'cc0', len: '17 秒一輪', url: 'https://opengameart.org/content/happy-clappy-loop',
+      desc: '鋼琴加拍手，開心、輕快。本來就做成無縫循環，但一輪很短，聽久可能會膩。' },
+    { slot: 'title', file: 'once', name: 'Once Upon a Time', by: 'TAD', lic: 'cc0', len: '58 秒一輪', url: 'https://opengameart.org/node/117388',
+      desc: '鋼琴加管弦，童話故事開場的感覺，做成循環版。' },
+    { slot: 'title', file: 'duck', name: 'Fluffing a Duck', by: 'Kevin MacLeod', lic: 'by', len: '67 秒', url: 'https://incompetech.com/music/royalty-free/',
+      desc: '低音管和撥弦，滑稽、可愛，有點卡通感。' },
+    { slot: 'title', file: 'flower', name: 'Flowerbed Fields', by: 'Zane Little', lic: 'cc0', len: '106 秒一輪', url: 'https://opengameart.org/content/flowerbed-fields-loop',
+      desc: '8-bit 電玩音樂，開朗、可愛，做成循環版，作者說是「冒險出發」的曲子。' },
+    { slot: 'battle', file: 'toy', name: 'Toy Soldiers', by: 'Zane Little', lic: 'cc0', len: '154 秒', url: 'https://opengameart.org/content/toy-soldiers',
+      desc: '主題就是玩具兵：電玩音樂，加上作者自己錄的發條、馬達聲，跟我們的玩具坦克最搭。不是循環版，要另外找接點。' },
+    { slot: 'battle', file: 'snitch', name: 'Sneaky Snitch', by: 'Kevin MacLeod', lic: 'by', len: '137 秒', url: 'https://incompetech.com/music/royalty-free/',
+      desc: '撥弦加木管，躡手躡腳、俏皮，像在捉迷藏。' },
+    { slot: 'battle', file: 'polka', name: 'Pixel Peeker Polka（快版）', by: 'Kevin MacLeod', lic: 'by', len: '202 秒', url: 'https://incompetech.com/music/royalty-free/',
+      desc: '快版波卡舞曲（144 BPM），熱鬧、跳來跳去，一首很長不容易膩。' },
+    { slot: 'boss', file: 'bounce', name: 'Boss Fight Bounce', by: 'Locomule', lic: 'cc0', len: '72 秒一輪', url: 'https://opengameart.org/content/boss-fight-bounce',
+      desc: '電玩音樂，作者說是寫給頭目戰的：有彈跳感、又夠緊張。做成循環版。' },
+    { slot: 'boss', file: 'volatile', name: 'Volatile Reaction', by: 'Kevin MacLeod', lic: 'by', len: '165 秒', url: 'https://incompetech.com/music/royalty-free/',
+      desc: '快節奏動作配樂（155 BPM），弦樂和鼓一直推，很有追逐感。' },
+    { slot: 'boss', file: 'epic', name: 'Epic Boss Battle', by: 'Juhani Junkala', lic: 'cc0', len: '123 秒一輪', url: 'https://opengameart.org/node/55649',
+      desc: '管弦樂史詩風，無縫循環。氣勢最大，但比較嚴肅、不太像玩具。' },
+  ];
+  const SLOTS = { title: ['標題、選單', '開場和選單播的'], battle: ['對戰', '一般關卡和對戰'], boss: ['頭目', '頭目關'] };
+  const LIC = { cc0: 'CC0', by: 'CC BY 4.0' };
+  const PLAY = '<svg class="play" viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/></svg><svg class="pause" viewBox="0 0 24 24"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z" fill="currentColor"/></svg>';
+  const list = document.getElementById('list');
+  let html = '', last = '';
+  TRACKS.forEach((t, i) => {
+    if (t.slot !== last) { last = t.slot; html += `<h2>${SLOTS[t.slot][0]}<small>${SLOTS[t.slot][1]}</small></h2>`; }
+    html += `<section class="track" data-slot="${t.slot}" data-src="${t.file}.m4a">
+      <div class="head"><button class="btn" aria-label="播放 ${t.name}">${PLAY}</button>
+        <div class="tt"><b><em>${i + 1}</em>${t.name}</b><span>${t.by}・${t.len}</span></div>
+        <span class="lic ${t.lic}">${LIC[t.lic]}</span></div>
+      <div class="bar"><i></i></div>
+      <div class="time"><span class="cur">0:00</span><span class="dur">–</span></div>
+      <p class="desc">${t.desc} <a href="${t.url}" target="_blank" rel="noopener">來源與授權 ↗</a></p>
+    </section>`;
+  });
+  list.innerHTML = html;
+  const fmt = (s) => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  const players = [...document.querySelectorAll('.track')].map((el) => {
+    const a = new Audio(el.dataset.src);
+    a.loop = true; a.preload = 'metadata';
+    const fill = el.querySelector('.bar i'), cur = el.querySelector('.cur'), dur = el.querySelector('.dur');
+    const draw = () => { const d = a.duration || 0; fill.style.width = (d ? (a.currentTime / d) * 100 : 0) + '%'; cur.textContent = fmt(a.currentTime); };
+    a.addEventListener('loadedmetadata', () => { dur.textContent = fmt(a.duration); });
+    a.addEventListener('timeupdate', draw);
+    a.addEventListener('play', () => el.classList.add('on'));
+    a.addEventListener('pause', () => el.classList.remove('on'));
+    el.querySelector('.btn').addEventListener('click', () => {
+      if (a.paused) { players.forEach((p) => p !== a && p.pause()); a.play(); } else a.pause();
+    });
+    const bar = el.querySelector('.bar');
+    const seek = (e) => { const r = bar.getBoundingClientRect(); const k = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); if (a.duration) { a.currentTime = k * a.duration; draw(); } };
+    bar.addEventListener('pointerdown', (e) => { bar.setPointerCapture(e.pointerId); seek(e); });
+    bar.addEventListener('pointermove', (e) => { if (bar.hasPointerCapture(e.pointerId)) seek(e); });
+    return a;
+  });
+</script>
+</body>
+</html>
